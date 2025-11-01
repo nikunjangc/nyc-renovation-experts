@@ -1,5 +1,6 @@
 # Environment variables (NEVER commit this!)
 .env
+env-template.txt
 
 # Node modules
 node_modules/
