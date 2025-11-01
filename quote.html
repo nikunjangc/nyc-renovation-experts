@@ -1,0 +1,697 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <title>AI-Powered Free Quote | NYC Renovation Experts</title>
+    <meta content="width=device-width, initial-scale=1.0" name="viewport" />
+    <meta content="AI renovation quote, smart quote assistant, NYC renovation estimate, free AI quote, renovation calculator" name="keywords" />
+    <meta content="Get an instant AI-powered renovation quote. Describe your project, upload photos, and receive personalized cost estimates and recommendations in seconds." name="description" />
+
+    <!-- Favicon -->
+    <link href="img/favicon.ico" rel="icon" />
+
+    <!-- Google Web Fonts -->
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link
+      href="https://fonts.googleapis.com/css2?family=Roboto:wght@400;500&family=Poppins:wght@600;700&display=swap"
+      rel="stylesheet"
+    />
+
+    <!-- Icon Font Stylesheet -->
+    <link
+      href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.10.0/css/all.min.css"
+      rel="stylesheet"
+    />
+    <link
+      href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.4.1/font/bootstrap-icons.css"
+      rel="stylesheet"
+    />
+
+    <!-- Libraries Stylesheet -->
+    <link href="lib/animate/animate.min.css" rel="stylesheet" />
+    <link href="lib/owlcarousel/assets/owl.carousel.min.css" rel="stylesheet" />
+
+    <!-- Customized Bootstrap Stylesheet -->
+    <link href="css/bootstrap.min.css" rel="stylesheet" />
+
+    <!-- Template Stylesheet -->
+    <link href="css/style.css" rel="stylesheet" />
+
+    <style>
+      .quote-wizard {
+        background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+        min-height: 100vh;
+        padding: 80px 0;
+      }
+      .quote-step {
+        display: none;
+        animation: fadeIn 0.5s;
+      }
+      .quote-step.active {
+        display: block;
+      }
+      @keyframes fadeIn {
+        from { opacity: 0; transform: translateY(20px); }
+        to { opacity: 1; transform: translateY(0); }
+      }
+      .step-indicator {
+        display: flex;
+        justify-content: center;
+        margin-bottom: 40px;
+      }
+      .step-dot {
+        width: 40px;
+        height: 40px;
+        border-radius: 50%;
+        background: rgba(255, 255, 255, 0.3);
+        color: white;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        margin: 0 10px;
+        font-weight: bold;
+        transition: all 0.3s;
+      }
+      .step-dot.active {
+        background: #FDA12B;
+        transform: scale(1.1);
+      }
+      .step-dot.completed {
+        background: #28a745;
+      }
+      .quote-card {
+        background: white;
+        border-radius: 20px;
+        padding: 40px;
+        box-shadow: 0 20px 60px rgba(0, 0, 0, 0.3);
+        max-width: 800px;
+        margin: 0 auto;
+      }
+      .ai-badge {
+        background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+        color: white;
+        padding: 8px 16px;
+        border-radius: 20px;
+        display: inline-block;
+        font-size: 14px;
+        margin-bottom: 20px;
+      }
+      .project-type-card {
+        border: 2px solid #e0e0e0;
+        border-radius: 15px;
+        padding: 20px;
+        text-align: center;
+        cursor: pointer;
+        transition: all 0.3s;
+        margin-bottom: 15px;
+      }
+      .project-type-card:hover {
+        border-color: #FDA12B;
+        transform: translateY(-5px);
+        box-shadow: 0 5px 15px rgba(253, 161, 43, 0.3);
+      }
+      .project-type-card.selected {
+        border-color: #FDA12B;
+        background: #fff5e6;
+      }
+      .project-type-card i {
+        font-size: 48px;
+        color: #FDA12B;
+        margin-bottom: 10px;
+      }
+      .ai-response-box {
+        background: #f8f9fa;
+        border-left: 4px solid #FDA12B;
+        padding: 20px;
+        border-radius: 10px;
+        margin: 20px 0;
+      }
+      .cost-estimate {
+        background: linear-gradient(135deg, #FDA12B 0%, #f89e2b 100%);
+        color: white;
+        padding: 30px;
+        border-radius: 15px;
+        text-align: center;
+        margin: 30px 0;
+      }
+      .cost-estimate h2 {
+        font-size: 48px;
+        font-weight: bold;
+        margin: 10px 0;
+      }
+      .upload-area {
+        border: 3px dashed #FDA12B;
+        border-radius: 15px;
+        padding: 40px;
+        text-align: center;
+        cursor: pointer;
+        transition: all 0.3s;
+        background: #fff5e6;
+      }
+      .upload-area:hover {
+        background: #ffeccc;
+        border-color: #f89e2b;
+      }
+      .upload-area.dragover {
+        background: #ffeccc;
+        border-color: #f89e2b;
+        transform: scale(1.02);
+      }
+      .upload-preview {
+        display: grid;
+        grid-template-columns: repeat(auto-fill, minmax(100px, 1fr));
+        gap: 15px;
+        margin-top: 20px;
+      }
+      .upload-preview-item {
+        position: relative;
+        border-radius: 10px;
+        overflow: hidden;
+      }
+      .upload-preview-item img {
+        width: 100%;
+        height: 100px;
+        object-fit: cover;
+      }
+      .upload-preview-item button {
+        position: absolute;
+        top: 5px;
+        right: 5px;
+        background: red;
+        color: white;
+        border: none;
+        border-radius: 50%;
+        width: 24px;
+        height: 24px;
+        cursor: pointer;
+        font-size: 12px;
+      }
+      .chat-message {
+        margin: 15px 0;
+        padding: 15px;
+        border-radius: 10px;
+      }
+      .chat-message.user {
+        background: #e3f2fd;
+        margin-left: 20%;
+      }
+      .chat-message.ai {
+        background: #f5f5f5;
+        margin-right: 20%;
+      }
+      .typing-indicator {
+        display: inline-flex;
+        gap: 5px;
+      }
+      .typing-indicator span {
+        width: 8px;
+        height: 8px;
+        background: #FDA12B;
+        border-radius: 50%;
+        animation: typing 1.4s infinite;
+      }
+      .typing-indicator span:nth-child(2) {
+        animation-delay: 0.2s;
+      }
+      .typing-indicator span:nth-child(3) {
+        animation-delay: 0.4s;
+      }
+      @keyframes typing {
+        0%, 60%, 100% { transform: translateY(0); }
+        30% { transform: translateY(-10px); }
+      }
+      .btn-primary {
+        background: #FDA12B;
+        border-color: #FDA12B;
+        padding: 12px 30px;
+        font-weight: 600;
+      }
+      .btn-primary:hover {
+        background: #f89e2b;
+        border-color: #f89e2b;
+      }
+    </style>
+  </head>
+
+  <body>
+    <!-- Spinner Start -->
+    <div
+      id="spinner"
+      class="show bg-white position-fixed translate-middle w-100 vh-100 top-50 start-50 d-flex align-items-center justify-content-center"
+    >
+      <div class="spinner-grow text-primary" role="status"></div>
+    </div>
+    <!-- Spinner End -->
+
+    <!-- Topbar Start -->
+    <div class="container-fluid bg-light p-0">
+      <div class="row gx-0 d-none d-lg-flex">
+        <div class="col-lg-7 px-5 text-start">
+          <div
+            class="h-100 d-inline-flex align-items-center border-start border-end px-3"
+          >
+            <small class="fa fa-phone-alt me-2"></small>
+            <small>+1 (646) 444-2434</small>
+          </div>
+          <div class="h-100 d-inline-flex align-items-center border-end px-3">
+            <small class="far fa-envelope-open me-2"></small>
+            <small>info@nycrenovationexperts.com</small>
+          </div>
+          <div class="h-100 d-inline-flex align-items-center border-end px-3">
+            <small class="far fa-clock me-2"></small>
+            <small>Mon - Fri : 09 AM - 09 PM</small>
+          </div>
+        </div>
+        <div class="col-lg-5 px-5 text-end">
+          <div class="h-100 d-inline-flex align-items-center">
+            <a class="btn btn-square border-end border-start" href="https://www.facebook.com/nycrenovationexperts" target="_blank" rel="noopener noreferrer" aria-label="Follow us on Facebook"
+              ><i class="fab fa-facebook-f"></i
+            ></a>
+            <a class="btn btn-square border-end" href="https://www.twitter.com/nycrenovationexperts" target="_blank" rel="noopener noreferrer" aria-label="Follow us on Twitter"
+              ><i class="fab fa-twitter"></i
+            ></a>
+            <a class="btn btn-square border-end" href="https://www.linkedin.com/company/nycrenovationexperts" target="_blank" rel="noopener noreferrer" aria-label="Follow us on LinkedIn"
+              ><i class="fab fa-linkedin-in"></i
+            ></a>
+            <a class="btn btn-square border-end" href="https://www.instagram.com/nycrenovationexperts" target="_blank" rel="noopener noreferrer" aria-label="Follow us on Instagram"
+              ><i class="fab fa-instagram"></i
+            ></a>
+          </div>
+        </div>
+      </div>
+    </div>
+    <!-- Topbar End -->
+
+    <!-- Navbar Start -->
+    <nav
+      class="navbar navbar-expand-lg bg-white navbar-light sticky-top px-4 px-lg-5 py-lg-0"
+    >
+      <a href="index.html" class="navbar-brand d-flex align-items-center">
+        <h1 class="m-0">
+          <i class="fa fa-building text-primary me-3"></i>NYC Renovation Experts
+        </h1>
+      </a>
+      <button
+        type="button"
+        class="navbar-toggler"
+        data-bs-toggle="collapse"
+        data-bs-target="#navbarCollapse"
+      >
+        <span class="navbar-toggler-icon"></span>
+      </button>
+      <div class="collapse navbar-collapse" id="navbarCollapse">
+        <div class="navbar-nav ms-auto py-3 py-lg-0">
+          <a href="index.html" class="nav-item nav-link">Home</a>
+          <a href="about.html" class="nav-item nav-link">About Us</a>
+          <a href="service.html" class="nav-item nav-link">Our Services</a>
+          <div class="nav-item dropdown">
+            <a
+              href="#"
+              class="nav-link dropdown-toggle"
+              data-bs-toggle="dropdown"
+              >Pages</a
+            >
+            <div class="dropdown-menu bg-light m-0">
+              <a href="feature.html" class="dropdown-item">Features</a>
+              <a href="appointment.html" class="dropdown-item">Appointment</a>
+              <a href="team.html" class="dropdown-item">Our Team</a>
+              <a href="testimonial.html" class="dropdown-item">Testimonial</a>
+              <a href="404.html" class="dropdown-item">404 Page</a>
+            </div>
+          </div>
+          <a href="contact.html" class="nav-item nav-link">Contact Us</a>
+          <a href="quote.html" class="nav-item nav-link active">Get Free Quote</a>
+        </div>
+      </div>
+    </nav>
+    <!-- Navbar End -->
+
+    <!-- AI Quote Wizard Start -->
+    <div class="quote-wizard">
+      <div class="container">
+        <div class="quote-card">
+          <div class="text-center mb-4">
+            <span class="ai-badge"><i class="fas fa-robot me-2"></i>AI-Powered Quote Assistant</span>
+            <h1 class="mt-3 mb-2">Get Your Instant Renovation Quote</h1>
+            <p class="text-muted">Tell us about your project, and our AI will provide an instant estimate</p>
+          </div>
+
+          <!-- Step Indicator -->
+          <div class="step-indicator">
+            <div class="step-dot active" data-step="1">1</div>
+            <div class="step-dot" data-step="2">2</div>
+            <div class="step-dot" data-step="3">3</div>
+            <div class="step-dot" data-step="4">4</div>
+            <div class="step-dot" data-step="5">5</div>
+          </div>
+
+          <!-- Step 1: Project Type -->
+          <div class="quote-step active" id="step1">
+            <h3 class="mb-4">What type of renovation are you planning?</h3>
+            <div class="row">
+              <div class="col-md-6 mb-3">
+                <div class="project-type-card" data-type="kitchen">
+                  <i class="fas fa-utensils"></i>
+                  <h5>Kitchen</h5>
+                </div>
+              </div>
+              <div class="col-md-6 mb-3">
+                <div class="project-type-card" data-type="bathroom">
+                  <i class="fas fa-bath"></i>
+                  <h5>Bathroom</h5>
+                </div>
+              </div>
+              <div class="col-md-6 mb-3">
+                <div class="project-type-card" data-type="full-home">
+                  <i class="fas fa-home"></i>
+                  <h5>Full Home</h5>
+                </div>
+              </div>
+              <div class="col-md-6 mb-3">
+                <div class="project-type-card" data-type="basement">
+                  <i class="fas fa-door-open"></i>
+                  <h5>Basement</h5>
+                </div>
+              </div>
+              <div class="col-md-6 mb-3">
+                <div class="project-type-card" data-type="office">
+                  <i class="fas fa-building"></i>
+                  <h5>Office/Commercial</h5>
+                </div>
+              </div>
+              <div class="col-md-6 mb-3">
+                <div class="project-type-card" data-type="other">
+                  <i class="fas fa-tools"></i>
+                  <h5>Other</h5>
+                </div>
+              </div>
+            </div>
+            <button class="btn btn-primary w-100 mt-4" onclick="nextStep()" id="btn-step1" disabled>
+              Continue <i class="fas fa-arrow-right ms-2"></i>
+            </button>
+          </div>
+
+          <!-- Step 2: Location & Basic Info -->
+          <div class="quote-step" id="step2">
+            <h3 class="mb-4">Tell us about your location</h3>
+            <div class="row">
+              <div class="col-md-6 mb-3">
+                <label class="form-label">Borough/ZIP Code</label>
+                <select class="form-select" id="borough">
+                  <option value="">Select Borough</option>
+                  <option value="manhattan">Manhattan</option>
+                  <option value="brooklyn">Brooklyn</option>
+                  <option value="queens">Queens</option>
+                  <option value="bronx">Bronx</option>
+                  <option value="staten-island">Staten Island</option>
+                </select>
+              </div>
+              <div class="col-md-6 mb-3">
+                <label class="form-label">Approximate Square Footage</label>
+                <input type="number" class="form-control" id="squareFootage" placeholder="e.g., 500" min="0">
+              </div>
+              <div class="col-md-6 mb-3">
+                <label class="form-label">Budget Range</label>
+                <select class="form-select" id="budgetRange">
+                  <option value="">Select Budget Range</option>
+                  <option value="under-10k">Under $10,000</option>
+                  <option value="10k-25k">$10,000 - $25,000</option>
+                  <option value="25k-50k">$25,000 - $50,000</option>
+                  <option value="50k-100k">$50,000 - $100,000</option>
+                  <option value="100k-plus">$100,000+</option>
+                </select>
+              </div>
+              <div class="col-md-6 mb-3">
+                <label class="form-label">Timeline</label>
+                <select class="form-select" id="timeline">
+                  <option value="">Select Timeline</option>
+                  <option value="asap">ASAP</option>
+                  <option value="1-3months">1-3 Months</option>
+                  <option value="3-6months">3-6 Months</option>
+                  <option value="6-12months">6-12 Months</option>
+                  <option value="planning">Just Planning</option>
+                </select>
+              </div>
+            </div>
+            <div class="d-flex gap-2 mt-4">
+              <button class="btn btn-outline-secondary flex-fill" onclick="prevStep()">
+                <i class="fas fa-arrow-left me-2"></i>Back
+              </button>
+              <button class="btn btn-primary flex-fill" onclick="nextStep()">
+                Continue <i class="fas fa-arrow-right ms-2"></i>
+              </button>
+            </div>
+          </div>
+
+          <!-- Step 3: Project Description (AI Chat) -->
+          <div class="quote-step" id="step3">
+            <h3 class="mb-4">Describe your project in detail</h3>
+            <p class="text-muted mb-4">Tell our AI assistant about your renovation vision. Be as specific as you'd like!</p>
+            
+            <div id="chat-container" style="max-height: 400px; overflow-y: auto; margin-bottom: 20px;">
+              <div class="chat-message ai">
+                <strong>RenoBot:</strong> Hi! I'm your AI renovation assistant. Tell me about your project - what would you like to renovate? You can describe the space, your goals, style preferences, or any specific requirements you have in mind.
+              </div>
+            </div>
+
+            <div class="input-group">
+              <textarea class="form-control" id="projectDescription" rows="3" placeholder="Example: I want to turn my basement into a studio apartment with a small kitchenette, full bathroom, and modern finishes..."></textarea>
+              <button class="btn btn-primary" onclick="sendToAI()" id="btn-send-ai">
+                <i class="fas fa-paper-plane"></i>
+              </button>
+            </div>
+
+            <div class="mt-3">
+              <div id="ai-response" class="ai-response-box" style="display: none;">
+                <h5><i class="fas fa-robot text-primary me-2"></i>AI Analysis:</h5>
+                <div id="ai-response-content"></div>
+              </div>
+            </div>
+
+            <div class="d-flex gap-2 mt-4">
+              <button class="btn btn-outline-secondary flex-fill" onclick="prevStep()">
+                <i class="fas fa-arrow-left me-2"></i>Back
+              </button>
+              <button class="btn btn-primary flex-fill" onclick="nextStep()" id="btn-step3" disabled>
+                Continue <i class="fas fa-arrow-right ms-2"></i>
+              </button>
+            </div>
+          </div>
+
+          <!-- Step 4: Photo Upload -->
+          <div class="quote-step" id="step4">
+            <h3 class="mb-4">Upload photos of your space (Optional)</h3>
+            <p class="text-muted mb-4">Help us better understand your project by uploading photos</p>
+
+            <div class="upload-area" id="uploadArea" onclick="document.getElementById('fileInput').click()">
+              <i class="fas fa-cloud-upload-alt" style="font-size: 48px; color: #FDA12B; margin-bottom: 15px;"></i>
+              <h5>Drag & Drop or Click to Upload</h5>
+              <p class="text-muted">Upload JPG, PNG, or HEIC files (Max 10MB each)</p>
+              <input type="file" id="fileInput" multiple accept="image/*" style="display: none;" onchange="handleFiles(this.files)">
+            </div>
+
+            <div class="upload-preview" id="uploadPreview"></div>
+
+            <div class="d-flex gap-2 mt-4">
+              <button class="btn btn-outline-secondary flex-fill" onclick="prevStep()">
+                <i class="fas fa-arrow-left me-2"></i>Back
+              </button>
+              <button class="btn btn-primary flex-fill" onclick="nextStep()">
+                Continue <i class="fas fa-arrow-right ms-2"></i>
+              </button>
+            </div>
+          </div>
+
+          <!-- Step 5: Results & Contact Info -->
+          <div class="quote-step" id="step5">
+            <h3 class="mb-4">Your AI-Generated Quote</h3>
+            
+            <div class="cost-estimate" id="costEstimate">
+              <h6>Estimated Cost Range</h6>
+              <h2 id="estimatedCost">Calculating...</h2>
+              <p id="costDetails"></p>
+            </div>
+
+            <div class="ai-response-box mb-4" id="finalAnalysis">
+              <h5><i class="fas fa-brain text-primary me-2"></i>Project Analysis:</h5>
+              <div id="finalAnalysisContent"></div>
+            </div>
+
+            <div class="ai-response-box mb-4" id="recommendations">
+              <h5><i class="fas fa-lightbulb text-primary me-2"></i>Recommendations:</h5>
+              <div id="recommendationsContent"></div>
+            </div>
+
+            <div class="alert alert-info">
+              <i class="fas fa-info-circle me-2"></i>
+              <strong>Next Steps:</strong> This is an AI-generated estimate. For an exact quote, book a free on-site consultation with one of our experts.
+            </div>
+
+            <h4 class="mt-4 mb-3">Get Your Detailed Quote</h4>
+            <form id="quoteForm" action="https://formspree.io/f/mvgaqvdy" method="POST">
+              <input type="hidden" name="project_type" id="form_project_type">
+              <input type="hidden" name="borough" id="form_borough">
+              <input type="hidden" name="square_footage" id="form_square_footage">
+              <input type="hidden" name="budget_range" id="form_budget_range">
+              <input type="hidden" name="project_description" id="form_project_description">
+              <input type="hidden" name="ai_analysis" id="form_ai_analysis">
+              <input type="hidden" name="estimated_cost" id="form_estimated_cost">
+              
+              <div class="row">
+                <div class="col-md-6 mb-3">
+                  <label class="form-label">Your Name *</label>
+                  <input type="text" class="form-control" name="name" required>
+                </div>
+                <div class="col-md-6 mb-3">
+                  <label class="form-label">Email *</label>
+                  <input type="email" class="form-control" name="email" required>
+                </div>
+                <div class="col-md-6 mb-3">
+                  <label class="form-label">Phone *</label>
+                  <input type="tel" class="form-control" name="phone" required>
+                </div>
+                <div class="col-md-6 mb-3">
+                  <label class="form-label">Preferred Contact Method</label>
+                  <select class="form-select" name="contact_method">
+                    <option value="email">Email</option>
+                    <option value="phone">Phone</option>
+                    <option value="text">Text Message</option>
+                  </select>
+                </div>
+              </div>
+
+              <div class="form-check mb-3">
+                <input class="form-check-input" type="checkbox" id="agreeToContact" required>
+                <label class="form-check-label" for="agreeToContact">
+                  I agree to be contacted by NYC Renovation Experts for a detailed quote
+                </label>
+              </div>
+
+              <button type="submit" class="btn btn-primary w-100 btn-lg">
+                <i class="fas fa-calendar-check me-2"></i>Book Free On-Site Consultation
+              </button>
+            </form>
+
+            <div class="d-flex gap-2 mt-3">
+              <button class="btn btn-outline-secondary flex-fill" onclick="prevStep()">
+                <i class="fas fa-arrow-left me-2"></i>Back
+              </button>
+              <a href="index.html" class="btn btn-outline-primary flex-fill">
+                Return to Home <i class="fas fa-home ms-2"></i>
+              </a>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+    <!-- AI Quote Wizard End -->
+
+    <!-- Footer Start -->
+    <div
+      class="container-fluid bg-dark footer mt-5 pt-5 wow fadeIn"
+      data-wow-delay="0.1s"
+    >
+      <div class="container py-5">
+        <div class="row g-5">
+          <div class="col-lg-3 col-md-6">
+            <h1 class="text-white mb-4">
+              <i class="fa fa-building text-primary me-3"></i>NYC Renovation Experts
+            </h1>
+            <p>
+              NYC Renovation Experts is your trusted partner for high-quality home and commercial renovations across New York City. From concept to completion, we deliver reliable craftsmanship, modern design, and lasting results.
+            </p>            
+            <div class="d-flex pt-2">
+              <a class="btn btn-square btn-outline-primary me-1" href="https://www.twitter.com/nycrenovationexperts" target="_blank" rel="noopener noreferrer" aria-label="Follow us on Twitter"
+                ><i class="fab fa-twitter"></i
+              ></a>
+              <a class="btn btn-square btn-outline-primary me-1" href="https://www.facebook.com/nycrenovationexperts" target="_blank" rel="noopener noreferrer" aria-label="Follow us on Facebook"
+                ><i class="fab fa-facebook-f"></i
+              ></a>
+              <a class="btn btn-square btn-outline-primary me-1" href="https://www.youtube.com/@nycrenovationexperts" target="_blank" rel="noopener noreferrer" aria-label="Follow us on YouTube"
+                ><i class="fab fa-youtube"></i
+              ></a>
+              <a class="btn btn-square btn-outline-primary me-0" href="https://www.linkedin.com/company/nycrenovationexperts" target="_blank" rel="noopener noreferrer" aria-label="Follow us on LinkedIn"
+                ><i class="fab fa-linkedin-in"></i
+              ></a>
+            </div>
+          </div>
+          <div class="col-lg-3 col-md-6">
+            <h4 class="text-light mb-4">Address</h4>
+            <p>
+              <i class="fa fa-map-marker-alt me-3"></i>80 5th Ave, B1, New York, NY 10011
+            </p>
+            <p><i class="fa fa-phone-alt me-3"></i>+1 (646) 444-2434</p>
+            <p><i class="fa fa-envelope me-3"></i>info@nycrenovationexperts.com</p>
+          </div>
+          <div class="col-lg-3 col-md-6">
+            <h4 class="text-light mb-4">Quick Links</h4>
+            <a class="btn btn-link" href="about.html">About Us</a>
+            <a class="btn btn-link" href="contact.html">Contact Us</a>
+            <a class="btn btn-link" href="service.html">Our Services</a>
+            <a class="btn btn-link" href="quote.html">Get Free Quote</a>
+            <a class="btn btn-link" href="contact.html">Support</a>
+          </div>
+          <div class="col-lg-3 col-md-6">
+            <h4 class="text-light mb-4">Newsletter</h4>
+            <p>Subscribe to stay updated on our latest renovation tips, project showcases, and exclusive offers—delivered straight to your inbox.</p>            
+            <div class="position-relative mx-auto" style="max-width: 400px">
+              <input
+                class="form-control bg-transparent w-100 py-3 ps-4 pe-5"
+                type="text"
+                placeholder="Your email"
+              />
+              <button
+                type="button"
+                class="btn btn-primary py-2 position-absolute top-0 end-0 mt-2 me-2"
+              >
+                SignUp
+              </button>
+            </div>
+          </div>
+        </div>
+      </div>
+      <div class="container-fluid copyright">
+        <div class="container">
+          <div class="row">
+            <div class="col-md-6 text-center text-md-start mb-3 mb-md-0">
+              &copy; <a href="index.html">NYC Renovation Experts</a>, All Right Reserved.
+            </div>
+            <div class="col-md-6 text-center text-md-end">
+              Designed By <a href="https://htmlcodex.com">HTML Codex</a>
+              <br />Distributed By:
+              <a href="https://themewagon.com" target="_blank">ThemeWagon</a>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+    <!-- Footer End -->
+
+    <!-- Back to Top -->
+    <a href="#" class="btn btn-lg btn-primary btn-lg-square back-to-top"
+      ><i class="bi bi-arrow-up"></i
+    ></a>
+
+    <!-- JavaScript Libraries -->
+    <script src="https://code.jquery.com/jquery-3.4.1.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.0.0/dist/js/bootstrap.bundle.min.js"></script>
+    <script src="lib/wow/wow.min.js"></script>
+    <script src="lib/easing/easing.min.js"></script>
+    <script src="lib/waypoints/waypoints.min.js"></script>
+    <script src="lib/owlcarousel/owl.carousel.min.js"></script>
+
+    <!-- Template Javascript -->
+    <script src="js/main.js"></script>
+
+    <!-- AI Quote Wizard JavaScript -->
+    <!-- Configure backend API URL here for production -->
+    <script>
+      // Update this to your production backend URL when deploying
+      // For local development, leave as undefined to use default (http://localhost:3001)
+      // window.BACKEND_API_URL = 'https://your-backend-domain.com';
+    </script>
+    <script src="js/ai-quote.js"></script>
+  </body>
+</html>
+

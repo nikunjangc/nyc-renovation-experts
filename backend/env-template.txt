@@ -1,0 +1,27 @@
+# Copy this file to .env and fill in your values
+# Command: cp env-template.txt .env
+
+# AI API Configuration
+# Use either DeepSeek or OpenAI API key (DeepSeek is more cost-effective)
+
+# DeepSeek API (Recommended - cheaper alternative)
+# Get your API key from: https://platform.deepseek.com/api_keys
+DEEPSEEK_API_KEY=sk-your-deepseek-api-key-here
+
+# OR use OpenAI API (uncomment if using OpenAI instead)
+# Get your API key from: https://platform.openai.com/api-keys
+# OPENAI_API_KEY=sk-your-openai-key-here
+
+# Server Configuration
+PORT=3001
+
+# CORS Configuration
+# Add your production domain here (comma-separated for multiple origins)
+ALLOWED_ORIGIN=http://localhost:3000,https://nycrenovationexperts.com
+
+# Environment
+NODE_ENV=development
+
+# Admin Dashboard Password
+# Change this to a strong password in production!
+ADMIN_PASSWORD=your-strong-admin-password-here
