@@ -8,8 +8,24 @@
   ],
   "routes": [
     {
-      "src": "/(.*)",
+      "src": "/api/(.*)",
       "dest": "api/server.js"
+    },
+    {
+      "src": "/admin/(.*)",
+      "dest": "api/server.js"
+    },
+    {
+      "src": "/health",
+      "dest": "api/server.js"
+    },
+    {
+      "src": "/(.*\\.(html|css|js|json|ico|png|jpg|jpeg|gif|svg|woff|woff2|ttf|eot|map))",
+      "dest": "/$1"
+    },
+    {
+      "src": "/(.*)",
+      "dest": "/index.html"
     }
   ]
 }
