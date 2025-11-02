@@ -1,4 +1,4 @@
 // Vercel serverless function entry point
-// This file is used by vercel.json to create a serverless function
+// Simply export the Express app from backend
 module.exports = require('../backend/server.js');
 
