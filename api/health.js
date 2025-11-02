@@ -1,10 +1,10 @@
 // Health check serverless function
-const app = require('./index.js');
-
+// Simple endpoint that doesn't require Express routing
 module.exports = (req, res) => {
-  // Handle /health request
-  req.url = '/health';
-  req.path = '/health';
-  app(req, res);
+  res.status(200).json({ 
+    status: 'ok', 
+    message: 'AI Quote API is running',
+    timestamp: new Date().toISOString()
+  });
 };
 
