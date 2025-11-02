@@ -10,7 +10,11 @@
       "destination": "/api/index"
     },
     {
-      "source": "/api/(?!health)",
+      "source": "/api/analyze-project",
+      "destination": "/api/index"
+    },
+    {
+      "source": "/api/estimate-cost",
       "destination": "/api/index"
     },
     {
