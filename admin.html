@@ -196,7 +196,9 @@
     </div>
 
     <script>
-        const BACKEND_API_URL = window.BACKEND_API_URL || 'https://nycrenovationexperts.com';
+        // Backend URL - Frontend on GitHub Pages, Backend on Vercel
+        // Update this to your Vercel deployment URL or custom domain
+        const BACKEND_API_URL = window.BACKEND_API_URL || 'https://www.nycrenovationexperts.com';
         let adminToken = localStorage.getItem('adminToken');
 
         // Check if already logged in
