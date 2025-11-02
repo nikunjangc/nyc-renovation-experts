@@ -10,6 +10,12 @@ require('dotenv').config();
 const app = express();
 const PORT = process.env.PORT || 3001;
 
+// Log all requests for debugging in Vercel
+app.use((req, res, next) => {
+  console.log(`[${req.method}] ${req.url} - ${req.path}`);
+  next();
+});
+
 // Middleware
 app.use(cors({
   origin: process.env.ALLOWED_ORIGIN || 'http://localhost:3000',
