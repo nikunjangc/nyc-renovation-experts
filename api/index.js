@@ -1,4 +1,6 @@
 // Vercel serverless function - handles all API routes
-// Simply export the Express app
-module.exports = require('../backend/server.js');
+// This file handles requests to /api/* routes
+const app = require('../backend/server.js');
+
+module.exports = app;
 
