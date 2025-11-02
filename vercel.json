@@ -2,10 +2,6 @@
   "version": 2,
   "rewrites": [
     {
-      "source": "/api/:path*",
-      "destination": "/api/index"
-    },
-    {
       "source": "/admin/:path*",
       "destination": "/api/index"
     },
@@ -15,4 +11,3 @@
     }
   ]
 }
-
