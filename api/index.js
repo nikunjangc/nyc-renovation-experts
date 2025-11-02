@@ -386,6 +386,17 @@ if (require.main === module) {
   });
 }
 
+// Catch-all for unmatched routes - return 404 for debugging
+app.use((req, res) => {
+  console.log(`[404] Unmatched route: ${req.method} ${req.url} - ${req.path}`);
+  res.status(404).json({ 
+    error: 'Not found', 
+    path: req.path,
+    url: req.url,
+    method: req.method 
+  });
+});
+
 // Export for Vercel
 module.exports = app;
 
