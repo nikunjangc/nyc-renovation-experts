@@ -3,15 +3,15 @@
   "rewrites": [
     {
       "source": "/api/:path*",
-      "destination": "/api/server"
+      "destination": "/api/index"
     },
     {
       "source": "/admin/:path*",
-      "destination": "/api/server"
+      "destination": "/api/index"
     },
     {
       "source": "/health",
-      "destination": "/api/server"
+      "destination": "/api/index"
     }
   ]
 }
