@@ -10,27 +10,7 @@
       "destination": "/api/index"
     },
     {
-      "source": "/api/analyze-project",
-      "destination": "/api/index"
-    },
-    {
-      "source": "/api/estimate-cost",
-      "destination": "/api/index"
-    },
-    {
-      "source": "/api/generate-quote",
-      "destination": "/api/index"
-    },
-    {
-      "source": "/api/stats",
-      "destination": "/api/index"
-    },
-    {
-      "source": "/api/logs",
-      "destination": "/api/index"
-    },
-    {
-      "source": "/api/clear-logs",
+      "source": "/api/(?!health)",
       "destination": "/api/index"
     },
     {
