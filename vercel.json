@@ -10,7 +10,27 @@
       "destination": "/api/index"
     },
     {
-      "source": "/api/:path*",
+      "source": "/api/analyze-project",
+      "destination": "/api/index"
+    },
+    {
+      "source": "/api/estimate-cost",
+      "destination": "/api/index"
+    },
+    {
+      "source": "/api/generate-quote",
+      "destination": "/api/index"
+    },
+    {
+      "source": "/api/stats",
+      "destination": "/api/index"
+    },
+    {
+      "source": "/api/logs",
+      "destination": "/api/index"
+    },
+    {
+      "source": "/api/clear-logs",
       "destination": "/api/index"
     },
     {
