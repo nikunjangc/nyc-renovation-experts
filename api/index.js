@@ -10,6 +10,12 @@ require('dotenv').config();
 const app = express();
 const PORT = process.env.PORT || 3001;
 
+// Log all requests for debugging in Vercel
+app.use((req, res, next) => {
+  console.log(`[${req.method}] ${req.url} - ${req.path}`);
+  next();
+});
+
 // Middleware
 app.use(cors({
   origin: process.env.ALLOWED_ORIGIN || 'http://localhost:3000',
@@ -379,6 +385,17 @@ if (require.main === module) {
     console.log(`🔒 CORS enabled for: ${process.env.ALLOWED_ORIGIN || 'http://localhost:3000'}`);
   });
 }
+
+// Catch-all for unmatched routes - return 404 for debugging
+app.use((req, res) => {
+  console.log(`[404] Unmatched route: ${req.method} ${req.url} - ${req.path}`);
+  res.status(404).json({ 
+    error: 'Not found', 
+    path: req.path,
+    url: req.url,
+    method: req.method 
+  });
+});
 
 // Export for Vercel
 module.exports = app;
