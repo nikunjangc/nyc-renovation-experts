@@ -5,6 +5,7 @@ backend/.env
 
 # Logs and database files
 backend/logs/
+api/logs/
 *.db
 *.sqlite
 *.sqlite3

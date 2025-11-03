@@ -36,6 +36,9 @@ async function logUsage(data) {
       timestamp: new Date().toISOString(),
       endpoint: data.endpoint,
       ip: data.ip,
+      source: data.source || null, // Track where request came from (quote.html, etc.)
+      referer: data.referer || null, // HTTP Referer header
+      userAgent: data.userAgent || null,
       projectType: data.projectType || null,
       tokensUsed: data.tokensUsed || 0,
       cost: data.cost || 0,
