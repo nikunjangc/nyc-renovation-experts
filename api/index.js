@@ -77,6 +77,11 @@ app.get('/health', (req, res) => {
   res.json({ status: 'ok', message: 'AI Quote API is running' });
 });
 
+// Health check via /api/health (for Vercel compatibility)
+app.get('/api/health', (req, res) => {
+  res.json({ status: 'ok', message: 'AI Quote API is running' });
+});
+
 // Simple admin authentication middleware
 const adminAuth = (req, res, next) => {
   const adminPassword = process.env.ADMIN_PASSWORD || 'admin123';
