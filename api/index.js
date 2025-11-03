@@ -16,10 +16,42 @@ app.use((req, res, next) => {
   next();
 });
 
-// Middleware
+// CORS Configuration - Allow multiple origins
+const allowedOrigins = [
+  'https://www.nycrenovationexperts.com',
+  'https://nycrenovationexperts.com',
+  'https://nikunjangc.github.io',
+  'http://localhost:3000',
+  'http://localhost:8080',
+  'http://127.0.0.1:5500',
+  process.env.ALLOWED_ORIGIN
+].filter(Boolean); // Remove undefined values
+
+// Middleware - CORS with dynamic origin checking
 app.use(cors({
-  origin: process.env.ALLOWED_ORIGIN || 'http://localhost:3000',
-  credentials: true
+  origin: function (origin, callback) {
+    // Allow requests with no origin (mobile apps, Postman, etc.)
+    if (!origin) return callback(null, true);
+    
+    // Check if origin is in allowed list
+    if (allowedOrigins.some(allowed => origin === allowed || origin.startsWith(allowed))) {
+      callback(null, true);
+    } else {
+      // Log blocked origin for debugging
+      console.log(`🚫 CORS blocked origin: ${origin}`);
+      console.log(`✅ Allowed origins: ${allowedOrigins.join(', ')}`);
+      
+      // In production, be strict; in development, allow all
+      if (process.env.NODE_ENV === 'development') {
+        callback(null, true);
+      } else {
+        callback(new Error('Not allowed by CORS'));
+      }
+    }
+  },
+  credentials: true,
+  methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
+  allowedHeaders: ['Content-Type', 'Authorization', 'X-Requested-With']
 }));
 app.use(express.json());
 
@@ -110,9 +142,12 @@ const adminAuth = (req, res, next) => {
 // Admin endpoints
 app.get('/admin/stats', adminAuth, async (req, res) => {
   try {
+    // Log CORS headers for debugging
+    console.log(`[Admin Stats] Origin: ${req.get('origin')}, Referer: ${req.get('referer')}`);
     const stats = await getUsageStats();
     res.json(stats);
   } catch (error) {
+    console.error('[Admin Stats] Error:', error);
     res.status(500).json({ error: 'Failed to get stats' });
   }
 });
@@ -435,7 +470,7 @@ if (require.main === module) {
     console.log(`🚀 Secure AI Quote API Server running on port ${PORT}`);
     console.log(`✅ Using ${API_PROVIDER} API`);
     console.log(`✅ API Key is safely stored server-side`);
-    console.log(`🔒 CORS enabled for: ${process.env.ALLOWED_ORIGIN || 'http://localhost:3000'}`);
+    console.log(`🔒 CORS enabled for: ${allowedOrigins.join(', ')}`);
   });
 }
 
