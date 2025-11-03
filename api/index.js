@@ -114,8 +114,29 @@ app.get('/api/health', (req, res) => {
   res.json({ status: 'ok', message: 'AI Quote API is running' });
 });
 
+// Handle CORS preflight (OPTIONS) requests
+app.options('*', (req, res) => {
+  const origin = req.get('origin');
+  console.log(`[OPTIONS] Preflight request from: ${origin}`);
+  
+  if (allowedOrigins.some(allowed => origin === allowed || (origin && origin.startsWith(allowed)))) {
+    res.header('Access-Control-Allow-Origin', origin);
+    res.header('Access-Control-Allow-Methods', 'GET, POST, PUT, DELETE, OPTIONS');
+    res.header('Access-Control-Allow-Headers', 'Content-Type, Authorization, X-Requested-With');
+    res.header('Access-Control-Allow-Credentials', 'true');
+    res.status(204).send();
+  } else {
+    res.status(403).send();
+  }
+});
+
 // Simple admin authentication middleware
 const adminAuth = (req, res, next) => {
+  // Skip auth for OPTIONS requests
+  if (req.method === 'OPTIONS') {
+    return next();
+  }
+  
   const adminPassword = process.env.ADMIN_PASSWORD || 'admin123';
   const authHeader = req.headers.authorization;
   
