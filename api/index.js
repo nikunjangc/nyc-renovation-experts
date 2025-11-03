@@ -87,7 +87,20 @@ const adminAuth = (req, res, next) => {
   const adminPassword = process.env.ADMIN_PASSWORD || 'admin123';
   const authHeader = req.headers.authorization;
   
-  if (authHeader && authHeader === `Bearer ${adminPassword}`) {
+  // Trim any whitespace from admin password
+  const trimmedPassword = adminPassword.trim();
+  
+  // Debug logging (only in development)
+  if (process.env.NODE_ENV === 'development') {
+    console.log('Admin auth check:', {
+      hasHeader: !!authHeader,
+      headerLength: authHeader?.length,
+      passwordLength: trimmedPassword.length,
+      passwordSet: !!process.env.ADMIN_PASSWORD
+    });
+  }
+  
+  if (authHeader && authHeader.trim() === `Bearer ${trimmedPassword}`) {
     return next();
   }
   
@@ -107,7 +120,17 @@ app.get('/admin/stats', adminAuth, async (req, res) => {
 app.get('/admin/logs', adminAuth, async (req, res) => {
   try {
     const limit = parseInt(req.query.limit) || 50;
-    const logs = await getRecentLogs(limit);
+    const source = req.query.source; // Filter by source (e.g., 'quote.html')
+    let logs = await getRecentLogs(limit * 2); // Get more to filter
+    
+    // Filter by source if specified
+    if (source) {
+      logs = logs.filter(log => log.source === source);
+    }
+    
+    // Limit results
+    logs = logs.slice(0, limit);
+    
     res.json({ logs });
   } catch (error) {
     res.status(500).json({ error: 'Failed to get logs' });
@@ -127,6 +150,11 @@ app.post('/admin/clear-logs', adminAuth, async (req, res) => {
 app.post('/api/analyze-project', rateLimiter, async (req, res) => {
   const startTime = Date.now();
   const clientIp = req.ip || req.connection.remoteAddress;
+  const referer = req.get('referer') || req.get('referrer') || '';
+  const userAgent = req.get('user-agent') || '';
+  
+  // Detect if request came from quote.html
+  const isFromQuotePage = referer.includes('quote.html') || referer.includes('/quote');
   
   try {
     const { projectType, borough, squareFootage, budgetRange, description } = req.body;
@@ -187,6 +215,9 @@ Project Description: ${description}`
     await logUsage({
       endpoint: '/api/analyze-project',
       ip: clientIp,
+      source: isFromQuotePage ? 'quote.html' : 'other',
+      referer: referer,
+      userAgent: userAgent,
       projectType,
       tokensUsed,
       cost,
@@ -204,6 +235,9 @@ Project Description: ${description}`
     await logUsage({
       endpoint: '/api/analyze-project',
       ip: clientIp,
+      source: isFromQuotePage ? 'quote.html' : 'other',
+      referer: referer,
+      userAgent: userAgent,
       tokensUsed: 0,
       cost: 0,
       model: process.env.DEEPSEEK_API_KEY ? 'deepseek-chat' : 'gpt-4',
@@ -220,6 +254,11 @@ Project Description: ${description}`
 app.post('/api/estimate-cost', rateLimiter, async (req, res) => {
   const startTime = Date.now();
   const clientIp = req.ip || req.connection.remoteAddress;
+  const referer = req.get('referer') || req.get('referrer') || '';
+  const userAgent = req.get('user-agent') || '';
+  
+  // Detect if request came from quote.html
+  const isFromQuotePage = referer.includes('quote.html') || referer.includes('/quote');
   
   try {
     const { 
@@ -317,6 +356,9 @@ Analyze this project and provide an accurate cost estimate range considering NYC
         await logUsage({
           endpoint: '/api/estimate-cost',
           ip: clientIp,
+          source: isFromQuotePage ? 'quote.html' : 'other',
+          referer: referer,
+          userAgent: userAgent,
           projectType,
           tokensUsed,
           cost,
@@ -342,6 +384,9 @@ Analyze this project and provide an accurate cost estimate range considering NYC
         await logUsage({
           endpoint: '/api/estimate-cost',
           ip: clientIp,
+          source: isFromQuotePage ? 'quote.html' : 'other',
+          referer: referer,
+          userAgent: userAgent,
           projectType,
           tokensUsed,
           cost,
@@ -367,6 +412,9 @@ Analyze this project and provide an accurate cost estimate range considering NYC
     await logUsage({
       endpoint: '/api/estimate-cost',
       ip: clientIp,
+      source: isFromQuotePage ? 'quote.html' : 'other',
+      referer: referer,
+      userAgent: userAgent,
       tokensUsed: 0,
       cost: 0,
       model: process.env.DEEPSEEK_API_KEY ? 'deepseek-chat' : 'gpt-4',

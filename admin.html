@@ -157,10 +157,83 @@
                 </div>
             </div>
 
-            <!-- Recent Logs -->
+            <!-- Quote.html Monitoring Section -->
+            <div class="logs-table mb-4">
+                <div class="d-flex justify-content-between align-items-center mb-3">
+                    <div>
+                        <h5><i class="fas fa-file-alt me-2"></i>Quote.html Request Monitor</h5>
+                        <p class="text-muted mb-0">Track all AI requests coming from quote.html page</p>
+                    </div>
+                    <button class="btn btn-sm btn-primary" onclick="refreshData()">
+                        <i class="fas fa-sync-alt me-2"></i>Refresh
+                    </button>
+                </div>
+                
+                <!-- Quote.html Stats -->
+                <div class="row mb-3">
+                    <div class="col-md-3">
+                        <div class="stat-card" style="padding: 1rem; margin-bottom: 0;">
+                            <small class="text-muted">Quote.html Requests</small>
+                            <h4 id="quoteRequests">0</h4>
+                        </div>
+                    </div>
+                    <div class="col-md-3">
+                        <div class="stat-card" style="padding: 1rem; margin-bottom: 0;">
+                            <small class="text-muted">Success Rate</small>
+                            <h4 id="quoteSuccessRate">0%</h4>
+                        </div>
+                    </div>
+                    <div class="col-md-3">
+                        <div class="stat-card" style="padding: 1rem; margin-bottom: 0;">
+                            <small class="text-muted">Total Cost</small>
+                            <h4 id="quoteTotalCost">$0.00</h4>
+                        </div>
+                    </div>
+                    <div class="col-md-3">
+                        <div class="stat-card" style="padding: 1rem; margin-bottom: 0;">
+                            <small class="text-muted">Avg Response Time</small>
+                            <h4 id="quoteAvgResponse">0ms</h4>
+                        </div>
+                    </div>
+                </div>
+                
+                <!-- Quote.html Logs -->
+                <div class="table-responsive">
+                    <table class="table table-hover">
+                        <thead>
+                            <tr>
+                                <th>Time</th>
+                                <th>Endpoint</th>
+                                <th>IP Address</th>
+                                <th>Project Type</th>
+                                <th>Borough</th>
+                                <th>Tokens</th>
+                                <th>Cost</th>
+                                <th>Response Time</th>
+                                <th>Status</th>
+                                <th>AI Status</th>
+                            </tr>
+                        </thead>
+                        <tbody id="quoteLogsTableBody">
+                            <tr>
+                                <td colspan="10" class="text-center">Loading quote.html requests...</td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </div>
+                
+                <div class="alert alert-info mt-3 mb-0">
+                    <i class="fas fa-info-circle me-2"></i>
+                    <strong>Status Indicator:</strong> 
+                    <span class="badge badge-success">Success</span> = Request reached AI and got response | 
+                    <span class="badge badge-danger">Failed</span> = Request failed to reach AI or got error
+                </div>
+            </div>
+
+            <!-- All Recent Logs -->
             <div class="logs-table">
                 <div class="d-flex justify-content-between align-items-center mb-3">
-                    <h5><i class="fas fa-list me-2"></i>Recent API Calls</h5>
+                    <h5><i class="fas fa-list me-2"></i>All Recent API Calls</h5>
                     <div>
                         <button class="btn btn-sm btn-outline-danger me-2" onclick="clearLogs()">
                             <i class="fas fa-trash me-2"></i>Clear Logs
@@ -176,6 +249,7 @@
                             <tr>
                                 <th>Time</th>
                                 <th>Endpoint</th>
+                                <th>Source</th>
                                 <th>IP Address</th>
                                 <th>Project Type</th>
                                 <th>Tokens</th>
@@ -228,11 +302,19 @@
                 if (response.ok) {
                     showDashboard();
                 } else {
-                    throw new Error('Invalid password');
+                    const errorData = await response.text().catch(() => '');
+                    console.error('Login failed:', response.status, errorData);
+                    
+                    if (response.status === 401) {
+                        showError('Invalid password. Please try again.');
+                    } else {
+                        showError(`Error: ${response.status} ${response.statusText}`);
+                    }
                 }
             } catch (error) {
+                console.error('Login error:', error);
                 localStorage.removeItem('adminToken');
-                showError('Invalid password. Please try again.');
+                showError('Connection error. Check if backend is accessible.');
             }
         }
 
@@ -258,7 +340,7 @@
 
         async function refreshData() {
             try {
-                const [statsResponse, logsResponse] = await Promise.all([
+                const [statsResponse, logsResponse, quoteLogsResponse] = await Promise.all([
                     fetch(`${BACKEND_API_URL}/admin/stats`, {
                         headers: {
                             'Authorization': `Bearer ${adminToken}`
@@ -268,10 +350,15 @@
                         headers: {
                             'Authorization': `Bearer ${adminToken}`
                         }
+                    }),
+                    fetch(`${BACKEND_API_URL}/admin/logs?limit=50&source=quote.html`, {
+                        headers: {
+                            'Authorization': `Bearer ${adminToken}`
+                        }
                     })
                 ]);
 
-                if (!statsResponse.ok || !logsResponse.ok) {
+                if (!statsResponse.ok || !logsResponse.ok || !quoteLogsResponse.ok) {
                     if (statsResponse.status === 401) {
                         logout();
                         return;
@@ -281,9 +368,11 @@
 
                 const stats = await statsResponse.json();
                 const logsData = await logsResponse.json();
+                const quoteLogsData = await quoteLogsResponse.json();
 
                 updateStats(stats);
                 updateLogs(logsData.logs);
+                updateQuoteLogs(quoteLogsData.logs);
                 updateCharts(stats);
             } catch (error) {
                 console.error('Error refreshing data:', error);
@@ -307,7 +396,7 @@
             const tbody = document.getElementById('logsTableBody');
             
             if (logs.length === 0) {
-                tbody.innerHTML = '<tr><td colspan="8" class="text-center">No logs yet</td></tr>';
+                tbody.innerHTML = '<tr><td colspan="9" class="text-center">No logs yet</td></tr>';
                 return;
             }
 
@@ -317,6 +406,68 @@
                 const statusBadge = log.success
                     ? '<span class="badge badge-success">Success</span>'
                     : '<span class="badge badge-danger">Failed</span>';
+                const sourceBadge = log.source === 'quote.html'
+                    ? '<span class="badge bg-info">quote.html</span>'
+                    : '<span class="badge bg-secondary">other</span>';
+
+                return `
+                    <tr>
+                        <td>${timeStr}</td>
+                        <td><code>${log.endpoint}</code></td>
+                        <td>${sourceBadge}</td>
+                        <td>${log.ip}</td>
+                        <td>${log.projectType || 'N/A'}</td>
+                        <td>${log.tokensUsed.toLocaleString()}</td>
+                        <td>$${log.cost.toFixed(4)}</td>
+                        <td>${log.responseTime}ms</td>
+                        <td>${statusBadge}</td>
+                    </tr>
+                `;
+            }).join('');
+        }
+
+        function updateQuoteLogs(logs) {
+            const tbody = document.getElementById('quoteLogsTableBody');
+            
+            // Calculate stats for quote.html
+            const quoteStats = {
+                total: logs.length,
+                successful: logs.filter(log => log.success).length,
+                totalCost: logs.reduce((sum, log) => sum + (log.cost || 0), 0),
+                avgResponseTime: logs.length > 0
+                    ? Math.round(logs.reduce((sum, log) => sum + (log.responseTime || 0), 0) / logs.length)
+                    : 0
+            };
+            
+            // Update quote.html stats
+            document.getElementById('quoteRequests').textContent = quoteStats.total;
+            document.getElementById('quoteSuccessRate').textContent = quoteStats.total > 0
+                ? ((quoteStats.successful / quoteStats.total) * 100).toFixed(1) + '%'
+                : '0%';
+            document.getElementById('quoteTotalCost').textContent = '$' + quoteStats.totalCost.toFixed(4);
+            document.getElementById('quoteAvgResponse').textContent = quoteStats.avgResponseTime + 'ms';
+            
+            if (logs.length === 0) {
+                tbody.innerHTML = '<tr><td colspan="10" class="text-center text-muted">No requests from quote.html yet. Try submitting a quote to see it here!</td></tr>';
+                return;
+            }
+
+            tbody.innerHTML = logs.map(log => {
+                const date = new Date(log.timestamp);
+                const timeStr = date.toLocaleString();
+                const statusBadge = log.success
+                    ? '<span class="badge badge-success">✓ Success</span>'
+                    : '<span class="badge badge-danger">✗ Failed</span>';
+                
+                // AI Status indicator
+                const aiStatus = log.success && log.tokensUsed > 0
+                    ? '<span class="badge bg-success">AI Responded</span>'
+                    : log.success && log.tokensUsed === 0
+                    ? '<span class="badge bg-warning">No AI Call</span>'
+                    : '<span class="badge bg-danger">AI Error</span>';
+
+                // Extract borough from referer if available
+                const borough = log.projectType ? log.projectType.split('-')[0] : 'N/A';
 
                 return `
                     <tr>
@@ -324,10 +475,12 @@
                         <td><code>${log.endpoint}</code></td>
                         <td>${log.ip}</td>
                         <td>${log.projectType || 'N/A'}</td>
+                        <td>${borough}</td>
                         <td>${log.tokensUsed.toLocaleString()}</td>
                         <td>$${log.cost.toFixed(4)}</td>
                         <td>${log.responseTime}ms</td>
                         <td>${statusBadge}</td>
+                        <td>${aiStatus}</td>
                     </tr>
                 `;
             }).join('');
