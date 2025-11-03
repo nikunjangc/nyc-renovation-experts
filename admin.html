@@ -319,45 +319,85 @@
 
             // Test auth
             try {
+                console.log(`[Login] Attempting to connect to: ${BACKEND_API_URL}/admin/stats`);
+                console.log(`[Login] Origin: ${window.location.origin}`);
+                
                 const response = await fetch(`${BACKEND_API_URL}/admin/stats`, {
+                    method: 'GET',
                     headers: {
-                        'Authorization': `Bearer ${adminToken}`
-                    }
+                        'Authorization': `Bearer ${adminToken}`,
+                        'Content-Type': 'application/json',
+                        'Accept': 'application/json'
+                    },
+                    credentials: 'include',
+                    mode: 'cors'
                 });
 
+                console.log(`[Login] Response status: ${response.status}`);
+                console.log(`[Login] Response headers:`, [...response.headers.entries()]);
+
                 if (response.ok) {
+                    const data = await response.json().catch(() => null);
+                    console.log('[Login] Success!', data);
                     showDashboard();
                 } else {
-                    const errorData = await response.text().catch(() => '');
-                    console.error('Login failed:', response.status, errorData);
+                    const contentType = response.headers.get('content-type');
+                    let errorData = '';
+                    
+                    if (contentType && contentType.includes('application/json')) {
+                        const jsonData = await response.json().catch(() => null);
+                        errorData = jsonData ? JSON.stringify(jsonData) : '';
+                    } else {
+                        errorData = await response.text().catch(() => '');
+                    }
+                    
+                    console.error('[Login] Failed:', {
+                        status: response.status,
+                        statusText: response.statusText,
+                        errorData: errorData.substring(0, 200),
+                        contentType
+                    });
                     
                     if (response.status === 401) {
                         showError('Invalid password. Please try again.');
+                    } else if (response.status === 0) {
+                        showError('CORS error - Backend not accessible. Check if Vercel deployment is ready.');
+                        console.error('[Login] CORS Error - Request was blocked. Check Vercel deployment status.');
                     } else {
                         showError(`Error: ${response.status} ${response.statusText}`);
                     }
                 }
             } catch (error) {
-                console.error('Login error:', error);
+                console.error('[Login] Exception:', error);
                 localStorage.removeItem('adminToken');
                 
-                // More helpful error message
-                const errorMsg = `Connection error. The backend URL (${BACKEND_API_URL}) might not be accessible. 
-                
-This usually means:
-1. The custom domain points to GitHub Pages (frontend) instead of Vercel (backend)
-2. You need to use your actual Vercel URL instead
+                // Detailed error message
+                const errorMsg = `
+Connection error. Details:
+- Backend URL: ${BACKEND_API_URL}
+- Error: ${error.message}
+- Error Type: ${error.name}
 
-To fix:
-1. Go to: https://vercel.com/dashboard
-2. Select project: nyc-renovation-experts
-3. Copy your Vercel deployment URL (e.g., https://nyc-renovation-experts-xxxxx.vercel.app)
-4. Open browser console (F12) and run:
-   window.BACKEND_API_URL = 'your-vercel-url-here';
-   Then try logging in again.`;
+Common causes:
+1. CORS issue - Backend not allowing requests from ${window.location.origin}
+2. Network error - Vercel deployment might not be ready
+3. DNS issue - Backend URL might be incorrect
+
+Next steps:
+1. Check Vercel dashboard: https://vercel.com/dashboard
+2. Verify deployment is "Ready"
+3. Check browser console Network tab for detailed error
+4. Try the health endpoint: ${BACKEND_API_URL}/health
+                `.trim();
                 
                 showError('Connection error. Check browser console (F12) for details.');
                 console.error(errorMsg);
+                
+                // Try to test health endpoint
+                fetch(`${BACKEND_API_URL}/health`)
+                    .then(r => r.json())
+                    .then(data => console.log('[Health Check] Success:', data))
+                    .catch(e => console.error('[Health Check] Failed:', e));
             }
         }
 
