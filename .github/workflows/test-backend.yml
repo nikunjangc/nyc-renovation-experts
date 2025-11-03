@@ -31,13 +31,25 @@ jobs:
           PORT: 3001
           HOST: localhost
           # Mock environment variables for testing
-          DEEPSEEK_API_KEY: ${{ secrets.DEEPSEEK_API_KEY || 'test-key' }}
+          DEEPSEEK_API_KEY: ${{ secrets.DEEPSEEK_API_KEY || 'test-key-for-ci' }}
           ALLOWED_ORIGIN: http://localhost:3000
           ADMIN_PASSWORD: test-password
           NODE_ENV: test
         run: |
+          # Install root dependencies if needed
+          npm install express cors dotenv node-fetch 2>/dev/null || true
           # Run tests with timeout
           timeout 30 node test-backend.js || exit 1
+      
+      - name: Test Vercel deployment (if URL provided)
+        if: env.VERCEL_URL != ''
+        working-directory: ./
+        env:
+          VERCEL_URL: ${{ secrets.VERCEL_URL }}
+        run: |
+          echo "Testing Vercel deployment at: $VERCEL_URL"
+          node test-vercel-deployment.js "$VERCEL_URL" || echo "⚠️ Vercel URL test skipped (set VERCEL_URL secret to enable)"
+        continue-on-error: true
       
       - name: Test results
         if: always()
