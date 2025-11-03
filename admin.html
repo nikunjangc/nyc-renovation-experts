@@ -271,8 +271,40 @@
 
     <script>
         // Backend URL - Frontend on GitHub Pages, Backend on Vercel
-        // Update this to your Vercel deployment URL or custom domain
+        // IMPORTANT: Use your actual Vercel URL, NOT the custom domain!
+        // Custom domain (www.nycrenovationexperts.com) points to GitHub Pages (frontend), not Vercel (backend)
+        // 
+        // To find your Vercel URL:
+        // 1. Go to: https://vercel.com/dashboard
+        // 2. Select project: nyc-renovation-experts
+        // 3. Copy the deployment URL (e.g., https://nyc-renovation-experts-xxxxx.vercel.app)
+        // 4. Update this line with your Vercel URL
         const BACKEND_API_URL = window.BACKEND_API_URL || 'https://www.nycrenovationexperts.com';
+        
+        // Test backend connection on page load
+        (async function testBackendOnLoad() {
+            try {
+                const response = await fetch(`${BACKEND_API_URL}/health`, { 
+                    method: 'GET',
+                    headers: { 'Accept': 'application/json' }
+                });
+                const contentType = response.headers.get('content-type');
+                
+                if (contentType && contentType.includes('application/json')) {
+                    console.log('✅ Backend connection OK - using:', BACKEND_API_URL);
+                } else {
+                    console.warn('⚠️ Backend connection issue - received HTML instead of JSON');
+                    console.warn('Current URL:', BACKEND_API_URL);
+                    console.warn('This URL might be pointing to GitHub Pages instead of Vercel!');
+                    console.warn('Find your Vercel URL at: https://vercel.com/dashboard');
+                }
+            } catch (error) {
+                console.error('❌ Cannot connect to backend:', error);
+                console.error('Current URL:', BACKEND_API_URL);
+                console.error('Please check your Vercel deployment and update BACKEND_API_URL!');
+            }
+        })();
+        
         let adminToken = localStorage.getItem('adminToken');
 
         // Check if already logged in
@@ -314,7 +346,24 @@
             } catch (error) {
                 console.error('Login error:', error);
                 localStorage.removeItem('adminToken');
-                showError('Connection error. Check if backend is accessible.');
+                
+                // More helpful error message
+                const errorMsg = `Connection error. The backend URL (${BACKEND_API_URL}) might not be accessible. 
+                
+This usually means:
+1. The custom domain points to GitHub Pages (frontend) instead of Vercel (backend)
+2. You need to use your actual Vercel URL instead
+
+To fix:
+1. Go to: https://vercel.com/dashboard
+2. Select project: nyc-renovation-experts
+3. Copy your Vercel deployment URL (e.g., https://nyc-renovation-experts-xxxxx.vercel.app)
+4. Open browser console (F12) and run:
+   window.BACKEND_API_URL = 'your-vercel-url-here';
+   Then try logging in again.`;
+                
+                showError('Connection error. Check browser console (F12) for details.');
+                console.error(errorMsg);
             }
         }
 
