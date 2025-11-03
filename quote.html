@@ -689,9 +689,8 @@
     <!-- Configure backend API URL here for production -->
     <script>
       // Production backend URL - Frontend on GitHub Pages, Backend on Vercel
-      // Update this to your Vercel deployment URL (e.g., https://nyc-renovation-experts.vercel.app)
-      // Or use custom domain: https://www.nycrenovationexperts.com
-      window.BACKEND_API_URL = 'https://www.nycrenovationexperts.com';
+      // Using actual Vercel URL (not custom domain - custom domain points to GitHub Pages frontend)
+      window.BACKEND_API_URL = window.BACKEND_API_URL || 'https://nyc-renovation-experts-q6k244xd3-nikunjan-gcs-projects.vercel.app';
     </script>
     <script src="js/ai-quote.js"></script>
   </body>
