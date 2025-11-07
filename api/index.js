@@ -547,3 +547,4 @@ app.use((req, res) => {
 // Export for Vercel
 module.exports = app;
 
+// CORS configuration updated Thu Nov  6 19:46:10 EST 2025
