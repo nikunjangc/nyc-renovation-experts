@@ -72,10 +72,27 @@ app.use(cors({
   allowedHeaders: ['Content-Type', 'Authorization', 'X-Requested-With']
 }));
 
-// Handle OPTIONS preflight requests explicitly
+// Handle OPTIONS preflight requests explicitly - MUST be before other routes
+// This is critical for CORS preflight requests from browsers
 app.options('*', (req, res) => {
-  setCORSHeaders(req, res);
-  res.status(204).send();
+  const origin = req.get('origin');
+  console.log(`[OPTIONS] Preflight request from: ${origin}`);
+  
+  // Set CORS headers
+  if (origin && allowedOrigins.some(allowed => origin === allowed || origin.startsWith(allowed))) {
+    res.header('Access-Control-Allow-Origin', origin);
+    res.header('Access-Control-Allow-Credentials', 'true');
+  } else if (!origin) {
+    res.header('Access-Control-Allow-Origin', '*');
+  }
+  
+  res.header('Access-Control-Allow-Methods', 'GET, POST, PUT, DELETE, OPTIONS');
+  res.header('Access-Control-Allow-Headers', 'Content-Type, Authorization, X-Requested-With');
+  res.header('Access-Control-Max-Age', '86400');
+  
+  // Return 200 OK (not 204) for better compatibility
+  res.status(200).end();
+  return; // Explicitly stop execution
 });
 
 app.use(express.json());
@@ -161,9 +178,10 @@ app.get('/api/health', (req, res) => {
 
 // Simple admin authentication middleware
 const adminAuth = (req, res, next) => {
-  // Skip auth for OPTIONS requests
+  // CRITICAL: Skip authentication for OPTIONS preflight requests
   if (req.method === 'OPTIONS') {
-    return next();
+    console.log('[Admin Auth] Skipping auth for OPTIONS request');
+    return next(); // Let OPTIONS handler process it
   }
   
   const adminPassword = process.env.ADMIN_PASSWORD || 'admin123';
@@ -547,3 +565,4 @@ app.use((req, res) => {
 // Export for Vercel
 module.exports = app;
 
+// CORS configuration updated Thu Nov  6 19:46:10 EST 2025
