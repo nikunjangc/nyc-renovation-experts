@@ -61,36 +61,30 @@ function setCORSHeaders(req, res) {
 // This is critical for CORS preflight requests from browsers
 // NOTE: Cannot use '*' with credentials: true - must use specific origin
 app.options('*', (req, res) => {
-  const origin = req.get('origin');
+  const origin = req.get('origin') || req.headers.origin;
   console.log(`[OPTIONS] Preflight request from: ${origin}`);
+  console.log(`[OPTIONS] Request path: ${req.path}, URL: ${req.url}`);
   console.log(`[OPTIONS] Allowed origins: ${allowedOrigins.join(', ')}`);
   
-  // Set common CORS headers
+  // ALWAYS set Access-Control-Allow-Origin first - this is critical
+  if (origin) {
+    // Always allow the requesting origin for preflight
+    res.header('Access-Control-Allow-Origin', origin);
+    res.header('Access-Control-Allow-Credentials', 'true');
+    console.log(`[OPTIONS] Setting Access-Control-Allow-Origin to: ${origin}`);
+  } else {
+    // No origin header - use '*' but NO credentials
+    res.header('Access-Control-Allow-Origin', '*');
+    console.log(`[OPTIONS] No origin header - using '*' (no credentials)`);
+  }
+  
+  // Set other CORS headers
   res.header('Access-Control-Allow-Methods', 'GET, POST, PUT, DELETE, OPTIONS');
   res.header('Access-Control-Allow-Headers', 'Content-Type, Authorization, X-Requested-With');
   res.header('Access-Control-Max-Age', '86400');
   
-  // Handle origin - CRITICAL: Cannot use '*' with credentials
-  if (origin) {
-    // Check if origin is in allowed list
-    if (allowedOrigins.some(allowed => origin === allowed || origin.startsWith(allowed))) {
-      res.header('Access-Control-Allow-Origin', origin);
-      res.header('Access-Control-Allow-Credentials', 'true');
-      console.log(`[OPTIONS] Allowing origin: ${origin} (in allowed list)`);
-    } else {
-      // Origin not in strict list - but allow it for debugging (with credentials)
-      res.header('Access-Control-Allow-Origin', origin);
-      res.header('Access-Control-Allow-Credentials', 'true');
-      console.log(`[OPTIONS] WARNING: Allowing origin: ${origin} (not in strict list, debugging mode)`);
-    }
-  } else {
-    // No origin header (e.g., Postman, curl) - use '*' but NO credentials
-    res.header('Access-Control-Allow-Origin', '*');
-    // Do NOT set Access-Control-Allow-Credentials when using '*'
-    console.log(`[OPTIONS] No origin header - using '*' (no credentials)`);
-  }
-  
-  res.status(200).end();
+  console.log(`[OPTIONS] Sending 200 OK with CORS headers`);
+  res.status(200).send();
   return; // Explicitly stop execution
 });
 
@@ -269,6 +263,21 @@ app.post('/admin/clear-logs', adminAuth, async (req, res) => {
   }
 });
 
+// Explicit OPTIONS handler for /api/analyze-project
+app.options('/api/analyze-project', (req, res) => {
+  const origin = req.get('origin') || req.headers.origin;
+  if (origin) {
+    res.header('Access-Control-Allow-Origin', origin);
+    res.header('Access-Control-Allow-Credentials', 'true');
+  } else {
+    res.header('Access-Control-Allow-Origin', '*');
+  }
+  res.header('Access-Control-Allow-Methods', 'GET, POST, PUT, DELETE, OPTIONS');
+  res.header('Access-Control-Allow-Headers', 'Content-Type, Authorization, X-Requested-With');
+  res.header('Access-Control-Max-Age', '86400');
+  res.status(200).send();
+});
+
 // AI Project Analysis Endpoint
 app.post('/api/analyze-project', rateLimiter, async (req, res) => {
   // Explicitly set CORS headers first
@@ -377,6 +386,21 @@ Project Description: ${description}`
     setCORSHeaders(req, res); // Ensure CORS headers on error response
     res.status(500).json({ error: 'Internal server error' });
   }
+});
+
+// Explicit OPTIONS handler for /api/estimate-cost
+app.options('/api/estimate-cost', (req, res) => {
+  const origin = req.get('origin') || req.headers.origin;
+  if (origin) {
+    res.header('Access-Control-Allow-Origin', origin);
+    res.header('Access-Control-Allow-Credentials', 'true');
+  } else {
+    res.header('Access-Control-Allow-Origin', '*');
+  }
+  res.header('Access-Control-Allow-Methods', 'GET, POST, PUT, DELETE, OPTIONS');
+  res.header('Access-Control-Allow-Headers', 'Content-Type, Authorization, X-Requested-With');
+  res.header('Access-Control-Max-Age', '86400');
+  res.status(200).send();
 });
 
 // AI Cost Estimation Endpoint
