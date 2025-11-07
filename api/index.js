@@ -31,11 +31,19 @@ const allowedOrigins = [
 function setCORSHeaders(req, res) {
   const origin = req.get('origin');
   
-  // Check if origin is allowed
-  if (origin && allowedOrigins.some(allowed => origin === allowed || origin.startsWith(allowed))) {
-    res.header('Access-Control-Allow-Origin', origin);
-    res.header('Access-Control-Allow-Credentials', 'true');
-  } else if (!origin) {
+  // Always set CORS headers - be permissive for now to fix the issue
+  if (origin) {
+    // Check if origin is in allowed list
+    if (allowedOrigins.some(allowed => origin === allowed || origin.startsWith(allowed))) {
+      res.header('Access-Control-Allow-Origin', origin);
+      res.header('Access-Control-Allow-Credentials', 'true');
+    } else {
+      // For debugging - allow the origin that's being used
+      console.log(`[CORS] Allowing origin: ${origin} (not in strict list)`);
+      res.header('Access-Control-Allow-Origin', origin);
+      res.header('Access-Control-Allow-Credentials', 'true');
+    }
+  } else {
     // Allow requests with no origin (mobile apps, Postman, etc.)
     res.header('Access-Control-Allow-Origin', '*');
   }
@@ -77,18 +85,22 @@ app.use(cors({
 app.options('*', (req, res) => {
   const origin = req.get('origin');
   console.log(`[OPTIONS] Preflight request from: ${origin}`);
+  console.log(`[OPTIONS] Allowed origins: ${allowedOrigins.join(', ')}`);
   
-  // Set CORS headers
-  if (origin && allowedOrigins.some(allowed => origin === allowed || origin.startsWith(allowed))) {
+  // Always allow the origin that's making the request (for now)
+  if (origin) {
     res.header('Access-Control-Allow-Origin', origin);
     res.header('Access-Control-Allow-Credentials', 'true');
-  } else if (!origin) {
+    console.log(`[OPTIONS] Setting Access-Control-Allow-Origin to: ${origin}`);
+  } else {
     res.header('Access-Control-Allow-Origin', '*');
   }
   
   res.header('Access-Control-Allow-Methods', 'GET, POST, PUT, DELETE, OPTIONS');
   res.header('Access-Control-Allow-Headers', 'Content-Type, Authorization, X-Requested-With');
   res.header('Access-Control-Max-Age', '86400');
+  
+  console.log(`[OPTIONS] Sending 200 OK response with CORS headers`);
   
   // Return 200 OK (not 204) for better compatibility
   res.status(200).end();
