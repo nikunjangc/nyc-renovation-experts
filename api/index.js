@@ -271,6 +271,9 @@ app.post('/admin/clear-logs', adminAuth, async (req, res) => {
 
 // AI Project Analysis Endpoint
 app.post('/api/analyze-project', rateLimiter, async (req, res) => {
+  // Explicitly set CORS headers first
+  setCORSHeaders(req, res);
+  
   const startTime = Date.now();
   const clientIp = req.ip || req.connection.remoteAddress;
   const referer = req.get('referer') || req.get('referrer') || '';
@@ -283,6 +286,7 @@ app.post('/api/analyze-project', rateLimiter, async (req, res) => {
     const { projectType, borough, squareFootage, budgetRange, description } = req.body;
 
     if (!description) {
+      setCORSHeaders(req, res); // Ensure CORS headers on error response
       return res.status(400).json({ error: 'Project description is required' });
     }
 
@@ -323,6 +327,7 @@ Project Description: ${description}`
     if (!response.ok) {
       const errorData = await response.text();
       console.error(`${API_PROVIDER} API Error:`, errorData);
+      setCORSHeaders(req, res); // Ensure CORS headers on error response
       return res.status(response.status).json({ 
         error: 'Failed to analyze project',
         details: process.env.NODE_ENV === 'development' ? errorData : undefined
@@ -369,12 +374,16 @@ Project Description: ${description}`
       responseTime
     });
     
+    setCORSHeaders(req, res); // Ensure CORS headers on error response
     res.status(500).json({ error: 'Internal server error' });
   }
 });
 
 // AI Cost Estimation Endpoint
 app.post('/api/estimate-cost', rateLimiter, async (req, res) => {
+  // Explicitly set CORS headers first
+  setCORSHeaders(req, res);
+  
   const startTime = Date.now();
   const clientIp = req.ip || req.connection.remoteAddress;
   const referer = req.get('referer') || req.get('referrer') || '';
@@ -395,6 +404,7 @@ app.post('/api/estimate-cost', rateLimiter, async (req, res) => {
     } = req.body;
 
     if (!description) {
+      setCORSHeaders(req, res); // Ensure CORS headers on error response
       return res.status(400).json({ error: 'Project description is required' });
     }
 
@@ -457,6 +467,7 @@ Analyze this project and provide an accurate cost estimate range considering NYC
     if (!response.ok) {
       const errorData = await response.text();
       console.error(`${API_PROVIDER} API Error:`, errorData);
+      setCORSHeaders(req, res); // Ensure CORS headers on error response
       return res.status(response.status).json({ 
         error: 'Failed to estimate cost',
         details: process.env.NODE_ENV === 'development' ? errorData : undefined
@@ -546,6 +557,7 @@ Analyze this project and provide an accurate cost estimate range considering NYC
       responseTime
     });
     
+    setCORSHeaders(req, res); // Ensure CORS headers on error response
     res.status(500).json({ error: 'Internal server error' });
   }
 });
