@@ -55,6 +55,8 @@ function setCORSHeaders(req, res) {
 }
 
 // Middleware - CORS with dynamic origin checking
+// NOTE: We allow all origins here because setCORSHeaders() handles the actual filtering
+// This prevents the middleware from blocking requests before they reach our handlers
 app.use(cors({
   origin: function (origin, callback) {
     // Allow requests with no origin (mobile apps, Postman, etc.)
@@ -64,16 +66,13 @@ app.use(cors({
     if (allowedOrigins.some(allowed => origin === allowed || origin.startsWith(allowed))) {
       callback(null, true);
     } else {
-      // Log blocked origin for debugging
-      console.log(`🚫 CORS blocked origin: ${origin}`);
-      console.log(`✅ Allowed origins: ${allowedOrigins.join(', ')}`);
+      // Log origin for debugging but allow it - setCORSHeaders() will handle the actual filtering
+      console.log(`[CORS Middleware] Allowing origin: ${origin} (will be filtered by setCORSHeaders if needed)`);
+      console.log(`[CORS Middleware] Allowed origins: ${allowedOrigins.join(', ')}`);
       
-      // In production, be strict; in development, allow all
-      if (process.env.NODE_ENV === 'development') {
-        callback(null, true);
-      } else {
-        callback(new Error('Not allowed by CORS'));
-      }
+      // Allow all origins - setCORSHeaders() will add the appropriate headers
+      // This prevents preflight failures while still maintaining security in the response headers
+      callback(null, true);
     }
   },
   credentials: true,
@@ -119,6 +118,14 @@ app.options('*', (req, res) => {
 });
 
 app.use(express.json());
+
+// Middleware to set CORS headers on all responses
+// This ensures CORS headers are always present, even for error responses
+app.use((req, res, next) => {
+  // Set CORS headers for all responses
+  setCORSHeaders(req, res);
+  next();
+});
 
 // Rate limiting (basic - consider using express-rate-limit for production)
 const rateLimit = new Map();
