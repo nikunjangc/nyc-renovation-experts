@@ -27,6 +27,24 @@ const allowedOrigins = [
   process.env.ALLOWED_ORIGIN
 ].filter(Boolean); // Remove undefined values
 
+// CORS helper function to add headers to responses
+function setCORSHeaders(req, res) {
+  const origin = req.get('origin');
+  
+  // Check if origin is allowed
+  if (origin && allowedOrigins.some(allowed => origin === allowed || origin.startsWith(allowed))) {
+    res.header('Access-Control-Allow-Origin', origin);
+    res.header('Access-Control-Allow-Credentials', 'true');
+  } else if (!origin) {
+    // Allow requests with no origin (mobile apps, Postman, etc.)
+    res.header('Access-Control-Allow-Origin', '*');
+  }
+  
+  res.header('Access-Control-Allow-Methods', 'GET, POST, PUT, DELETE, OPTIONS');
+  res.header('Access-Control-Allow-Headers', 'Content-Type, Authorization, X-Requested-With');
+  res.header('Access-Control-Max-Age', '86400'); // 24 hours
+}
+
 // Middleware - CORS with dynamic origin checking
 app.use(cors({
   origin: function (origin, callback) {
@@ -53,6 +71,13 @@ app.use(cors({
   methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
   allowedHeaders: ['Content-Type', 'Authorization', 'X-Requested-With']
 }));
+
+// Handle OPTIONS preflight requests explicitly
+app.options('*', (req, res) => {
+  setCORSHeaders(req, res);
+  res.status(204).send();
+});
+
 app.use(express.json());
 
 // Rate limiting (basic - consider using express-rate-limit for production)
@@ -106,11 +131,13 @@ console.log(`✅ Using ${API_PROVIDER} API`);
 
 // Health check endpoint
 app.get('/health', (req, res) => {
+  setCORSHeaders(req, res);
   res.json({ status: 'ok', message: 'AI Quote API is running' });
 });
 
 // Health check via /api/health (for Vercel compatibility)
 app.get('/api/health', (req, res) => {
+  setCORSHeaders(req, res);
   res.json({ status: 'ok', message: 'AI Quote API is running' });
 });
 
@@ -142,18 +169,24 @@ const adminAuth = (req, res, next) => {
 // Admin endpoints
 app.get('/admin/stats', adminAuth, async (req, res) => {
   try {
+    // Set CORS headers explicitly
+    setCORSHeaders(req, res);
+    
     // Log CORS headers for debugging
     console.log(`[Admin Stats] Origin: ${req.get('origin')}, Referer: ${req.get('referer')}`);
     const stats = await getUsageStats();
     res.json(stats);
   } catch (error) {
     console.error('[Admin Stats] Error:', error);
+    setCORSHeaders(req, res);
     res.status(500).json({ error: 'Failed to get stats' });
   }
 });
 
 app.get('/admin/logs', adminAuth, async (req, res) => {
   try {
+    setCORSHeaders(req, res);
+    
     const limit = parseInt(req.query.limit) || 50;
     const source = req.query.source; // Filter by source (e.g., 'quote.html')
     let logs = await getRecentLogs(limit * 2); // Get more to filter
@@ -168,15 +201,18 @@ app.get('/admin/logs', adminAuth, async (req, res) => {
     
     res.json({ logs });
   } catch (error) {
+    setCORSHeaders(req, res);
     res.status(500).json({ error: 'Failed to get logs' });
   }
 });
 
 app.post('/admin/clear-logs', adminAuth, async (req, res) => {
   try {
+    setCORSHeaders(req, res);
     await clearLogs();
     res.json({ message: 'Logs cleared successfully' });
   } catch (error) {
+    setCORSHeaders(req, res);
     res.status(500).json({ error: 'Failed to clear logs' });
   }
 });
