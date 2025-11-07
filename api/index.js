@@ -97,6 +97,24 @@ app.options('*', (req, res) => {
 
 app.use(express.json());
 
+// Handle CORS preflight (OPTIONS) requests - MUST be before other routes
+app.options('*', (req, res) => {
+  const origin = req.get('origin');
+  console.log(`[OPTIONS] Preflight request from: ${origin}`);
+  
+  if (!origin || allowedOrigins.some(allowed => origin === allowed || origin.startsWith(allowed))) {
+    res.header('Access-Control-Allow-Origin', origin || '*');
+    res.header('Access-Control-Allow-Methods', 'GET, POST, PUT, DELETE, OPTIONS');
+    res.header('Access-Control-Allow-Headers', 'Content-Type, Authorization, X-Requested-With');
+    res.header('Access-Control-Allow-Credentials', 'true');
+    res.header('Access-Control-Max-Age', '86400'); // 24 hours
+    res.status(204).send();
+  } else {
+    console.log(`[OPTIONS] Blocked origin: ${origin}`);
+    res.status(403).send();
+  }
+});
+
 // Rate limiting (basic - consider using express-rate-limit for production)
 const rateLimit = new Map();
 const RATE_LIMIT_WINDOW = 60000; // 1 minute
