@@ -89,33 +89,32 @@ app.options('*', (req, res) => {
   console.log(`[OPTIONS] Preflight request from: ${origin}`);
   console.log(`[OPTIONS] Allowed origins: ${allowedOrigins.join(', ')}`);
   
-  // Check if origin is allowed
-  if (origin && allowedOrigins.some(allowed => origin === allowed || origin.startsWith(allowed))) {
-    res.header('Access-Control-Allow-Origin', origin);
-    res.header('Access-Control-Allow-Credentials', 'true');
-    res.header('Access-Control-Allow-Methods', 'GET, POST, PUT, DELETE, OPTIONS');
-    res.header('Access-Control-Allow-Headers', 'Content-Type, Authorization, X-Requested-With');
-    res.header('Access-Control-Max-Age', '86400');
-    console.log(`[OPTIONS] Allowing origin: ${origin}`);
-    res.status(200).end();
-  } else if (!origin) {
-    // No origin header (e.g., Postman, curl) - allow but without credentials
-    res.header('Access-Control-Allow-Origin', '*');
-    res.header('Access-Control-Allow-Methods', 'GET, POST, PUT, DELETE, OPTIONS');
-    res.header('Access-Control-Allow-Headers', 'Content-Type, Authorization, X-Requested-With');
-    res.header('Access-Control-Max-Age', '86400');
-    console.log(`[OPTIONS] No origin header - allowing with *`);
-    res.status(200).end();
+  // Set common CORS headers
+  res.header('Access-Control-Allow-Methods', 'GET, POST, PUT, DELETE, OPTIONS');
+  res.header('Access-Control-Allow-Headers', 'Content-Type, Authorization, X-Requested-With');
+  res.header('Access-Control-Max-Age', '86400');
+  
+  // Handle origin - CRITICAL: Cannot use '*' with credentials
+  if (origin) {
+    // Check if origin is in allowed list
+    if (allowedOrigins.some(allowed => origin === allowed || origin.startsWith(allowed))) {
+      res.header('Access-Control-Allow-Origin', origin);
+      res.header('Access-Control-Allow-Credentials', 'true');
+      console.log(`[OPTIONS] Allowing origin: ${origin} (in allowed list)`);
+    } else {
+      // Origin not in strict list - but allow it for debugging (with credentials)
+      res.header('Access-Control-Allow-Origin', origin);
+      res.header('Access-Control-Allow-Credentials', 'true');
+      console.log(`[OPTIONS] WARNING: Allowing origin: ${origin} (not in strict list, debugging mode)`);
+    }
   } else {
-    // Origin not allowed - but for debugging, let's allow it anyway with a warning
-    console.log(`[OPTIONS] WARNING: Origin ${origin} not in strict list, but allowing for debugging`);
-    res.header('Access-Control-Allow-Origin', origin);
-    res.header('Access-Control-Allow-Credentials', 'true');
-    res.header('Access-Control-Allow-Methods', 'GET, POST, PUT, DELETE, OPTIONS');
-    res.header('Access-Control-Allow-Headers', 'Content-Type, Authorization, X-Requested-With');
-    res.header('Access-Control-Max-Age', '86400');
-    res.status(200).end();
+    // No origin header (e.g., Postman, curl) - use '*' but NO credentials
+    res.header('Access-Control-Allow-Origin', '*');
+    // Do NOT set Access-Control-Allow-Credentials when using '*'
+    console.log(`[OPTIONS] No origin header - using '*' (no credentials)`);
   }
+  
+  res.status(200).end();
   return; // Explicitly stop execution
 });
 
