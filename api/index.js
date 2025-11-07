@@ -153,15 +153,37 @@ if (!API_KEY) {
 const API_PROVIDER = process.env.DEEPSEEK_API_KEY ? 'DeepSeek' : 'OpenAI';
 console.log(`✅ Using ${API_PROVIDER} API`);
 
-// Health check endpoint
+// Health check endpoint - NO AUTH REQUIRED
 app.get('/health', (req, res) => {
-  setCORSHeaders(req, res);
+  // Explicitly set CORS headers (middleware also sets them, but be explicit)
+  const origin = req.get('origin');
+  if (origin) {
+    res.header('Access-Control-Allow-Origin', origin);
+    res.header('Access-Control-Allow-Credentials', 'true');
+  } else {
+    res.header('Access-Control-Allow-Origin', '*');
+  }
+  res.header('Access-Control-Allow-Methods', 'GET, POST, PUT, DELETE, OPTIONS');
+  res.header('Access-Control-Allow-Headers', 'Content-Type, Authorization, X-Requested-With');
+  res.header('Access-Control-Max-Age', '86400');
+  
   res.json({ status: 'ok', message: 'AI Quote API is running' });
 });
 
-// Health check via /api/health (for Vercel compatibility)
+// Health check via /api/health (for Vercel compatibility) - NO AUTH REQUIRED
 app.get('/api/health', (req, res) => {
-  setCORSHeaders(req, res);
+  // Explicitly set CORS headers (middleware also sets them, but be explicit)
+  const origin = req.get('origin');
+  if (origin) {
+    res.header('Access-Control-Allow-Origin', origin);
+    res.header('Access-Control-Allow-Credentials', 'true');
+  } else {
+    res.header('Access-Control-Allow-Origin', '*');
+  }
+  res.header('Access-Control-Allow-Methods', 'GET, POST, PUT, DELETE, OPTIONS');
+  res.header('Access-Control-Allow-Headers', 'Content-Type, Authorization, X-Requested-With');
+  res.header('Access-Control-Max-Age', '86400');
+  
   res.json({ status: 'ok', message: 'AI Quote API is running' });
 });
 
@@ -542,6 +564,8 @@ if (require.main === module) {
 
 // Catch-all for unmatched routes - return 404 for debugging
 app.use((req, res) => {
+  // Set CORS headers even for 404 responses
+  setCORSHeaders(req, res);
   console.log(`[404] Unmatched route: ${req.method} ${req.url} - ${req.path}`);
   res.status(404).json({ 
     error: 'Not found', 
