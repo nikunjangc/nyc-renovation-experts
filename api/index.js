@@ -28,24 +28,25 @@ const allowedOrigins = [
 ].filter(Boolean); // Remove undefined values
 
 // CORS helper function to add headers to responses
+// IMPORTANT: Cannot use '*' with credentials: true - must use specific origin
 function setCORSHeaders(req, res) {
   const origin = req.get('origin');
   
-  // Always set CORS headers - be permissive for now to fix the issue
   if (origin) {
     // Check if origin is in allowed list
     if (allowedOrigins.some(allowed => origin === allowed || origin.startsWith(allowed))) {
       res.header('Access-Control-Allow-Origin', origin);
       res.header('Access-Control-Allow-Credentials', 'true');
     } else {
-      // For debugging - allow the origin that's being used
-      console.log(`[CORS] Allowing origin: ${origin} (not in strict list)`);
+      // For debugging - allow the origin that's being used (with warning)
+      console.log(`[CORS] WARNING: Allowing origin: ${origin} (not in strict list)`);
       res.header('Access-Control-Allow-Origin', origin);
       res.header('Access-Control-Allow-Credentials', 'true');
     }
   } else {
-    // Allow requests with no origin (mobile apps, Postman, etc.)
+    // No origin header - use * but cannot use credentials
     res.header('Access-Control-Allow-Origin', '*');
+    // Note: Cannot set Access-Control-Allow-Credentials with *
   }
   
   res.header('Access-Control-Allow-Methods', 'GET, POST, PUT, DELETE, OPTIONS');
@@ -82,50 +83,43 @@ app.use(cors({
 
 // Handle OPTIONS preflight requests explicitly - MUST be before other routes
 // This is critical for CORS preflight requests from browsers
+// NOTE: Cannot use '*' with credentials: true - must use specific origin
 app.options('*', (req, res) => {
   const origin = req.get('origin');
   console.log(`[OPTIONS] Preflight request from: ${origin}`);
   console.log(`[OPTIONS] Allowed origins: ${allowedOrigins.join(', ')}`);
   
-  // Always allow the origin that's making the request (for now)
-  if (origin) {
+  // Check if origin is allowed
+  if (origin && allowedOrigins.some(allowed => origin === allowed || origin.startsWith(allowed))) {
     res.header('Access-Control-Allow-Origin', origin);
     res.header('Access-Control-Allow-Credentials', 'true');
-    console.log(`[OPTIONS] Setting Access-Control-Allow-Origin to: ${origin}`);
-  } else {
+    res.header('Access-Control-Allow-Methods', 'GET, POST, PUT, DELETE, OPTIONS');
+    res.header('Access-Control-Allow-Headers', 'Content-Type, Authorization, X-Requested-With');
+    res.header('Access-Control-Max-Age', '86400');
+    console.log(`[OPTIONS] Allowing origin: ${origin}`);
+    res.status(200).end();
+  } else if (!origin) {
+    // No origin header (e.g., Postman, curl) - allow but without credentials
     res.header('Access-Control-Allow-Origin', '*');
+    res.header('Access-Control-Allow-Methods', 'GET, POST, PUT, DELETE, OPTIONS');
+    res.header('Access-Control-Allow-Headers', 'Content-Type, Authorization, X-Requested-With');
+    res.header('Access-Control-Max-Age', '86400');
+    console.log(`[OPTIONS] No origin header - allowing with *`);
+    res.status(200).end();
+  } else {
+    // Origin not allowed - but for debugging, let's allow it anyway with a warning
+    console.log(`[OPTIONS] WARNING: Origin ${origin} not in strict list, but allowing for debugging`);
+    res.header('Access-Control-Allow-Origin', origin);
+    res.header('Access-Control-Allow-Credentials', 'true');
+    res.header('Access-Control-Allow-Methods', 'GET, POST, PUT, DELETE, OPTIONS');
+    res.header('Access-Control-Allow-Headers', 'Content-Type, Authorization, X-Requested-With');
+    res.header('Access-Control-Max-Age', '86400');
+    res.status(200).end();
   }
-  
-  res.header('Access-Control-Allow-Methods', 'GET, POST, PUT, DELETE, OPTIONS');
-  res.header('Access-Control-Allow-Headers', 'Content-Type, Authorization, X-Requested-With');
-  res.header('Access-Control-Max-Age', '86400');
-  
-  console.log(`[OPTIONS] Sending 200 OK response with CORS headers`);
-  
-  // Return 200 OK (not 204) for better compatibility
-  res.status(200).end();
   return; // Explicitly stop execution
 });
 
 app.use(express.json());
-
-// Handle CORS preflight (OPTIONS) requests - MUST be before other routes
-app.options('*', (req, res) => {
-  const origin = req.get('origin');
-  console.log(`[OPTIONS] Preflight request from: ${origin}`);
-  
-  if (!origin || allowedOrigins.some(allowed => origin === allowed || origin.startsWith(allowed))) {
-    res.header('Access-Control-Allow-Origin', origin || '*');
-    res.header('Access-Control-Allow-Methods', 'GET, POST, PUT, DELETE, OPTIONS');
-    res.header('Access-Control-Allow-Headers', 'Content-Type, Authorization, X-Requested-With');
-    res.header('Access-Control-Allow-Credentials', 'true');
-    res.header('Access-Control-Max-Age', '86400'); // 24 hours
-    res.status(204).send();
-  } else {
-    console.log(`[OPTIONS] Blocked origin: ${origin}`);
-    res.status(403).send();
-  }
-});
 
 // Rate limiting (basic - consider using express-rate-limit for production)
 const rateLimit = new Map();
