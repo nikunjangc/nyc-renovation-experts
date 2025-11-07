@@ -2,7 +2,6 @@
 // This keeps your OpenAI API key safe on the server
 
 const express = require('express');
-const cors = require('cors');
 const fetch = require('node-fetch');
 const { logUsage, getUsageStats, getRecentLogs, clearLogs, calculateCost } = require('./usage-logger');
 require('dotenv').config();
@@ -54,31 +53,9 @@ function setCORSHeaders(req, res) {
   res.header('Access-Control-Max-Age', '86400'); // 24 hours
 }
 
-// Middleware - CORS with dynamic origin checking
-// NOTE: We allow all origins here because setCORSHeaders() handles the actual filtering
-// This prevents the middleware from blocking requests before they reach our handlers
-app.use(cors({
-  origin: function (origin, callback) {
-    // Allow requests with no origin (mobile apps, Postman, etc.)
-    if (!origin) return callback(null, true);
-    
-    // Check if origin is in allowed list
-    if (allowedOrigins.some(allowed => origin === allowed || origin.startsWith(allowed))) {
-      callback(null, true);
-    } else {
-      // Log origin for debugging but allow it - setCORSHeaders() will handle the actual filtering
-      console.log(`[CORS Middleware] Allowing origin: ${origin} (will be filtered by setCORSHeaders if needed)`);
-      console.log(`[CORS Middleware] Allowed origins: ${allowedOrigins.join(', ')}`);
-      
-      // Allow all origins - setCORSHeaders() will add the appropriate headers
-      // This prevents preflight failures while still maintaining security in the response headers
-      callback(null, true);
-    }
-  },
-  credentials: true,
-  methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
-  allowedHeaders: ['Content-Type', 'Authorization', 'X-Requested-With']
-}));
+// NOTE: We handle CORS manually via setCORSHeaders() and OPTIONS handler
+// The cors() package middleware was removed to avoid conflicts in Vercel serverless environment
+// All CORS headers are set explicitly in setCORSHeaders() and the OPTIONS handler
 
 // Handle OPTIONS preflight requests explicitly - MUST be before other routes
 // This is critical for CORS preflight requests from browsers
@@ -117,15 +94,15 @@ app.options('*', (req, res) => {
   return; // Explicitly stop execution
 });
 
-app.use(express.json());
-
-// Middleware to set CORS headers on all responses
+// Middleware to set CORS headers on ALL requests (moved early to ensure it runs)
 // This ensures CORS headers are always present, even for error responses
 app.use((req, res, next) => {
-  // Set CORS headers for all responses
+  // Set CORS headers for all responses - this runs before routes
   setCORSHeaders(req, res);
   next();
 });
+
+app.use(express.json());
 
 // Rate limiting (basic - consider using express-rate-limit for production)
 const rateLimit = new Map();
