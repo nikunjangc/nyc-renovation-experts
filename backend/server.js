@@ -5,6 +5,8 @@ const express = require('express');
 const cors = require('cors');
 const fetch = require('node-fetch');
 const { logUsage, getUsageStats, getRecentLogs, clearLogs, calculateCost } = require('./usage-logger');
+const { recommendProducts } = require('./product-recommender');
+const { searchProducts } = require('./product-search');
 require('dotenv').config();
 
 const app = express();
@@ -368,6 +370,70 @@ Analyze this project and provide an accurate cost estimate range considering NYC
   }
 });
 
+// AI Product Recommender — turns a project description into a structured
+// list of materials + tools the client can search for at retailers.
+app.post('/api/recommend-products', rateLimiter, async (req, res) => {
+  const startTime = Date.now();
+  const clientIp = req.ip || req.connection.remoteAddress;
+  try {
+    const quoteData = req.body || {};
+    if (!quoteData.description) {
+      return res.status(400).json({ error: 'Project description is required' });
+    }
+    const model = process.env.DEEPSEEK_API_KEY ? 'deepseek-chat' : 'gpt-4o-mini';
+    const result = await recommendProducts({
+      quoteData,
+      apiKey: API_KEY,
+      apiBaseUrl: API_BASE_URL,
+      model,
+    });
+    const responseTime = Date.now() - startTime;
+    const tokensUsed = result.usage?.total_tokens || 0;
+    const cost = calculateCost(tokensUsed, model);
+    await logUsage({
+      endpoint: '/api/recommend-products',
+      ip: clientIp,
+      projectType: quoteData.projectType,
+      tokensUsed,
+      cost,
+      model,
+      success: true,
+      responseTime,
+    });
+    res.json({
+      summary: result.summary,
+      materials: result.materials,
+      tools: result.tools,
+    });
+  } catch (error) {
+    console.error('recommend-products error:', error);
+    res.status(500).json({
+      error: 'Failed to recommend products',
+      details: process.env.NODE_ENV === 'development' ? error.detail || error.message : undefined,
+    });
+  }
+});
+
+// Retailer product search — wraps SerpAPI Google Shopping. Falls back to
+// mock data if SERPAPI_KEY is unset so the UI is exercisable.
+app.post('/api/product-search', rateLimiter, async (req, res) => {
+  try {
+    const { query, limit, zip } = req.body || {};
+    if (!query) return res.status(400).json({ error: 'query is required' });
+    const data = await searchProducts(query, {
+      limit: Math.min(Math.max(+limit || 6, 1), 12),
+      zip: zip || '10001',
+    });
+    res.json(data);
+  } catch (error) {
+    console.error('product-search error:', error);
+    res.status(500).json({
+      error: 'Product search failed',
+      details: process.env.NODE_ENV === 'development' ? error.detail || error.message : undefined,
+    });
+  }
+});
+
 // Export for Vercel serverless function
 // For local development, start the server normally
 if (require.main === module) {
@@ -377,6 +443,9 @@ if (require.main === module) {
     console.log(`✅ Using ${API_PROVIDER} API`);
     console.log(`✅ API Key is safely stored server-side`);
     console.log(`🔒 CORS enabled for: ${process.env.ALLOWED_ORIGIN || 'http://localhost:3000'}`);
+    if (!process.env.SERPAPI_KEY) {
+      console.log('ℹ️  SERPAPI_KEY not set — product search will return mock data');
+    }
   });
 }
 

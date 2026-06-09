@@ -334,6 +334,9 @@ async function generateFinalQuote() {
   const recommendations = generateRecommendations();
   document.getElementById('recommendationsContent').innerHTML = recommendations;
 
+  // Kick off tools+materials recommendation (independent of cost lookup)
+  loadToolsAndMaterials();
+
   // Populate form hidden fields
   document.getElementById('form_project_type').value = quoteData.projectType;
   document.getElementById('form_borough').value = quoteData.borough;
@@ -478,6 +481,165 @@ function removePhoto(button) {
   const index = Array.from(previewItem.parentElement.children).indexOf(previewItem);
   quoteData.photos.splice(index, 1);
   previewItem.remove();
+}
+
+// ===== Tools & Materials + Retailer Comparison =====
+
+function escapeHtml(s) {
+  return String(s || '')
+    .replace(/&/g, '&amp;')
+    .replace(/</g, '&lt;')
+    .replace(/>/g, '&gt;')
+    .replace(/"/g, '&quot;')
+    .replace(/'/g, '&#39;');
+}
+
+async function loadToolsAndMaterials() {
+  const materialsPane = document.getElementById('tm-materials');
+  const toolsPane = document.getElementById('tm-tools');
+  if (!materialsPane || !toolsPane) return;
+
+  const BACKEND_API_URL = window.BACKEND_API_URL || 'http://localhost:3001';
+
+  try {
+    const response = await fetch(`${BACKEND_API_URL}/api/recommend-products`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        projectType: quoteData.projectType,
+        borough: quoteData.borough,
+        squareFootage: quoteData.squareFootage,
+        budgetRange: quoteData.budgetRange,
+        timeline: quoteData.timeline,
+        description: quoteData.description || quoteData.aiAnalysis || '',
+      }),
+    });
+    if (!response.ok) throw new Error(`HTTP ${response.status}`);
+    const data = await response.json();
+    renderToolMaterialPane(materialsPane, data.materials || [], 'materials');
+    renderToolMaterialPane(toolsPane, data.tools || [], 'tools');
+    bindTmTabs();
+  } catch (err) {
+    console.error('recommend-products failed', err);
+    const msg = `<div class="tm-empty">Couldn't load product suggestions right now. Your quote estimate is still ready below.</div>`;
+    materialsPane.innerHTML = msg;
+    toolsPane.innerHTML = msg;
+  }
+}
+
+function renderToolMaterialPane(container, items, kind) {
+  if (!items.length) {
+    container.innerHTML = `<div class="tm-empty">No ${kind} suggestions for this project.</div>`;
+    return;
+  }
+  container.innerHTML = items
+    .map((item, idx) => itemRow(item, `${kind}-${idx}`))
+    .join('');
+  container.querySelectorAll('[data-search-btn]').forEach((btn) => {
+    btn.addEventListener('click', () => searchAndRender(btn));
+  });
+}
+
+function itemRow(item, id) {
+  const qty = item.qty ? `${item.qty} ${escapeHtml(item.unit || '')}` : '';
+  return `
+    <div class="tm-item" data-tm-id="${escapeHtml(id)}">
+      <div class="tm-item-header">
+        <div>
+          <div class="tm-item-name">${escapeHtml(item.name)}</div>
+          <div class="tm-item-meta">${escapeHtml(item.category || '')} ${qty ? '· ' + qty : ''}</div>
+        </div>
+        <button type="button" class="tm-search-btn"
+          data-search-btn data-query="${escapeHtml(item.query)}">
+          Compare prices
+        </button>
+      </div>
+      ${item.why ? `<div class="tm-item-why">${escapeHtml(item.why)}</div>` : ''}
+      <div class="tm-results" data-results style="display:none;"></div>
+    </div>
+  `;
+}
+
+async function searchAndRender(btn) {
+  const wrapper = btn.closest('.tm-item');
+  const resultsEl = wrapper.querySelector('[data-results]');
+  const query = btn.dataset.query;
+  if (!query) return;
+
+  if (wrapper.dataset.loaded === '1') {
+    resultsEl.style.display = resultsEl.style.display === 'none' ? 'grid' : 'none';
+    btn.textContent = resultsEl.style.display === 'none' ? 'Compare prices' : 'Hide prices';
+    return;
+  }
+
+  btn.disabled = true;
+  btn.textContent = 'Searching…';
+  resultsEl.style.display = 'grid';
+  resultsEl.innerHTML = `<div class="tm-loading"><div class="typing-indicator"><span></span><span></span><span></span></div></div>`;
+
+  const BACKEND_API_URL = window.BACKEND_API_URL || 'http://localhost:3001';
+  try {
+    const response = await fetch(`${BACKEND_API_URL}/api/product-search`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ query, limit: 6 }),
+    });
+    if (!response.ok) throw new Error(`HTTP ${response.status}`);
+    const data = await response.json();
+    renderProducts(resultsEl, data.results || [], data.source);
+    wrapper.dataset.loaded = '1';
+    btn.textContent = 'Hide prices';
+  } catch (err) {
+    console.error('product-search failed', err);
+    resultsEl.innerHTML = `<div class="tm-empty">Couldn't load prices. Try again later.</div>`;
+    btn.textContent = 'Retry';
+  } finally {
+    btn.disabled = false;
+  }
+}
+
+function renderProducts(container, products, source) {
+  if (!products.length) {
+    container.innerHTML = `<div class="tm-empty">No matching products found.</div>`;
+    return;
+  }
+  const cheapest = products.reduce((min, p) =>
+    p.price != null && (min == null || p.price < min) ? p.price : min, null);
+
+  const cards = products.map((p) => `
+    <div class="tm-product">
+      ${p.thumbnail ? `<img src="${escapeHtml(p.thumbnail)}" alt="${escapeHtml(p.title)}" loading="lazy">` : ''}
+      <div class="tm-product-title">${escapeHtml(p.title)}</div>
+      <div class="tm-product-retailer">
+        ${escapeHtml(p.retailer)} ${p.rating ? `· ⭐ ${(+p.rating).toFixed(1)}` : ''}
+      </div>
+      <div class="tm-product-price">
+        ${escapeHtml(p.priceDisplay || (p.price != null ? '$' + p.price.toFixed(2) : 'See price'))}
+        ${cheapest != null && p.price === cheapest ? ' <span style="font-size:0.7rem;color:#28a745;">BEST</span>' : ''}
+      </div>
+      <a href="${escapeHtml(p.link || '#')}" target="_blank" rel="noopener noreferrer">View</a>
+    </div>
+  `).join('');
+
+  const note = source === 'mock'
+    ? `<div class="tm-empty" style="grid-column:1/-1;padding:6px;">Showing sample data — live retailer search activates once SERPAPI_KEY is configured.</div>`
+    : '';
+  container.innerHTML = cards + note;
+}
+
+function bindTmTabs() {
+  const tabs = document.querySelectorAll('#tmTabs .tm-tab');
+  if (!tabs.length) return;
+  tabs.forEach((tab) => {
+    if (tab.dataset.bound) return;
+    tab.dataset.bound = '1';
+    tab.addEventListener('click', () => {
+      tabs.forEach((t) => t.classList.toggle('active', t === tab));
+      document.querySelectorAll('.tm-pane').forEach((p) => {
+        p.style.display = p.id === tab.dataset.pane ? '' : 'none';
+      });
+    });
+  });
 }
 
 // Form Submission

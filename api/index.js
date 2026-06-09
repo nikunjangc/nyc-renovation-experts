@@ -4,6 +4,8 @@
 const express = require('express');
 const fetch = require('node-fetch');
 const { logUsage, getUsageStats, getRecentLogs, clearLogs, calculateCost } = require('./usage-logger');
+const { recommendProducts } = require('../backend/product-recommender');
+const { searchProducts } = require('../backend/product-search');
 require('dotenv').config();
 
 const app = express();
@@ -586,6 +588,110 @@ Analyze this project and provide an accurate cost estimate range considering NYC
   }
 });
 
+// Explicit OPTIONS handler for /api/recommend-products
+app.options('/api/recommend-products', (req, res) => {
+  const origin = req.get('origin') || req.headers.origin;
+  if (origin) {
+    res.header('Access-Control-Allow-Origin', origin);
+    res.header('Access-Control-Allow-Credentials', 'true');
+  } else {
+    res.header('Access-Control-Allow-Origin', '*');
+  }
+  res.header('Access-Control-Allow-Methods', 'GET, POST, PUT, DELETE, OPTIONS');
+  res.header('Access-Control-Allow-Headers', 'Content-Type, Authorization, X-Requested-With');
+  res.header('Access-Control-Max-Age', '86400');
+  res.status(200).send();
+});
+
+// AI Product Recommender — structured materials + tools JSON for the project.
+app.post('/api/recommend-products', rateLimiter, async (req, res) => {
+  setCORSHeaders(req, res);
+  const startTime = Date.now();
+  const clientIp = req.ip || req.connection.remoteAddress;
+  const referer = req.get('referer') || '';
+  const isFromQuotePage = referer.includes('quote.html') || referer.includes('/quote');
+  try {
+    const quoteData = req.body || {};
+    if (!quoteData.description) {
+      setCORSHeaders(req, res);
+      return res.status(400).json({ error: 'Project description is required' });
+    }
+    const model = process.env.DEEPSEEK_API_KEY ? 'deepseek-chat' : 'gpt-4o-mini';
+    const result = await recommendProducts({
+      quoteData,
+      apiKey: API_KEY,
+      apiBaseUrl: API_BASE_URL,
+      model,
+    });
+    const responseTime = Date.now() - startTime;
+    const tokensUsed = result.usage?.total_tokens || 0;
+    const cost = calculateCost(tokensUsed, model);
+    await logUsage({
+      endpoint: '/api/recommend-products',
+      ip: clientIp,
+      source: isFromQuotePage ? 'quote.html' : 'other',
+      referer,
+      projectType: quoteData.projectType,
+      tokensUsed,
+      cost,
+      model,
+      success: true,
+      responseTime,
+    });
+    res.json({
+      summary: result.summary,
+      materials: result.materials,
+      tools: result.tools,
+    });
+  } catch (error) {
+    console.error('recommend-products error:', error);
+    setCORSHeaders(req, res);
+    res.status(500).json({
+      error: 'Failed to recommend products',
+      details: process.env.NODE_ENV === 'development' ? error.detail || error.message : undefined,
+    });
+  }
+});
+
+// Explicit OPTIONS handler for /api/product-search
+app.options('/api/product-search', (req, res) => {
+  const origin = req.get('origin') || req.headers.origin;
+  if (origin) {
+    res.header('Access-Control-Allow-Origin', origin);
+    res.header('Access-Control-Allow-Credentials', 'true');
+  } else {
+    res.header('Access-Control-Allow-Origin', '*');
+  }
+  res.header('Access-Control-Allow-Methods', 'GET, POST, PUT, DELETE, OPTIONS');
+  res.header('Access-Control-Allow-Headers', 'Content-Type, Authorization, X-Requested-With');
+  res.header('Access-Control-Max-Age', '86400');
+  res.status(200).send();
+});
+
+// Retailer product search via SerpAPI (mock fallback if no key).
+app.post('/api/product-search', rateLimiter, async (req, res) => {
+  setCORSHeaders(req, res);
+  try {
+    const { query, limit, zip } = req.body || {};
+    if (!query) {
+      setCORSHeaders(req, res);
+      return res.status(400).json({ error: 'query is required' });
+    }
+    const data = await searchProducts(query, {
+      limit: Math.min(Math.max(+limit || 6, 1), 12),
+      zip: zip || '10001',
+    });
+    res.json(data);
+  } catch (error) {
+    console.error('product-search error:', error);
+    setCORSHeaders(req, res);
+    res.status(500).json({
+      error: 'Product search failed',
+      details: process.env.NODE_ENV === 'development' ? error.detail || error.message : undefined,
+    });
+  }
+});
+
 // Export for Vercel serverless function
 // For local development, start the server normally
 if (require.main === module) {
@@ -595,6 +701,9 @@ if (require.main === module) {
     console.log(`✅ Using ${API_PROVIDER} API`);
     console.log(`✅ API Key is safely stored server-side`);
     console.log(`🔒 CORS enabled for: ${allowedOrigins.join(', ')}`);
+    if (!process.env.SERPAPI_KEY) {
+      console.log('ℹ️  SERPAPI_KEY not set — product search will return mock data');
+    }
   });
 }
 

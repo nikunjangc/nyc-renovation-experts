@@ -87,6 +87,14 @@
       "destination": "/api/index"
     },
     {
+      "source": "/api/recommend-products",
+      "destination": "/api/index"
+    },
+    {
+      "source": "/api/product-search",
+      "destination": "/api/index"
+    },
+    {
       "source": "/",
       "destination": "/index.html"
     }

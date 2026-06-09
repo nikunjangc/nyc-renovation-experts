@@ -25,3 +25,21 @@ NODE_ENV=development
 # Admin Dashboard Password
 # Change this to a strong password in production!
 ADMIN_PASSWORD=your-strong-admin-password-here
+
+# ===== Retailer Product Search (Phase 1: Tools & Materials) =====
+# SerpAPI key for live Google Shopping results across Home Depot, Lowe's,
+# IKEA, Amazon, Wayfair, etc. Without this, /api/product-search returns mock
+# data so the UI is still exercisable.
+# Get one at: https://serpapi.com/  (free tier: 100 searches/mo)
+SERPAPI_KEY=
+
+# ===== Affiliate / Referral (Phase 1: hybrid revenue layer) =====
+# Optional. If set, product links to that retailer are rewritten so you earn
+# commission on referred sales. Apply for each network separately:
+# - Amazon Associates:        https://affiliate-program.amazon.com
+# - Home Depot / Lowe's:      via Impact (https://impact.com) or CJ (https://cj.com)
+# - Wayfair:                  via CJ
+AMAZON_ASSOCIATE_TAG=
+HOMEDEPOT_AFFILIATE_PREFIX=
+LOWES_AFFILIATE_PREFIX=
+WAYFAIR_AFFILIATE_PREFIX=
