@@ -1,0 +1,4 @@
+# Python dependencies for Vercel's Python runtime.
+# The Self-Fix assistant (selffix/, api/self-fix.py) is intentionally stdlib-only,
+# so this file is empty. Vercel still needs the file present to detect the
+# Python runtime for /api/*.py functions.

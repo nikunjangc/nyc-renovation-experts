@@ -95,6 +95,10 @@
       "destination": "/api/index"
     },
     {
+      "source": "/api/self-fix",
+      "destination": "/api/self-fix"
+    },
+    {
       "source": "/",
       "destination": "/index.html"
     }
