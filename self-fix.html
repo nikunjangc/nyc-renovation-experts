@@ -137,9 +137,10 @@
 
     <script>
         // Frontend lives on GitHub Pages; the Python serverless function is on Vercel.
-        // Mirror the same backend URL quote.html uses so /api/self-fix resolves correctly in prod.
+        // Use the stable project alias (not a per-deploy immutable URL — those rotate
+        // and are subject to Vercel Deployment Protection).
         window.SELF_FIX_API_URL = window.SELF_FIX_API_URL ||
-            'https://nyc-renovation-experts-q6k244xd3-nikunjan-gcs-projects.vercel.app/api/self-fix';
+            'https://nyc-renovation-experts.vercel.app/api/self-fix';
     </script>
     <script src="js/self-fix-chat.js"></script>
 </body>

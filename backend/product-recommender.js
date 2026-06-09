@@ -3,8 +3,9 @@
 // against retailers (Home Depot, Lowe's, IKEA, Amazon, etc.).
 //
 // Shared between local Express server and Vercel serverless function.
-
-const fetch = require('node-fetch');
+// Uses the global fetch (Node 18+). No node-fetch dep, so this module
+// resolves cleanly inside Vercel's api/ bundle without needing a
+// node_modules in this directory.
 
 const SYSTEM_PROMPT = `You are an expert NYC renovation estimator. Given a project description, produce a realistic, conservative list of materials AND tools required to complete it.
 

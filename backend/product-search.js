@@ -3,8 +3,9 @@
 //
 // Falls back to deterministic mock data if SERPAPI_KEY is not set, so the
 // feature is testable end-to-end before the user provisions an API key.
+//
+// Uses the global fetch (Node 18+) — see product-recommender.js for why.
 
-const fetch = require('node-fetch');
 const { applyAffiliate } = require('./affiliate');
 
 const PREFERRED_RETAILERS = [
