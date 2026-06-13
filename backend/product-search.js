@@ -110,11 +110,15 @@ async function searchProducts(query, { limit = 6, zip = '10001' } = {}) {
     return data;
   }
 
+  // SerpAPI's `location` param must match a name in their location database
+  // (free-form addresses or ZIPs are rejected with "Unsupported … location").
+  // For NYC we use the canonical name; for non-NYC zips we omit location and
+  // rely on gl/hl to localize. zip is accepted as input for future use.
   const params = new URLSearchParams({
     engine: 'google_shopping',
     q: trimmed,
     api_key: apiKey,
-    location: `New York, NY ${zip}`,
+    location: 'New York, New York, United States',
     gl: 'us',
     hl: 'en',
     num: String(Math.min(limit * 3, 30)),

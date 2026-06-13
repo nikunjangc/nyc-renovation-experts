@@ -695,12 +695,9 @@ app.post('/api/product-search', rateLimiter, async (req, res) => {
   } catch (error) {
     console.error('product-search error:', error);
     setCORSHeaders(req, res);
-    // Echo upstream SerpAPI error (truncated) so failures are diagnosable
-    // end-to-end. SerpAPI errors typically mean: invalid key, plan exhausted,
-    // or malformed query — none of which are sensitive to leak back.
     res.status(500).json({
       error: 'Product search failed',
-      upstream_message: (error.detail || error.message || '').toString().slice(0, 300),
+      details: process.env.NODE_ENV === 'development' ? error.detail || error.message : undefined,
     });
   }
 });
