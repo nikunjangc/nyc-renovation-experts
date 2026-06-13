@@ -658,11 +658,7 @@ app.post('/api/recommend-products', rateLimiter, async (req, res) => {
       error: 'Failed to recommend products',
       upstream_status: upstreamStatus,
       hint,
-      // Temporarily echo the upstream body (truncated) in prod so the actual
-      // DeepSeek error reason is diagnosable without Vercel log access. Safe
-      // because we never include the API key itself; if anything sensitive
-      // shows up here we'll drop this line again.
-      upstream_message: (error.detail || error.message || '').toString().slice(0, 400),
+      details: process.env.NODE_ENV === 'development' ? error.detail || error.message : undefined,
     });
   }
 });

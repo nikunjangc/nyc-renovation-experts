@@ -15,7 +15,8 @@ Rules:
 - "qty" must be a number, "unit" must be one of: "unit", "linear-ft", "sqft", "gallon", "box", "roll", "bag", "sheet".
 - Group similar items rather than listing every screw/nail.
 - Include only items a homeowner or GC would actually purchase from a retailer — exclude labor.
-- Limit total items to ~25 across materials+tools combined; pick the highest-impact ones.
+- Limit total items to ~15 across materials+tools combined; pick the highest-impact ones.
+- Keep "why" under 80 characters.
 
 Schema:
 {
@@ -42,13 +43,35 @@ Produce the JSON list of materials and tools.`;
 
 function extractJson(text) {
   if (!text) return null;
+  // First, try a clean object match from first { to last }.
   const match = text.match(/\{[\s\S]*\}/);
-  if (!match) return null;
-  try {
-    return JSON.parse(match[0]);
-  } catch {
-    return null;
+  if (match) {
+    try { return JSON.parse(match[0]); } catch {}
   }
+  // Fallback: the model may have hit max_tokens mid-output. Try to repair by
+  // closing any open string/array/object brackets at the truncation point.
+  const start = text.indexOf('{');
+  if (start === -1) return null;
+  let s = text.slice(start);
+  // Trim a dangling partial token (often a half-finished string or comma).
+  s = s.replace(/,\s*$/, '').replace(/[^"]*$/, (tail) => tail.includes('"') ? tail : '');
+  // Close unbalanced quotes, brackets.
+  const opens = { '{': '}', '[': ']' };
+  const stack = [];
+  let inStr = false, escaped = false;
+  for (const ch of s) {
+    if (inStr) {
+      if (escaped) escaped = false;
+      else if (ch === '\\') escaped = true;
+      else if (ch === '"') inStr = false;
+    } else if (ch === '"') inStr = true;
+    else if (opens[ch]) stack.push(opens[ch]);
+    else if (ch === '}' || ch === ']') stack.pop();
+  }
+  let repaired = s;
+  if (inStr) repaired += '"';
+  while (stack.length) repaired += stack.pop();
+  try { return JSON.parse(repaired); } catch { return null; }
 }
 
 function normalize(result) {
@@ -83,7 +106,7 @@ async function recommendProducts({ quoteData, apiKey, apiBaseUrl, model }) {
         { role: 'system', content: SYSTEM_PROMPT },
         { role: 'user', content: buildUserPrompt(quoteData) },
       ],
-      max_tokens: 1200,
+      max_tokens: 2500,
       temperature: 0.3,
       // No response_format: DeepSeek's strict JSON mode 500s for some prompt
       // shapes. The system prompt already requires JSON-only output, and
