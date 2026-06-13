@@ -646,8 +646,18 @@ app.post('/api/recommend-products', rateLimiter, async (req, res) => {
   } catch (error) {
     console.error('recommend-products error:', error);
     setCORSHeaders(req, res);
-    res.status(500).json({
+    // Propagate the upstream status (commonly 401 for a bad LLM API key) and a
+    // short human-readable hint so the frontend can show WHY it failed instead
+    // of a generic 'something went wrong'. We never echo the API key itself.
+    const upstreamStatus = error.status || 500;
+    const hint =
+      upstreamStatus === 401 ? 'LLM API key is missing or invalid in Vercel env vars (DEEPSEEK_API_KEY / OPENAI_API_KEY)'
+      : upstreamStatus === 429 ? 'LLM rate-limited — try again in a moment'
+      : 'AI service is unavailable';
+    res.status(upstreamStatus).json({
       error: 'Failed to recommend products',
+      upstream_status: upstreamStatus,
+      hint,
       details: process.env.NODE_ENV === 'development' ? error.detail || error.message : undefined,
     });
   }

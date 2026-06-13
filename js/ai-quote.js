@@ -514,14 +514,26 @@ async function loadToolsAndMaterials() {
         description: quoteData.description || quoteData.aiAnalysis || '',
       }),
     });
-    if (!response.ok) throw new Error(`HTTP ${response.status}`);
-    const data = await response.json();
+    const data = await response.json().catch(() => ({}));
+    if (!response.ok) {
+      const e = new Error(`HTTP ${response.status}`);
+      e.payload = data;
+      e.status = response.status;
+      throw e;
+    }
     renderToolMaterialPane(materialsPane, data.materials || [], 'materials');
     renderToolMaterialPane(toolsPane, data.tools || [], 'tools');
     bindTmTabs();
   } catch (err) {
     console.error('recommend-products failed', err);
-    const msg = `<div class="tm-empty">Couldn't load product suggestions right now. Your quote estimate is still ready below.</div>`;
+    const hint = err.payload?.hint || '';
+    const status = err.status || 'network';
+    const msg = `
+      <div class="tm-empty" style="text-align:left; padding:18px; background:#fff5f5; border:1px solid #f5c2c0; border-radius:8px; color:#842029;">
+        <strong>Couldn't load product suggestions.</strong><br>
+        <small>Status: ${escapeHtml(String(status))}${hint ? ' — ' + escapeHtml(hint) : ''}</small><br>
+        <small>Your quote estimate above is still valid. We're looking into it.</small>
+      </div>`;
     materialsPane.innerHTML = msg;
     toolsPane.innerHTML = msg;
   }
