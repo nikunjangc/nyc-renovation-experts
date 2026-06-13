@@ -142,23 +142,24 @@ async function sendToAI() {
   try {
     // Call OpenAI API
     const aiResponse = await callOpenAI(description);
-    
+    const rendered = renderMarkdown(aiResponse);
+
     // Remove typing indicator
     document.getElementById('typing-indicator')?.remove();
 
     // Add AI response to chat
     const aiMessage = document.createElement('div');
     aiMessage.className = 'chat-message ai';
-    aiMessage.innerHTML = `<strong>RenoBot:</strong> ${aiResponse}`;
+    aiMessage.innerHTML = `<strong>RenoBot:</strong> <div class="ai-md">${rendered}</div>`;
     chatContainer.appendChild(aiMessage);
     chatContainer.scrollTop = chatContainer.scrollHeight;
 
     // Show AI analysis box
     const aiResponseBox = document.getElementById('ai-response');
     const aiResponseContent = document.getElementById('ai-response-content');
-    aiResponseContent.innerHTML = aiResponse;
+    aiResponseContent.innerHTML = `<div class="ai-md">${rendered}</div>`;
     aiResponseBox.style.display = 'block';
-    
+
     quoteData.aiAnalysis = aiResponse;
     document.getElementById('btn-step3').disabled = false;
 
@@ -327,9 +328,10 @@ async function generateFinalQuote() {
     costDetailsEl.textContent = `Based on ${quoteData.projectType} renovation in ${quoteData.borough} (${quoteData.squareFootage || 'estimated'} sq ft)`;
   }
 
-  // Display AI analysis
+  // Display AI analysis (markdown → HTML)
   if (quoteData.aiAnalysis) {
-    document.getElementById('finalAnalysisContent').innerHTML = quoteData.aiAnalysis;
+    document.getElementById('finalAnalysisContent').innerHTML =
+      `<div class="ai-md">${renderMarkdown(quoteData.aiAnalysis)}</div>`;
   }
 
   // Generate recommendations
@@ -486,6 +488,25 @@ function removePhoto(button) {
   const index = Array.from(previewItem.parentElement.children).indexOf(previewItem);
   quoteData.photos.splice(index, 1);
   previewItem.remove();
+}
+
+// Convert markdown (LLM output) to sanitized HTML. Falls back to a minimal
+// pass that escapes HTML + converts newlines so the page never shows raw
+// ###/** if the CDN libs failed to load.
+function renderMarkdown(text) {
+  const src = String(text || '');
+  if (window.marked && window.DOMPurify) {
+    try {
+      const html = window.marked.parse(src, { breaks: true, gfm: true });
+      return window.DOMPurify.sanitize(html);
+    } catch (e) {
+      console.warn('markdown render failed, falling back', e);
+    }
+  }
+  // Minimal fallback — escape and preserve line breaks.
+  return src
+    .replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;')
+    .replace(/\n/g, '<br>');
 }
 
 // ===== Clarification step (runs BEFORE tools & materials) =====
