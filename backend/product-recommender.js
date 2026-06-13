@@ -83,9 +83,11 @@ async function recommendProducts({ quoteData, apiKey, apiBaseUrl, model }) {
         { role: 'system', content: SYSTEM_PROMPT },
         { role: 'user', content: buildUserPrompt(quoteData) },
       ],
-      max_tokens: 1500,
+      max_tokens: 1200,
       temperature: 0.3,
-      response_format: { type: 'json_object' },
+      // No response_format: DeepSeek's strict JSON mode 500s for some prompt
+      // shapes. The system prompt already requires JSON-only output, and
+      // extractJson() below pulls the JSON object out of the text defensively.
     }),
   });
 
