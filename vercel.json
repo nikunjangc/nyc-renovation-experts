@@ -87,6 +87,10 @@
       "destination": "/api/index"
     },
     {
+      "source": "/api/clarify-project",
+      "destination": "/api/index"
+    },
+    {
       "source": "/api/recommend-products",
       "destination": "/api/index"
     },

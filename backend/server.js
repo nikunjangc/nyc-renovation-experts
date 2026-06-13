@@ -7,6 +7,7 @@ const fetch = require('node-fetch');
 const { logUsage, getUsageStats, getRecentLogs, clearLogs, calculateCost } = require('./usage-logger');
 const { recommendProducts } = require('./product-recommender');
 const { searchProducts } = require('./product-search');
+const { clarifyProject } = require('./project-clarifier');
 require('dotenv').config();
 
 const app = express();
@@ -367,6 +368,30 @@ Analyze this project and provide an accurate cost estimate range considering NYC
     });
     
     res.status(500).json({ error: 'Internal server error' });
+  }
+});
+
+// AI clarifier — returns multiple-choice questions tailored to the project.
+app.post('/api/clarify-project', rateLimiter, async (req, res) => {
+  try {
+    const quoteData = req.body || {};
+    if (!quoteData.description) {
+      return res.status(400).json({ error: 'Project description is required' });
+    }
+    const model = process.env.DEEPSEEK_API_KEY ? 'deepseek-chat' : 'gpt-4o-mini';
+    const result = await clarifyProject({
+      quoteData,
+      apiKey: API_KEY,
+      apiBaseUrl: API_BASE_URL,
+      model,
+    });
+    res.json({ intro: result.intro, questions: result.questions });
+  } catch (error) {
+    console.error('clarify-project error:', error);
+    res.status(error.status || 500).json({
+      error: 'Failed to generate clarification questions',
+      details: process.env.NODE_ENV === 'development' ? error.detail || error.message : undefined,
+    });
   }
 });
 

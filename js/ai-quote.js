@@ -8,7 +8,9 @@ let quoteData = {
   timeline: '',
   description: '',
   aiAnalysis: '',
-  photos: []
+  photos: [],
+  // Clarification answers, e.g. { cabinet_style: 'Shaker', countertop: 'Quartz' }
+  clarifications: {}
 };
 
 // Step Navigation
@@ -334,8 +336,11 @@ async function generateFinalQuote() {
   const recommendations = generateRecommendations();
   document.getElementById('recommendationsContent').innerHTML = recommendations;
 
-  // Kick off tools+materials recommendation (independent of cost lookup)
-  loadToolsAndMaterials();
+  // Kick off the clarification step first. When the user submits their picks
+  // (or hits "Skip"), THEN we load tools & materials with the enriched
+  // description — so the shopping list and SerpAPI lookups stay accurate
+  // instead of being model-default guesses.
+  loadClarificationQuestions();
 
   // Populate form hidden fields
   document.getElementById('form_project_type').value = quoteData.projectType;
@@ -483,6 +488,84 @@ function removePhoto(button) {
   previewItem.remove();
 }
 
+// ===== Clarification step (runs BEFORE tools & materials) =====
+
+async function loadClarificationQuestions() {
+  const box = document.getElementById('clarifyBox');
+  const slot = document.getElementById('clarifyQuestions');
+  const actions = document.getElementById('clarifyActions');
+  const introEl = document.getElementById('clarifyIntro');
+  if (!box || !slot) return;
+
+  const BACKEND_API_URL = window.BACKEND_API_URL || 'http://localhost:3001';
+  try {
+    const response = await fetch(`${BACKEND_API_URL}/api/clarify-project`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        projectType: quoteData.projectType,
+        borough: quoteData.borough,
+        squareFootage: quoteData.squareFootage,
+        budgetRange: quoteData.budgetRange,
+        description: quoteData.description || '',
+      }),
+    });
+    const data = await response.json().catch(() => ({}));
+    if (!response.ok || !data.questions?.length) {
+      // No questions to ask (or backend hiccup) — fall through directly to materials.
+      revealToolsAndMaterials();
+      return;
+    }
+    if (data.intro && introEl) introEl.textContent = data.intro;
+    renderClarification(slot, data.questions);
+    actions.style.display = '';
+    document.getElementById('clarifySkipBtn').onclick = () => {
+      quoteData.clarifications = {};
+      revealToolsAndMaterials();
+    };
+    document.getElementById('clarifySubmitBtn').onclick = () => {
+      revealToolsAndMaterials();
+    };
+  } catch (err) {
+    console.error('clarify-project failed', err);
+    // If the clarifier fails, don't block the user — just load the materials.
+    revealToolsAndMaterials();
+  }
+}
+
+function renderClarification(container, questions) {
+  container.innerHTML = questions.map((q) => `
+    <div class="cq-group" data-qid="${escapeHtml(q.id)}">
+      <div class="cq-label">${escapeHtml(q.label || q.question)}</div>
+      <div class="cq-question">${escapeHtml(q.question)}</div>
+      <div class="cq-chips">
+        ${q.options.map((opt) => `
+          <button type="button" class="cq-chip" data-value="${escapeHtml(opt)}">${escapeHtml(opt)}</button>
+        `).join('')}
+      </div>
+    </div>
+  `).join('');
+
+  container.querySelectorAll('.cq-group').forEach((group) => {
+    const qid = group.dataset.qid;
+    group.querySelectorAll('.cq-chip').forEach((chip) => {
+      chip.addEventListener('click', () => {
+        group.querySelectorAll('.cq-chip').forEach((c) => c.classList.remove('selected'));
+        chip.classList.add('selected');
+        quoteData.clarifications[qid] = chip.dataset.value;
+      });
+    });
+  });
+}
+
+function revealToolsAndMaterials() {
+  const clarifyBox = document.getElementById('clarifyBox');
+  const tmBox = document.getElementById('toolsMaterialsBox');
+  if (clarifyBox) clarifyBox.style.display = 'none';
+  if (tmBox) tmBox.style.display = '';
+  loadToolsAndMaterials();
+}
+
 // ===== Tools & Materials + Retailer Comparison =====
 
 function escapeHtml(s) {
@@ -501,6 +584,15 @@ async function loadToolsAndMaterials() {
 
   const BACKEND_API_URL = window.BACKEND_API_URL || 'http://localhost:3001';
 
+  // Fold clarification picks into the description so the model has the
+  // user's explicit preferences instead of guessing defaults.
+  const baseDesc = quoteData.description || quoteData.aiAnalysis || '';
+  const picks = Object.entries(quoteData.clarifications || {})
+    .filter(([, v]) => v && !/^surprise/i.test(v))
+    .map(([k, v]) => `${k.replace(/_/g, ' ')}: ${v}`)
+    .join('; ');
+  const enrichedDesc = picks ? `${baseDesc}\n\nUser preferences — ${picks}` : baseDesc;
+
   try {
     const response = await fetch(`${BACKEND_API_URL}/api/recommend-products`, {
       method: 'POST',
@@ -511,7 +603,7 @@ async function loadToolsAndMaterials() {
         squareFootage: quoteData.squareFootage,
         budgetRange: quoteData.budgetRange,
         timeline: quoteData.timeline,
-        description: quoteData.description || quoteData.aiAnalysis || '',
+        description: enrichedDesc,
       }),
     });
     const data = await response.json().catch(() => ({}));

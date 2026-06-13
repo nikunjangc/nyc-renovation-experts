@@ -6,6 +6,7 @@ const fetch = require('node-fetch');
 const { logUsage, getUsageStats, getRecentLogs, clearLogs, calculateCost } = require('./usage-logger');
 const { recommendProducts } = require('../backend/product-recommender');
 const { searchProducts } = require('../backend/product-search');
+const { clarifyProject } = require('../backend/project-clarifier');
 require('dotenv').config();
 
 const app = express();
@@ -585,6 +586,55 @@ Analyze this project and provide an accurate cost estimate range considering NYC
     
     setCORSHeaders(req, res); // Ensure CORS headers on error response
     res.status(500).json({ error: 'Internal server error' });
+  }
+});
+
+// Explicit OPTIONS handler for /api/clarify-project
+app.options('/api/clarify-project', (req, res) => {
+  const origin = req.get('origin') || req.headers.origin;
+  if (origin) {
+    res.header('Access-Control-Allow-Origin', origin);
+    res.header('Access-Control-Allow-Credentials', 'true');
+  } else {
+    res.header('Access-Control-Allow-Origin', '*');
+  }
+  res.header('Access-Control-Allow-Methods', 'GET, POST, PUT, DELETE, OPTIONS');
+  res.header('Access-Control-Allow-Headers', 'Content-Type, Authorization, X-Requested-With');
+  res.header('Access-Control-Max-Age', '86400');
+  res.status(200).send();
+});
+
+// AI clarifier — returns multiple-choice questions tailored to the project
+// description so we can refine before generating the product list.
+app.post('/api/clarify-project', rateLimiter, async (req, res) => {
+  setCORSHeaders(req, res);
+  try {
+    const quoteData = req.body || {};
+    if (!quoteData.description) {
+      setCORSHeaders(req, res);
+      return res.status(400).json({ error: 'Project description is required' });
+    }
+    const model = process.env.DEEPSEEK_API_KEY ? 'deepseek-chat' : 'gpt-4o-mini';
+    const result = await clarifyProject({
+      quoteData,
+      apiKey: API_KEY,
+      apiBaseUrl: API_BASE_URL,
+      model,
+    });
+    res.json({ intro: result.intro, questions: result.questions });
+  } catch (error) {
+    console.error('clarify-project error:', error);
+    setCORSHeaders(req, res);
+    const upstreamStatus = error.status || 500;
+    const hint =
+      upstreamStatus === 401 ? 'LLM API key is missing or invalid'
+      : upstreamStatus === 429 ? 'LLM rate-limited — try again in a moment'
+      : 'AI service is unavailable';
+    res.status(upstreamStatus).json({
+      error: 'Failed to generate clarification questions',
+      upstream_status: upstreamStatus,
+      hint,
+    });
   }
 });
 
