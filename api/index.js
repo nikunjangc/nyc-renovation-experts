@@ -766,7 +766,7 @@ app.post('/api/product-detail', rateLimiter, async (req, res) => {
     setCORSHeaders(req, res);
     res.status(500).json({
       error: 'Product detail lookup failed',
-      details: process.env.NODE_ENV === 'development' ? error.detail || error.message : undefined,
+      upstream_message: (error.detail || error.message || '').toString().slice(0, 400),
     });
   }
 });
