@@ -230,6 +230,46 @@
                 </div>
             </div>
 
+            <!-- Quote Submissions (Supabase) -->
+            <div class="logs-table mb-4">
+                <div class="d-flex justify-content-between align-items-center mb-3 flex-wrap gap-2">
+                    <h5 class="mb-0"><i class="fas fa-clipboard-list me-2"></i>Quote Submissions</h5>
+                    <div class="d-flex gap-2 align-items-center flex-wrap">
+                        <select id="quoteStatusFilter" class="form-select form-select-sm" style="width:auto;">
+                            <option value="">All statuses</option>
+                            <option value="new">New</option>
+                            <option value="contacted">Contacted</option>
+                            <option value="scheduled">Scheduled</option>
+                            <option value="won">Won</option>
+                            <option value="lost">Lost</option>
+                        </select>
+                        <button class="btn btn-sm btn-primary" onclick="loadQuoteSubmissions()">
+                            <i class="fas fa-sync-alt me-1"></i>Refresh
+                        </button>
+                    </div>
+                </div>
+                <div class="table-responsive">
+                    <table class="table table-hover align-middle">
+                        <thead>
+                            <tr>
+                                <th>Submitted</th>
+                                <th>Name / Contact</th>
+                                <th>Project</th>
+                                <th>Borough</th>
+                                <th>Budget</th>
+                                <th>Est. cost</th>
+                                <th>Status</th>
+                                <th>Source</th>
+                            </tr>
+                        </thead>
+                        <tbody id="quoteSubmissionsTableBody">
+                            <tr><td colspan="8" class="text-center text-muted">Loading quote submissions…</td></tr>
+                        </tbody>
+                    </table>
+                </div>
+                <div id="quoteSubmissionsError" class="alert alert-warning mt-2 d-none small mb-0"></div>
+            </div>
+
             <!-- All Recent Logs -->
             <div class="logs-table">
                 <div class="d-flex justify-content-between align-items-center mb-3">
@@ -270,10 +310,9 @@
     </div>
 
     <script>
-        // Backend URL - Frontend on GitHub Pages, Backend on Vercel
-        // IMPORTANT: Using actual Vercel URL (not custom domain)
-        // Custom domain (www.nycrenovationexperts.com) points to GitHub Pages (frontend), not Vercel (backend)
-        const BACKEND_API_URL = window.BACKEND_API_URL || 'https://nyc-renovation-experts-q6k244xd3-nikunjan-gcs-projects.vercel.app';
+        // Backend URL — use the stable Vercel project alias, NOT per-deploy
+        // immutable URLs (those rotate and are subject to Deployment Protection).
+        const BACKEND_API_URL = window.BACKEND_API_URL || 'https://nyc-renovation-experts.vercel.app';
         
         // Test backend connection on page load
         (async function testBackendOnLoad() {
@@ -418,7 +457,111 @@ Next steps:
             document.getElementById('loginScreen').classList.add('d-none');
             document.getElementById('dashboard').classList.remove('d-none');
             refreshData();
-            setInterval(refreshData, 30000); // Refresh every 30 seconds
+            loadQuoteSubmissions();
+            // Hook the status filter once.
+            const filter = document.getElementById('quoteStatusFilter');
+            if (filter && !filter.dataset.bound) {
+                filter.dataset.bound = '1';
+                filter.addEventListener('change', loadQuoteSubmissions);
+            }
+            setInterval(refreshData, 30000); // Refresh API usage logs every 30s
+        }
+
+        // ===== Quote Submissions (Supabase) =====
+        async function loadQuoteSubmissions() {
+            const tbody = document.getElementById('quoteSubmissionsTableBody');
+            const errEl = document.getElementById('quoteSubmissionsError');
+            if (!tbody) return;
+            errEl.classList.add('d-none');
+            const status = document.getElementById('quoteStatusFilter')?.value || '';
+            const url = `${BACKEND_API_URL}/admin/quotes?limit=100${status ? '&status=' + encodeURIComponent(status) : ''}`;
+            try {
+                const res = await fetch(url, {
+                    headers: { 'Authorization': `Bearer ${adminToken}` }
+                });
+                if (res.status === 401) { logout(); return; }
+                if (!res.ok) throw new Error('HTTP ' + res.status);
+                const data = await res.json();
+                renderQuoteSubmissions(data.quotes || []);
+            } catch (err) {
+                console.error('loadQuoteSubmissions failed', err);
+                tbody.innerHTML = `<tr><td colspan="8" class="text-center text-muted">Couldn't load submissions.</td></tr>`;
+                errEl.textContent = 'Failed to load quote submissions. Check that SUPABASE_URL and SUPABASE_SERVICE_ROLE_KEY are set in Vercel env vars.';
+                errEl.classList.remove('d-none');
+            }
+        }
+
+        function renderQuoteSubmissions(rows) {
+            const tbody = document.getElementById('quoteSubmissionsTableBody');
+            if (!rows.length) {
+                tbody.innerHTML = `<tr><td colspan="8" class="text-center text-muted">No submissions yet.</td></tr>`;
+                return;
+            }
+            const fmt = (iso) => {
+                if (!iso) return '';
+                const d = new Date(iso);
+                return d.toLocaleString(undefined, { month: 'short', day: 'numeric', hour: 'numeric', minute: '2-digit' });
+            };
+            const money = (n) => n == null ? '—' : '$' + Number(n).toLocaleString();
+            const esc = (s) => String(s == null ? '' : s).replace(/[&<>"']/g, c =>
+                ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+            const statusBadge = (s) => {
+                const map = { new: 'secondary', contacted: 'info', scheduled: 'primary', won: 'success', lost: 'danger' };
+                return `<span class="badge bg-${map[s] || 'secondary'}">${esc(s)}</span>`;
+            };
+            tbody.innerHTML = rows.map(r => `
+                <tr data-quote-id="${esc(r.id)}">
+                    <td><small>${fmt(r.created_at)}</small></td>
+                    <td>
+                        <div><strong>${esc(r.contact_name || '(no name)')}</strong></div>
+                        <div class="small text-muted">${esc(r.contact_email || '')}</div>
+                        <div class="small text-muted">${esc(r.contact_phone || '')}</div>
+                    </td>
+                    <td>${esc(r.project_type || '—')}</td>
+                    <td>${esc(r.borough || '—')}</td>
+                    <td><small>${esc(r.budget_range || '—')}</small></td>
+                    <td><small>${money(r.estimated_cost_min)}–${money(r.estimated_cost_max)}</small></td>
+                    <td>
+                        ${statusBadge(r.status)}
+                        <select class="form-select form-select-sm mt-1" data-status-select style="width:auto;">
+                            ${['new','contacted','scheduled','won','lost'].map(s =>
+                                `<option value="${s}"${s===r.status?' selected':''}>${s}</option>`).join('')}
+                        </select>
+                    </td>
+                    <td><small>${esc(r.source || '—')}</small></td>
+                </tr>
+            `).join('');
+            // Wire status change handlers.
+            tbody.querySelectorAll('[data-status-select]').forEach(sel => {
+                sel.addEventListener('change', (e) => {
+                    const id = sel.closest('tr').dataset.quoteId;
+                    updateQuoteStatus(id, sel.value, sel);
+                });
+            });
+        }
+
+        async function updateQuoteStatus(id, status, selectEl) {
+            const prev = selectEl?.dataset.prev || '';
+            selectEl.disabled = true;
+            try {
+                const res = await fetch(`${BACKEND_API_URL}/admin/quotes/${encodeURIComponent(id)}`, {
+                    method: 'POST',
+                    headers: {
+                        'Authorization': `Bearer ${adminToken}`,
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify({ status })
+                });
+                if (!res.ok) throw new Error('HTTP ' + res.status);
+                // Refresh just this section so the badge reflects the new status.
+                loadQuoteSubmissions();
+            } catch (err) {
+                console.error('updateQuoteStatus failed', err);
+                alert('Failed to update status. Try again.');
+                if (prev) selectEl.value = prev;
+            } finally {
+                selectEl.disabled = false;
+            }
         }
 
         async function refreshData() {
