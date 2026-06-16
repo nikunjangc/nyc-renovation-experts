@@ -99,6 +99,10 @@
       "destination": "/api/index"
     },
     {
+      "source": "/api/product-detail",
+      "destination": "/api/index"
+    },
+    {
       "source": "/api/self-fix",
       "destination": "/api/self-fix"
     },

@@ -72,6 +72,9 @@ function normalizeResult(r) {
     reviews: r.reviews ?? null,
     thumbnail: r.thumbnail || r.image || null,
     link: applyAffiliate(r.product_link || r.link || '', retailer),
+    // product_id is fed to /api/product-detail on click so we can resolve the
+    // direct retailer URL (bypassing Google Shopping). Missing for mock data.
+    productId: r.product_id || null,
     delivery: r.delivery || null,
     snippet: r.snippet || '',
   };
@@ -90,6 +93,7 @@ function mockResults(query) {
     reviews: 50 + i * 21,
     thumbnail: null,
     link: applyAffiliate(`https://www.${retailer.replace(/[^a-z]/g, '')}.com/s?k=${encodeURIComponent(query)}`, retailer),
+    productId: null, // mocks skip the product-detail lookup
     delivery: i % 2 ? 'Free delivery' : 'In stock nearby',
     snippet: 'Mock result — set SERPAPI_KEY to enable live retailer search.',
   }));
