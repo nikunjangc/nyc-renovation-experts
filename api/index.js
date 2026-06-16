@@ -7,6 +7,7 @@ const { logUsage, getUsageStats, getRecentLogs, clearLogs, calculateCost } = req
 const { recommendProducts } = require('../backend/product-recommender');
 const { searchProducts } = require('../backend/product-search');
 const { clarifyProject } = require('../backend/project-clarifier');
+const { saveQuoteSubmission, listQuoteSubmissions, updateQuoteStatus } = require('./quote-store');
 require('dotenv').config();
 
 const app = express();
@@ -726,6 +727,81 @@ app.options('/api/product-search', (req, res) => {
   res.header('Access-Control-Allow-Headers', 'Content-Type, Authorization, X-Requested-With');
   res.header('Access-Control-Max-Age', '86400');
   res.status(200).send();
+});
+
+// ===== Quote persistence (Supabase) =====
+
+app.options('/api/save-quote', (req, res) => {
+  const origin = req.get('origin') || req.headers.origin;
+  if (origin) {
+    res.header('Access-Control-Allow-Origin', origin);
+    res.header('Access-Control-Allow-Credentials', 'true');
+  } else {
+    res.header('Access-Control-Allow-Origin', '*');
+  }
+  res.header('Access-Control-Allow-Methods', 'GET, POST, PUT, DELETE, OPTIONS');
+  res.header('Access-Control-Allow-Headers', 'Content-Type, Authorization, X-Requested-With');
+  res.header('Access-Control-Max-Age', '86400');
+  res.status(200).send();
+});
+
+// Persist a completed quote submission. Called from quote.html alongside
+// the existing Formspree POST so we get DB rows AND email notifications.
+app.post('/api/save-quote', rateLimiter, async (req, res) => {
+  setCORSHeaders(req, res);
+  try {
+    const body = req.body || {};
+    if (!body.contactEmail && !body.description) {
+      return res.status(400).json({ error: 'contactEmail or description is required' });
+    }
+    const result = await saveQuoteSubmission({
+      ...body,
+      ip: req.ip || req.connection?.remoteAddress,
+      userAgent: req.get('user-agent') || '',
+      referer: req.get('referer') || '',
+    });
+    res.json({ ok: true, id: result.id });
+  } catch (error) {
+    console.error('save-quote error:', error);
+    setCORSHeaders(req, res);
+    if (error.code === 'NOT_CONFIGURED') {
+      return res.status(503).json({ error: 'Quote store not configured' });
+    }
+    res.status(500).json({
+      error: 'Failed to save quote',
+      details: process.env.NODE_ENV === 'development' ? error.detail || error.message : undefined,
+    });
+  }
+});
+
+// Admin: list quote submissions. Reuses the existing adminAuth Bearer pattern.
+app.get('/admin/quotes', adminAuth, async (req, res) => {
+  setCORSHeaders(req, res);
+  try {
+    const list = await listQuoteSubmissions({
+      limit: parseInt(req.query.limit, 10) || 50,
+      status: req.query.status,
+    });
+    res.json({ quotes: list });
+  } catch (error) {
+    console.error('admin/quotes error:', error);
+    setCORSHeaders(req, res);
+    res.status(500).json({ error: 'Failed to list quotes' });
+  }
+});
+
+// Admin: update status / notes on a quote.
+app.post('/admin/quotes/:id', adminAuth, async (req, res) => {
+  setCORSHeaders(req, res);
+  try {
+    const { status, notes } = req.body || {};
+    const updated = await updateQuoteStatus({ id: req.params.id, status, notes });
+    res.json({ ok: true, updated });
+  } catch (error) {
+    console.error('admin/quotes update error:', error);
+    setCORSHeaders(req, res);
+    res.status(500).json({ error: 'Failed to update quote' });
+  }
 });
 
 // Retailer product search via SerpAPI (mock fallback if no key).

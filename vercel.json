@@ -95,6 +95,18 @@
       "destination": "/api/index"
     },
     {
+      "source": "/api/save-quote",
+      "destination": "/api/index"
+    },
+    {
+      "source": "/admin/quotes",
+      "destination": "/api/index"
+    },
+    {
+      "source": "/admin/quotes/:id",
+      "destination": "/api/index"
+    },
+    {
       "source": "/api/product-search",
       "destination": "/api/index"
     },

@@ -634,6 +634,10 @@ async function loadToolsAndMaterials() {
       e.status = response.status;
       throw e;
     }
+    // Stash the AI-recommended list on quoteData so it lands in the DB
+    // payload when the user submits the contact form.
+    quoteData.recommendedMaterials = data.materials || null;
+    quoteData.recommendedTools = data.tools || null;
     renderToolMaterialPane(materialsPane, data.materials || [], 'materials');
     renderToolMaterialPane(toolsPane, data.tools || [], 'tools');
     bindTmTabs();
@@ -767,37 +771,66 @@ function bindTmTabs() {
   });
 }
 
-// Form Submission
-document.getElementById('quoteForm')?.addEventListener('submit', function(e) {
+// Form Submission — dual-write to Formspree (email) AND /api/save-quote (DB).
+// We treat success as "at least one of the two succeeded" so an outage in
+// one path doesn't lose a lead. Most of the time both succeed.
+document.getElementById('quoteForm')?.addEventListener('submit', function (e) {
   e.preventDefault();
-  
-  const formData = new FormData(this);
-  
-  // Add AI-generated data
+
+  const form = this;
+  const formData = new FormData(form);
   formData.append('subject', 'AI-Powered Quote Request');
   formData.append('estimated_cost', document.getElementById('form_estimated_cost').value);
-  
-  // Submit to Formspree
-  fetch(this.action, {
+
+  const BACKEND_API_URL = window.BACKEND_API_URL || 'http://localhost:3001';
+
+  // Build the structured payload for the DB. quoteData has the full wizard
+  // state including AI outputs and clarifications.
+  const dbPayload = {
+    projectType:           quoteData.projectType,
+    borough:               quoteData.borough,
+    squareFootage:         quoteData.squareFootage,
+    budgetRange:           quoteData.budgetRange,
+    timeline:              quoteData.timeline,
+    description:           quoteData.description,
+    clarifications:        quoteData.clarifications,
+    aiAnalysis:            quoteData.aiAnalysis,
+    estimatedCost:         document.getElementById('form_estimated_cost').value,
+    recommendedMaterials:  quoteData.recommendedMaterials || null,
+    recommendedTools:      quoteData.recommendedTools || null,
+    contactName:           formData.get('name'),
+    contactEmail:          formData.get('email'),
+    contactPhone:          formData.get('phone'),
+    contactMethod:         formData.get('contact_method'),
+    source:                'quote.html',
+  };
+
+  const formspreeP = fetch(form.action, {
     method: 'POST',
     body: formData,
-    headers: {
-      'Accept': 'application/json'
+    headers: { Accept: 'application/json' },
+  }).then((r) => { if (!r.ok) throw new Error('formspree ' + r.status); return r; });
+
+  const dbP = fetch(`${BACKEND_API_URL}/api/save-quote`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify(dbPayload),
+  }).then((r) => { if (!r.ok) throw new Error('save-quote ' + r.status); return r; });
+
+  Promise.allSettled([formspreeP, dbP]).then((results) => {
+    const anyOk = results.some((r) => r.status === 'fulfilled');
+    const allFailed = results.every((r) => r.status === 'rejected');
+    results.forEach((r) => {
+      if (r.status === 'rejected') console.warn('quote submission path failed', r.reason);
+    });
+
+    if (allFailed) {
+      alert("There was an error submitting your request. Please try again or call us directly at +1 (646) 444-2434");
+      return;
     }
-  })
-  .then(response => {
-    if (response.ok) {
-      alert('Thank you! We\'ve received your quote request. Our team will contact you shortly for a detailed on-site consultation.');
-      this.reset();
-      // Optionally redirect
-      // window.location.href = 'contact.html';
-    } else {
-      throw new Error('Form submission failed');
-    }
-  })
-  .catch(error => {
-    console.error('Error:', error);
-    alert('There was an error submitting your request. Please try again or call us directly at +1 (646) 444-2434');
+    alert("Thank you! We've received your quote request. Our team will contact you shortly for a detailed on-site consultation.");
+    form.reset();
+    // Keep the structured AI output visible so the user can still review it.
   });
 });
 

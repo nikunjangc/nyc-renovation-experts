@@ -8,6 +8,7 @@ const { logUsage, getUsageStats, getRecentLogs, clearLogs, calculateCost } = req
 const { recommendProducts } = require('./product-recommender');
 const { searchProducts } = require('./product-search');
 const { clarifyProject } = require('./project-clarifier');
+const { saveQuoteSubmission, listQuoteSubmissions, updateQuoteStatus } = require('../api/quote-store');
 require('dotenv').config();
 
 const app = express();
@@ -436,6 +437,53 @@ app.post('/api/recommend-products', rateLimiter, async (req, res) => {
       error: 'Failed to recommend products',
       details: process.env.NODE_ENV === 'development' ? error.detail || error.message : undefined,
     });
+  }
+});
+
+// ===== Quote persistence (Supabase) =====
+app.post('/api/save-quote', rateLimiter, async (req, res) => {
+  try {
+    const body = req.body || {};
+    if (!body.contactEmail && !body.description) {
+      return res.status(400).json({ error: 'contactEmail or description is required' });
+    }
+    const result = await saveQuoteSubmission({
+      ...body,
+      ip: req.ip || req.connection?.remoteAddress,
+      userAgent: req.get('user-agent') || '',
+      referer: req.get('referer') || '',
+    });
+    res.json({ ok: true, id: result.id });
+  } catch (error) {
+    console.error('save-quote error:', error);
+    if (error.code === 'NOT_CONFIGURED') {
+      return res.status(503).json({ error: 'Quote store not configured' });
+    }
+    res.status(500).json({ error: 'Failed to save quote' });
+  }
+});
+
+app.get('/admin/quotes', adminAuth, async (req, res) => {
+  try {
+    const list = await listQuoteSubmissions({
+      limit: parseInt(req.query.limit, 10) || 50,
+      status: req.query.status,
+    });
+    res.json({ quotes: list });
+  } catch (error) {
+    console.error('admin/quotes error:', error);
+    res.status(500).json({ error: 'Failed to list quotes' });
+  }
+});
+
+app.post('/admin/quotes/:id', adminAuth, async (req, res) => {
+  try {
+    const { status, notes } = req.body || {};
+    const updated = await updateQuoteStatus({ id: req.params.id, status, notes });
+    res.json({ ok: true, updated });
+  } catch (error) {
+    console.error('admin/quotes update error:', error);
+    res.status(500).json({ error: 'Failed to update quote' });
   }
 });
 

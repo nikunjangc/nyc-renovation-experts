@@ -43,3 +43,16 @@ AMAZON_ASSOCIATE_TAG=
 HOMEDEPOT_AFFILIATE_PREFIX=
 LOWES_AFFILIATE_PREFIX=
 WAYFAIR_AFFILIATE_PREFIX=
+
+# ===== Supabase (quote submission storage) =====
+# Project URL and keys from your Supabase project: Settings -> API
+# - SUPABASE_URL: the Project URL (e.g. https://xxxxx.supabase.co)
+# - SUPABASE_ANON_KEY: the "anon public" key (currently unused server-side
+#   but kept here for future frontend-only reads if we add RLS-friendly
+#   queries)
+# - SUPABASE_SERVICE_ROLE_KEY: the "service_role secret" key. THIS BYPASSES
+#   Row Level Security — guard it like an admin password. Server-side only,
+#   never expose to the frontend.
+SUPABASE_URL=
+SUPABASE_ANON_KEY=
+SUPABASE_SERVICE_ROLE_KEY=
