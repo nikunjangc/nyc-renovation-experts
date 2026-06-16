@@ -8,7 +8,6 @@ const { logUsage, getUsageStats, getRecentLogs, clearLogs, calculateCost } = req
 const { recommendProducts } = require('./product-recommender');
 const { searchProducts } = require('./product-search');
 const { clarifyProject } = require('./project-clarifier');
-const { getProductDetail } = require('./product-detail');
 require('dotenv').config();
 
 const app = express();
@@ -435,23 +434,6 @@ app.post('/api/recommend-products', rateLimiter, async (req, res) => {
     console.error('recommend-products error:', error);
     res.status(500).json({
       error: 'Failed to recommend products',
-      details: process.env.NODE_ENV === 'development' ? error.detail || error.message : undefined,
-    });
-  }
-});
-
-// Resolve a Google Shopping product_id to direct retailer URLs (cached 7d).
-app.post('/api/product-detail', rateLimiter, async (req, res) => {
-  try {
-    const { productId } = req.body || {};
-    if (!productId) return res.status(400).json({ error: 'productId is required' });
-    const data = await getProductDetail(productId);
-    if (!data) return res.status(200).json({ productId, sellers: [], available: false });
-    res.json({ ...data, available: true });
-  } catch (error) {
-    console.error('product-detail error:', error);
-    res.status(500).json({
-      error: 'Product detail lookup failed',
       details: process.env.NODE_ENV === 'development' ? error.detail || error.message : undefined,
     });
   }

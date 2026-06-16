@@ -8,6 +8,31 @@
 
 const { applyAffiliate } = require('./affiliate');
 
+// Direct retailer search URLs.
+// SerpAPI's google_shopping `link` field points at Google Shopping
+// product pages (one extra click for the user). Google deprecated the
+// product-detail API in 2024, so SerpAPI can no longer resolve a
+// product_id into a direct retailer URL. As a pragmatic middle ground
+// we send users to the retailer's OWN search page for the product title
+// — one fewer hop than Google Shopping, no external API call, no quota.
+const RETAILER_SEARCH_URLS = {
+  'home depot':   (q) => `https://www.homedepot.com/s/${encodeURIComponent(q)}`,
+  homedepot:      (q) => `https://www.homedepot.com/s/${encodeURIComponent(q)}`,
+  lowes:          (q) => `https://www.lowes.com/search?searchTerm=${encodeURIComponent(q)}`,
+  "lowe's":       (q) => `https://www.lowes.com/search?searchTerm=${encodeURIComponent(q)}`,
+  amazon:         (q) => `https://www.amazon.com/s?k=${encodeURIComponent(q)}`,
+  ikea:           (q) => `https://www.ikea.com/us/en/search/?q=${encodeURIComponent(q)}`,
+  wayfair:        (q) => `https://www.wayfair.com/keyword.php?keyword=${encodeURIComponent(q)}`,
+  menards:        (q) => `https://www.menards.com/main/search.html?search=${encodeURIComponent(q)}`,
+  'ace hardware': (q) => `https://www.acehardware.com/search?query=${encodeURIComponent(q)}`,
+  'build.com':    (q) => `https://www.build.com/search?term=${encodeURIComponent(q)}`,
+};
+
+function directRetailerLink(retailer, title) {
+  const builder = RETAILER_SEARCH_URLS[(retailer || '').toLowerCase()];
+  return builder ? builder(title || '') : null;
+}
+
 const PREFERRED_RETAILERS = [
   'home depot',
   'homedepot',
@@ -63,17 +88,22 @@ function parsePrice(p) {
 function normalizeResult(r) {
   const retailer = normalizeRetailer(r.source || r.seller);
   const price = parsePrice(r.extracted_price ?? r.price);
+  const title = r.title || '';
+  const googleShoppingLink = r.product_link || r.link || '';
+  // Prefer a direct retailer search URL when we recognize the retailer; fall
+  // back to the Google Shopping link otherwise.
+  const directLink = directRetailerLink(retailer, title);
+  const finalLink = applyAffiliate(directLink || googleShoppingLink, retailer);
   return {
-    title: r.title || '',
+    title,
     price,
     priceDisplay: r.price || (price != null ? `$${price.toFixed(2)}` : null),
     retailer,
     rating: r.rating ?? null,
     reviews: r.reviews ?? null,
     thumbnail: r.thumbnail || r.image || null,
-    link: applyAffiliate(r.product_link || r.link || '', retailer),
-    // product_id is fed to /api/product-detail on click so we can resolve the
-    // direct retailer URL (bypassing Google Shopping). Missing for mock data.
+    link: finalLink,
+    googleShoppingLink, // kept so the frontend can offer it as a secondary
     productId: r.product_id || null,
     delivery: r.delivery || null,
     snippet: r.snippet || '',

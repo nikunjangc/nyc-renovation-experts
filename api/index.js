@@ -7,7 +7,6 @@ const { logUsage, getUsageStats, getRecentLogs, clearLogs, calculateCost } = req
 const { recommendProducts } = require('../backend/product-recommender');
 const { searchProducts } = require('../backend/product-search');
 const { clarifyProject } = require('../backend/project-clarifier');
-const { getProductDetail } = require('../backend/product-detail');
 require('dotenv').config();
 
 const app = express();
@@ -727,48 +726,6 @@ app.options('/api/product-search', (req, res) => {
   res.header('Access-Control-Allow-Headers', 'Content-Type, Authorization, X-Requested-With');
   res.header('Access-Control-Max-Age', '86400');
   res.status(200).send();
-});
-
-// Explicit OPTIONS handler for /api/product-detail
-app.options('/api/product-detail', (req, res) => {
-  const origin = req.get('origin') || req.headers.origin;
-  if (origin) {
-    res.header('Access-Control-Allow-Origin', origin);
-    res.header('Access-Control-Allow-Credentials', 'true');
-  } else {
-    res.header('Access-Control-Allow-Origin', '*');
-  }
-  res.header('Access-Control-Allow-Methods', 'GET, POST, PUT, DELETE, OPTIONS');
-  res.header('Access-Control-Allow-Headers', 'Content-Type, Authorization, X-Requested-With');
-  res.header('Access-Control-Max-Age', '86400');
-  res.status(200).send();
-});
-
-// Resolve a Google Shopping product_id to direct retailer URLs (bypasses
-// the Google Shopping intermediary). Cached 7d per product_id.
-app.post('/api/product-detail', rateLimiter, async (req, res) => {
-  setCORSHeaders(req, res);
-  try {
-    const { productId } = req.body || {};
-    if (!productId) {
-      setCORSHeaders(req, res);
-      return res.status(400).json({ error: 'productId is required' });
-    }
-    const data = await getProductDetail(productId);
-    if (!data) {
-      // No SERPAPI_KEY set, or no detail available — caller falls back to
-      // the original link.
-      return res.status(200).json({ productId, sellers: [], available: false });
-    }
-    res.json({ ...data, available: true });
-  } catch (error) {
-    console.error('product-detail error:', error);
-    setCORSHeaders(req, res);
-    res.status(500).json({
-      error: 'Product detail lookup failed',
-      upstream_message: (error.detail || error.message || '').toString().slice(0, 400),
-    });
-  }
 });
 
 // Retailer product search via SerpAPI (mock fallback if no key).

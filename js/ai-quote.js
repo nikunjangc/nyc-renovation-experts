@@ -742,10 +742,7 @@ function renderProducts(container, products, source) {
         ${escapeHtml(p.priceDisplay || (p.price != null ? '$' + p.price.toFixed(2) : 'See price'))}
         ${cheapest != null && p.price === cheapest ? ' <span style="font-size:0.7rem;color:#28a745;">BEST</span>' : ''}
       </div>
-      <a href="${escapeHtml(p.link || '#')}" target="_blank" rel="noopener noreferrer"
-         data-view-link
-         data-product-id="${escapeHtml(p.productId || '')}"
-         data-fallback="${escapeHtml(p.link || '')}">View</a>
+      <a href="${escapeHtml(p.link || '#')}" target="_blank" rel="noopener noreferrer">View</a>
     </div>
   `).join('');
 
@@ -753,43 +750,6 @@ function renderProducts(container, products, source) {
     ? `<div class="tm-empty" style="grid-column:1/-1;padding:6px;">Showing sample data — live retailer search activates once SERPAPI_KEY is configured.</div>`
     : '';
   container.innerHTML = cards + note;
-
-  // Intercept View clicks: when we have a product_id, fetch the direct retailer
-  // URL via /api/product-detail and open THAT instead of the Google Shopping
-  // intermediary. If anything fails, the anchor's original href still opens.
-  container.querySelectorAll('[data-view-link]').forEach((a) => {
-    a.addEventListener('click', (e) => resolveDirectLink(e, a));
-  });
-}
-
-async function resolveDirectLink(event, anchor) {
-  const productId = anchor.dataset.productId;
-  const fallbackUrl = anchor.dataset.fallback;
-  if (!productId) return; // mock data or pre-direct-link result — let default href open
-
-  event.preventDefault();
-  const originalText = anchor.textContent;
-  anchor.textContent = 'Loading…';
-  anchor.style.pointerEvents = 'none';
-
-  const BACKEND_API_URL = window.BACKEND_API_URL || 'http://localhost:3001';
-  try {
-    const response = await fetch(`${BACKEND_API_URL}/api/product-detail`, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ productId }),
-    });
-    const data = await response.json().catch(() => ({}));
-    const sellers = (data && data.sellers) || [];
-    const directUrl = sellers.length ? sellers[0].link : null;
-    window.open(directUrl || fallbackUrl || '#', '_blank', 'noopener,noreferrer');
-  } catch (err) {
-    console.warn('product-detail lookup failed, using fallback link', err);
-    window.open(fallbackUrl || '#', '_blank', 'noopener,noreferrer');
-  } finally {
-    anchor.textContent = originalText;
-    anchor.style.pointerEvents = '';
-  }
 }
 
 function bindTmTabs() {
