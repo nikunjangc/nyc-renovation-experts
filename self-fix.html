@@ -1,147 +1,406 @@
 <!DOCTYPE html>
 <html lang="en">
-<head>
-    <meta charset="utf-8">
-    <title>Self-Fix Assistant — NYC Renovation Experts</title>
-    <meta content="width=device-width, initial-scale=1.0" name="viewport">
-    <meta content="AI troubleshooting assistant for safe, minor electrical fixes. Dangerous issues are routed straight to a licensed electrician." name="description">
+  <head>
+    <base href="/">
+    <meta charset="utf-8" />
+    <title>Self-Fix Assistant | NYC Renovation Experts</title>
+    <meta content="width=device-width, initial-scale=1.0" name="viewport" />
+    <meta content="AI troubleshooting assistant for safe, minor electrical fixes. Anything dangerous is routed straight to a licensed electrician." name="description" />
+    <meta content="self-fix, electrical troubleshooting, NYC electrician, safety assistant, AI help" name="keywords" />
 
-    <!-- Reuse the site's fonts/icons for visual consistency -->
-    <link href="https://fonts.googleapis.com" rel="preconnect">
-    <link href="https://fonts.gstatic.com" rel="preconnect" crossorigin>
-    <link href="https://fonts.googleapis.com/css2?family=Jost:wght@400;500;600;700&display=swap" rel="stylesheet">
-    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.15.4/css/all.min.css" rel="stylesheet">
+    <!-- Favicon -->
+    <link href="img/favicon.ico" rel="icon" />
+
+    <!-- Google Web Fonts -->
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link
+      href="https://fonts.googleapis.com/css2?family=Roboto:wght@400;500&family=Poppins:wght@600;700&display=swap"
+      rel="stylesheet"
+    />
+
+    <!-- Icon Font Stylesheet -->
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.10.0/css/all.min.css" rel="stylesheet" />
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.4.1/font/bootstrap-icons.css" rel="stylesheet" />
+
+    <!-- Libraries Stylesheet -->
+    <link href="lib/animate/animate.min.css" rel="stylesheet" />
+    <link href="lib/owlcarousel/assets/owl.carousel.min.css" rel="stylesheet" />
+
+    <!-- Customized Bootstrap Stylesheet -->
+    <link href="css/bootstrap.min.css" rel="stylesheet" />
+
+    <!-- Template Stylesheet -->
+    <link href="css/style.css" rel="stylesheet" />
 
     <style>
-        :root {
-            --sf-primary: #06A3DA;
-            --sf-secondary: #34AD54;
-            --sf-dark: #091E3E;
-            --sf-danger: #d9534f;
-            --sf-light: #f4f7fe;
-        }
-        * { box-sizing: border-box; }
-        body {
-            margin: 0;
-            font-family: 'Jost', sans-serif;
-            color: var(--sf-dark);
-            background: linear-gradient(180deg, var(--sf-light), #fff);
-        }
-        .sf-topbar {
-            display: flex; align-items: center; justify-content: space-between;
-            padding: 16px 24px; background: var(--sf-dark); color: #fff;
-        }
-        .sf-topbar a { color: #fff; text-decoration: none; }
-        .sf-brand { font-weight: 700; font-size: 1.15rem; }
-        .sf-brand i { color: var(--sf-primary); margin-right: 8px; }
-        .sf-topbar .sf-nav a { margin-left: 20px; opacity: .85; font-size: .95rem; }
-        .sf-topbar .sf-nav a:hover { opacity: 1; }
-
-        .sf-hero { text-align: center; padding: 36px 20px 8px; }
-        .sf-hero h1 { margin: 0 0 8px; font-size: 1.9rem; }
-        .sf-hero p { margin: 0 auto; max-width: 620px; color: #5a6a85; }
-        .sf-safety-note {
-            display: inline-flex; align-items: center; gap: 8px;
-            margin-top: 14px; padding: 8px 14px; border-radius: 30px;
-            background: #fff3cd; color: #856404; font-size: .85rem; border: 1px solid #ffe69c;
-        }
-
-        .sf-chat {
-            max-width: 720px; margin: 22px auto 60px; background: #fff;
-            border-radius: 16px; box-shadow: 0 16px 40px rgba(9,30,62,.12);
-            overflow: hidden; display: flex; flex-direction: column; height: 70vh; min-height: 460px;
-        }
-        .sf-chat-head {
-            background: var(--sf-primary); color: #fff; padding: 14px 20px;
-            display: flex; align-items: center; gap: 10px; font-weight: 600;
-        }
-        .sf-chat-head .sf-dot { width: 9px; height: 9px; border-radius: 50%; background: #7CFC9B; box-shadow: 0 0 0 3px rgba(124,252,155,.3); }
-
-        #chatMessages { flex: 1; overflow-y: auto; padding: 20px; background: var(--sf-light); }
-        .sf-msg { display: flex; flex-direction: column; margin-bottom: 14px; max-width: 85%; }
-        .sf-user { margin-left: auto; align-items: flex-end; }
-        .sf-assistant { margin-right: auto; align-items: flex-start; }
-        .sf-bubble {
-            padding: 11px 15px; border-radius: 14px; line-height: 1.5; font-size: .96rem;
-            white-space: normal; word-wrap: break-word;
-        }
-        .sf-user .sf-bubble { background: var(--sf-primary); color: #fff; border-bottom-right-radius: 4px; }
-        .sf-assistant .sf-bubble { background: #fff; border: 1px solid #e3e9f4; border-bottom-left-radius: 4px; }
-        .sf-danger .sf-bubble { background: #fdecec; border-color: #f5c2c0; color: #842029; }
-
-        .sf-book-btn {
-            margin-top: 10px; display: inline-block; text-decoration: none;
-            background: var(--sf-danger); color: #fff !important; padding: 10px 18px;
-            border-radius: 30px; font-weight: 600; font-size: .92rem;
-        }
-        .sf-book-btn:hover { background: #c9302c; }
-
-        .sf-typing .sf-bubble { display: inline-flex; gap: 4px; }
-        .sf-typing span { width: 7px; height: 7px; border-radius: 50%; background: #b8c4da; animation: sf-blink 1.2s infinite; }
-        .sf-typing span:nth-child(2) { animation-delay: .2s; }
-        .sf-typing span:nth-child(3) { animation-delay: .4s; }
-        @keyframes sf-blink { 0%,80%,100% { opacity: .3; } 40% { opacity: 1; } }
-
-        .sf-examples { padding: 10px 20px 0; background: var(--sf-light); display: flex; flex-wrap: wrap; gap: 8px; }
-        .sf-examples button {
-            border: 1px solid #cfd9ec; background: #fff; color: var(--sf-dark);
-            border-radius: 20px; padding: 6px 12px; font-size: .82rem; cursor: pointer; font-family: inherit;
-        }
-        .sf-examples button:hover { border-color: var(--sf-primary); color: var(--sf-primary); }
-
-        #chatForm { display: flex; gap: 10px; padding: 14px 16px; border-top: 1px solid #e6ebf5; background: #fff; }
-        #chatInput {
-            flex: 1; border: 1px solid #d2dbed; border-radius: 30px; padding: 12px 18px;
-            font-size: .96rem; font-family: inherit; outline: none;
-        }
-        #chatInput:focus { border-color: var(--sf-primary); }
-        #chatSend {
-            border: none; background: var(--sf-primary); color: #fff; border-radius: 30px;
-            padding: 0 24px; font-weight: 600; cursor: pointer; font-family: inherit; min-width: 80px;
-        }
-        #chatSend:disabled { opacity: .6; cursor: default; }
-        .sf-disclaimer { text-align: center; color: #8794ab; font-size: .78rem; padding: 0 20px 30px; max-width: 720px; margin: -40px auto 0; }
+      /* Self-Fix chat — matches the site's Bootstrap/orange brand. */
+      .sf-card {
+        background: #fff;
+        border-radius: 16px;
+        box-shadow: 0 12px 40px rgba(0, 0, 0, 0.08);
+        overflow: hidden;
+      }
+      .sf-chat-head {
+        background: #FDA12B;
+        color: #fff;
+        padding: 14px 22px;
+        display: flex;
+        align-items: center;
+        gap: 10px;
+        font-weight: 600;
+      }
+      .sf-status-dot {
+        width: 9px;
+        height: 9px;
+        border-radius: 50%;
+        background: #7CFC9B;
+        box-shadow: 0 0 0 3px rgba(124, 252, 155, 0.3);
+      }
+      #chatMessages {
+        background: #f8f9fa;
+        padding: 22px;
+        min-height: 360px;
+        max-height: 60vh;
+        overflow-y: auto;
+      }
+      /* Wrapper is a column flex so the bubble + (optional) book CTA stack
+         vertically. Whole wrap sits left/right of the chat via margin auto. */
+      .sf-msg {
+        margin-bottom: 14px;
+        display: flex;
+        flex-direction: column;
+        max-width: 85%;
+      }
+      .sf-msg.sf-user { margin-left: auto; align-items: flex-end; }
+      .sf-msg.sf-assistant { margin-right: auto; align-items: flex-start; }
+      .sf-bubble {
+        padding: 12px 16px;
+        border-radius: 14px;
+        line-height: 1.5;
+        font-size: 0.95rem;
+        word-wrap: break-word;
+      }
+      .sf-user .sf-bubble {
+        background: #FDA12B;
+        color: #fff;
+        border-bottom-right-radius: 4px;
+      }
+      .sf-assistant .sf-bubble {
+        background: #fff;
+        border: 1px solid #e5e7eb;
+        border-bottom-left-radius: 4px;
+      }
+      .sf-danger .sf-bubble {
+        background: #fde8e8;
+        border-color: #f5c2c0;
+        color: #842029;
+      }
+      .sf-book-btn {
+        margin-top: 8px;
+        display: inline-block;
+        text-decoration: none;
+        background: #dc3545;
+        color: #fff !important;
+        padding: 10px 18px;
+        border-radius: 30px;
+        font-weight: 600;
+        font-size: 0.9rem;
+      }
+      .sf-book-btn:hover { background: #c9302c; color: #fff !important; }
+      .sf-typing .sf-bubble {
+        display: inline-flex;
+        gap: 4px;
+        padding: 14px 16px;
+      }
+      .sf-typing span {
+        width: 7px;
+        height: 7px;
+        border-radius: 50%;
+        background: #FDA12B;
+        animation: sf-blink 1.2s infinite;
+      }
+      .sf-typing span:nth-child(2) { animation-delay: 0.2s; }
+      .sf-typing span:nth-child(3) { animation-delay: 0.4s; }
+      @keyframes sf-blink {
+        0%, 80%, 100% { opacity: 0.3; }
+        40% { opacity: 1; }
+      }
+      .sf-examples {
+        padding: 14px 20px;
+        background: #f8f9fa;
+        border-top: 1px solid #e5e7eb;
+        display: flex;
+        flex-wrap: wrap;
+        gap: 8px;
+      }
+      .sf-example-btn {
+        border: 1.5px solid #e5e7eb;
+        background: #fff;
+        color: #495057;
+        border-radius: 20px;
+        padding: 7px 14px;
+        font-size: 0.85rem;
+        cursor: pointer;
+        font-family: inherit;
+        transition: all 0.15s;
+      }
+      .sf-example-btn:hover {
+        border-color: #FDA12B;
+        color: #FDA12B;
+      }
+      #chatForm {
+        display: flex;
+        gap: 10px;
+        padding: 16px 20px;
+        border-top: 1px solid #e5e7eb;
+        background: #fff;
+      }
+      #chatInput {
+        flex: 1;
+        border: 1.5px solid #d2dbed;
+        border-radius: 30px;
+        padding: 12px 20px;
+        font-size: 0.95rem;
+        font-family: inherit;
+        outline: none;
+      }
+      #chatInput:focus { border-color: #FDA12B; }
+      #chatSend {
+        border: none;
+        background: #FDA12B;
+        color: #fff;
+        border-radius: 30px;
+        padding: 0 28px;
+        font-weight: 600;
+        cursor: pointer;
+        font-family: inherit;
+        min-width: 88px;
+        transition: background 0.15s;
+      }
+      #chatSend:hover:not(:disabled) { background: #f89e2b; }
+      #chatSend:disabled { opacity: 0.5; cursor: not-allowed; }
+      .sf-safety-banner {
+        background: #fff3cd;
+        border-left: 4px solid #ffc107;
+        padding: 14px 18px;
+        border-radius: 8px;
+        color: #664d03;
+        font-size: 0.9rem;
+        margin-bottom: 24px;
+      }
+      .sf-safety-banner strong { color: #5c3d01; }
     </style>
-</head>
-<body>
-    <div class="sf-topbar">
-        <a class="sf-brand" href="index.html"><i class="fa fa-bolt"></i>NYC Renovation Experts</a>
-        <nav class="sf-nav">
-            <a href="index.html">Home</a>
-            <a href="service.html">Services</a>
-            <a href="appointment.html">Book Now</a>
-        </nav>
+  </head>
+
+  <body>
+    <!-- Spinner Start -->
+    <div
+      id="spinner"
+      class="show bg-white position-fixed translate-middle w-100 vh-100 top-50 start-50 d-flex align-items-center justify-content-center"
+    >
+      <div class="spinner-grow text-primary" role="status"></div>
     </div>
+    <!-- Spinner End -->
 
-    <section class="sf-hero">
-        <h1>Self-Fix Assistant</h1>
-        <p>Describe your electrical problem and I'll walk you through safe, minor fixes — or connect you with a licensed electrician if it's not safe to DIY.</p>
-        <div class="sf-safety-note"><i class="fa fa-shield-alt"></i> Safety first: dangerous issues are routed straight to a pro.</div>
-    </section>
-
-    <div class="sf-chat">
-        <div class="sf-chat-head"><span class="sf-dot"></span> SafetyBot · Electrical troubleshooting</div>
-        <div id="chatMessages"></div>
-        <div class="sf-examples">
-            <button data-example="My living room outlets aren't working">Outlets not working</button>
-            <button data-example="How do I reset a tripped breaker?">Reset a breaker</button>
-            <button data-example="The bathroom GFCI outlet has no power">GFCI no power</button>
-            <button data-example="How do I change a light bulb in a ceiling fixture?">Change a bulb</button>
+    <!-- Topbar Start -->
+    <div class="container-fluid bg-light p-0">
+      <div class="row gx-0 d-none d-lg-flex">
+        <div class="col-lg-7 px-5 text-start">
+          <div class="h-100 d-inline-flex align-items-center border-start border-end px-3">
+            <small class="fa fa-phone-alt me-2"></small>
+            <small>+1 (646) 444-2434</small>
+          </div>
+          <div class="h-100 d-inline-flex align-items-center border-end px-3">
+            <small class="far fa-envelope-open me-2"></small>
+            <small>info@nycrenovationexperts.com</small>
+          </div>
+          <div class="h-100 d-inline-flex align-items-center border-end px-3">
+            <small class="far fa-clock me-2"></small>
+            <small>Mon - Fri : 09 AM - 09 PM</small>
+          </div>
         </div>
-        <form id="chatForm" autocomplete="off">
-            <input id="chatInput" type="text" placeholder="Describe what's happening…" aria-label="Describe your electrical issue" maxlength="500">
-            <button id="chatSend" type="submit">Send</button>
-        </form>
+        <div class="col-lg-5 px-5 text-end">
+          <div class="h-100 d-inline-flex align-items-center">
+            <a class="btn btn-square border-end border-start" href="https://www.facebook.com/nycrenovationexperts" target="_blank" rel="noopener noreferrer" aria-label="Follow us on Facebook"><i class="fab fa-facebook-f"></i></a>
+            <a class="btn btn-square border-end" href="https://www.twitter.com/nycrenovationexperts" target="_blank" rel="noopener noreferrer" aria-label="Follow us on Twitter"><i class="fab fa-twitter"></i></a>
+            <a class="btn btn-square border-end" href="https://www.linkedin.com/company/nycrenovationexperts" target="_blank" rel="noopener noreferrer" aria-label="Follow us on LinkedIn"><i class="fab fa-linkedin-in"></i></a>
+            <a class="btn btn-square border-end" href="https://www.instagram.com/nycrenovationexperts" target="_blank" rel="noopener noreferrer" aria-label="Follow us on Instagram"><i class="fab fa-instagram"></i></a>
+          </div>
+        </div>
+      </div>
     </div>
-    <p class="sf-disclaimer">SafetyBot provides general guidance for minor tasks only and is not a substitute for a licensed electrician. If you see sparks, smoke, or fire, stop and call 911.</p>
+    <!-- Topbar End -->
+
+    <!-- Navbar Start -->
+    <nav class="navbar navbar-expand-lg bg-white navbar-light sticky-top px-4 px-lg-5 py-lg-0">
+      <a href="index.html" class="navbar-brand d-flex align-items-center">
+        <h1 class="m-0"><i class="fa fa-building text-primary me-3"></i>NYC Renovation Experts</h1>
+      </a>
+      <button type="button" class="navbar-toggler" data-bs-toggle="collapse" data-bs-target="#navbarCollapse">
+        <span class="navbar-toggler-icon"></span>
+      </button>
+      <div class="collapse navbar-collapse" id="navbarCollapse">
+        <div class="navbar-nav ms-auto py-3 py-lg-0">
+          <a href="index.html" class="nav-item nav-link">Home</a>
+          <a href="about.html" class="nav-item nav-link">About Us</a>
+          <a href="service.html" class="nav-item nav-link">Our Services</a>
+          <div class="nav-item dropdown">
+            <a href="#" class="nav-link dropdown-toggle" data-bs-toggle="dropdown">Pages</a>
+            <div class="dropdown-menu bg-light m-0">
+              <a href="feature.html" class="dropdown-item">Features</a>
+              <a href="appointment.html" class="dropdown-item">Appointment</a>
+              <a href="team.html" class="dropdown-item">Our Team</a>
+              <a href="testimonial.html" class="dropdown-item">Testimonial</a>
+              <a href="404.html" class="dropdown-item">404 Page</a>
+            </div>
+          </div>
+          <a href="self-fix.html" class="nav-item nav-link active">Self-Fix</a>
+          <a href="contact.html" class="nav-item nav-link">Contact Us</a>
+          <a href="quote.html" class="nav-item nav-link">Get Free Quote</a>
+        </div>
+      </div>
+    </nav>
+    <!-- Navbar End -->
+
+    <!-- Page Header Start -->
+    <div class="container-fluid page-header py-5 mb-5 wow fadeIn" data-wow-delay="0.1s">
+      <div class="container text-center py-5">
+        <h1 class="display-4 text-white animated slideInDown mb-4">Self-Fix Assistant</h1>
+        <nav aria-label="breadcrumb animated slideInDown">
+          <ol class="breadcrumb justify-content-center mb-0">
+            <li class="breadcrumb-item"><a class="text-white" href="index.html">Home</a></li>
+            <li class="breadcrumb-item"><a class="text-white" href="#">Pages</a></li>
+            <li class="breadcrumb-item text-primary active" aria-current="page">Self-Fix</li>
+          </ol>
+        </nav>
+      </div>
+    </div>
+    <!-- Page Header End -->
+
+    <!-- Self-Fix Section Start -->
+    <div class="container py-5">
+      <div class="row justify-content-center">
+        <div class="col-lg-9">
+          <div class="text-center mb-4">
+            <span class="bg-light text-primary px-3 py-2 rounded-pill" style="font-size: 0.85rem; font-weight: 600;">
+              <i class="fas fa-shield-alt me-2"></i>Safety-first AI assistant
+            </span>
+            <h2 class="mt-3 mb-2">Try a self-fix before booking</h2>
+            <p class="text-muted">
+              For minor, safe electrical issues — resetting a tripped breaker, GFCI outlet, swapping a bulb, replacing a like-for-like fuse. Anything dangerous gets routed straight to a licensed electrician.
+            </p>
+          </div>
+
+          <div class="sf-safety-banner">
+            <strong>Read first.</strong> SafetyBot only suggests safe DIY actions. If you see sparks, smoke, burning smell, exposed wires, shocks, or water near electricity — stop, keep clear of the area, and call 911 if there's smoke or fire. By using this tool you agree it's informational only and not a substitute for a licensed electrician.
+          </div>
+
+          <div class="sf-card mb-4">
+            <div class="sf-chat-head">
+              <span class="sf-status-dot"></span>
+              <span>SafetyBot · Electrical troubleshooting</span>
+            </div>
+            <div id="chatMessages"></div>
+            <div class="sf-examples">
+              <button type="button" class="sf-example-btn" data-example="My living room outlets aren't working">Outlets not working</button>
+              <button type="button" class="sf-example-btn" data-example="How do I reset a tripped breaker?">Reset a breaker</button>
+              <button type="button" class="sf-example-btn" data-example="The bathroom GFCI outlet has no power">GFCI no power</button>
+              <button type="button" class="sf-example-btn" data-example="How do I change a light bulb in a ceiling fixture?">Change a bulb</button>
+              <button type="button" class="sf-example-btn" data-example="My kitchen lights are flickering">Flickering lights</button>
+            </div>
+            <form id="chatForm" autocomplete="off">
+              <input id="chatInput" type="text" placeholder="Describe what's happening…" aria-label="Describe your electrical issue" maxlength="500">
+              <button id="chatSend" type="submit">Send</button>
+            </form>
+          </div>
+
+          <div class="text-center text-muted" style="font-size: 0.85rem;">
+            Not what you need?
+            <a href="appointment.html" class="text-primary">Book a consultation</a>
+            ·
+            <a href="quote.html" class="text-primary">Get an AI quote</a>
+          </div>
+        </div>
+      </div>
+    </div>
+    <!-- Self-Fix Section End -->
+
+    <!-- Footer Start -->
+    <div class="container-fluid bg-dark footer mt-5 pt-5 wow fadeIn" data-wow-delay="0.1s">
+      <div class="container py-5">
+        <div class="row g-5">
+          <div class="col-lg-3 col-md-6">
+            <h1 class="text-white mb-4"><i class="fa fa-building text-primary me-3"></i>NYC Renovation Experts</h1>
+            <p>NYC Renovation Experts is your trusted partner for high-quality home and commercial renovations across New York City. From concept to completion, we deliver reliable craftsmanship, modern design, and lasting results.</p>
+            <div class="d-flex pt-2">
+              <a class="btn btn-square btn-outline-primary me-1" href="https://www.twitter.com/nycrenovationexperts" target="_blank" rel="noopener noreferrer" aria-label="Twitter"><i class="fab fa-twitter"></i></a>
+              <a class="btn btn-square btn-outline-primary me-1" href="https://www.facebook.com/nycrenovationexperts" target="_blank" rel="noopener noreferrer" aria-label="Facebook"><i class="fab fa-facebook-f"></i></a>
+              <a class="btn btn-square btn-outline-primary me-1" href="https://www.youtube.com/@nycrenovationexperts" target="_blank" rel="noopener noreferrer" aria-label="YouTube"><i class="fab fa-youtube"></i></a>
+              <a class="btn btn-square btn-outline-primary me-0" href="https://www.linkedin.com/company/nycrenovationexperts" target="_blank" rel="noopener noreferrer" aria-label="LinkedIn"><i class="fab fa-linkedin-in"></i></a>
+            </div>
+          </div>
+          <div class="col-lg-3 col-md-6">
+            <h4 class="text-light mb-4">Address</h4>
+            <p><i class="fa fa-map-marker-alt me-3"></i>80 5th Ave, B1, New York, NY 10011</p>
+            <p><i class="fa fa-phone-alt me-3"></i>+1 (646) 444-2434</p>
+            <p><i class="fa fa-envelope me-3"></i>info@nycrenovationexperts.com</p>
+          </div>
+          <div class="col-lg-3 col-md-6">
+            <h4 class="text-light mb-4">Quick Links</h4>
+            <a class="btn btn-link" href="about.html">About Us</a>
+            <a class="btn btn-link" href="contact.html">Contact Us</a>
+            <a class="btn btn-link" href="service.html">Our Services</a>
+            <a class="btn btn-link" href="quote.html">Get Free Quote</a>
+            <a class="btn btn-link" href="self-fix.html">Self-Fix Assistant</a>
+          </div>
+          <div class="col-lg-3 col-md-6">
+            <h4 class="text-light mb-4">Newsletter</h4>
+            <p>Subscribe to stay updated on our latest renovation tips, project showcases, and exclusive offers—delivered straight to your inbox.</p>
+            <div class="position-relative mx-auto" style="max-width: 400px">
+              <input class="form-control bg-transparent w-100 py-3 ps-4 pe-5" type="text" placeholder="Your email" />
+              <button type="button" class="btn btn-primary py-2 position-absolute top-0 end-0 mt-2 me-2">SignUp</button>
+            </div>
+          </div>
+        </div>
+      </div>
+      <div class="container-fluid copyright">
+        <div class="container">
+          <div class="row">
+            <div class="col-md-6 text-center text-md-start mb-3 mb-md-0">
+              &copy; <a href="index.html">NYC Renovation Experts</a>, All Right Reserved.
+            </div>
+            <div class="col-md-6 text-center text-md-end">
+              Designed By <a href="https://htmlcodex.com">HTML Codex</a>
+              <br />Distributed By: <a href="https://themewagon.com" target="_blank">ThemeWagon</a>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+    <!-- Footer End -->
+
+    <!-- Back to Top -->
+    <a href="#" class="btn btn-lg btn-primary btn-lg-square back-to-top"><i class="bi bi-arrow-up"></i></a>
+
+    <!-- JavaScript Libraries -->
+    <script src="https://code.jquery.com/jquery-3.4.1.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.0.0/dist/js/bootstrap.bundle.min.js"></script>
+    <script src="lib/wow/wow.min.js"></script>
+    <script src="lib/easing/easing.min.js"></script>
+    <script src="lib/waypoints/waypoints.min.js"></script>
+    <script src="lib/owlcarousel/owl.carousel.min.js"></script>
+
+    <!-- Template Javascript -->
+    <script src="js/main.js"></script>
 
     <script>
-        // Frontend lives on GitHub Pages; the Python serverless function is on Vercel.
-        // Use the stable project alias (not a per-deploy immutable URL — those rotate
-        // and are subject to Vercel Deployment Protection).
-        window.SELF_FIX_API_URL = window.SELF_FIX_API_URL ||
-            'https://nyc-renovation-experts.vercel.app/api/self-fix';
+      // Frontend lives on GitHub Pages / Vercel; the Python serverless function
+      // is on the Vercel backend. Use the stable project alias (not a per-deploy
+      // immutable URL — those rotate and are subject to Deployment Protection).
+      window.SELF_FIX_API_URL = window.SELF_FIX_API_URL ||
+        'https://nyc-renovation-experts.vercel.app/api/self-fix';
     </script>
     <script src="js/self-fix-chat.js"></script>
-</body>
+  </body>
 </html>
