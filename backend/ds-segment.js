@@ -15,7 +15,10 @@
 
 const crypto = require('crypto');
 
-const FAL_ENDPOINT = 'https://fal.run/fal-ai/florence-2-large';
+// fal.ai exposes Florence-2 as one model with multiple task subpaths. The
+// open-vocabulary-detection subpath takes a comma/period-separated list of
+// labels and returns the bounding boxes that match.
+const FAL_ENDPOINT = 'https://fal.run/fal-ai/florence-2-large/open-vocabulary-detection';
 
 // Vocabulary for the open-vocabulary detector. Tuned for kitchen + bath
 // renovation. Period-separated as Florence-2 expects.
@@ -62,9 +65,10 @@ async function segmentImage({ imageUrl, prompts }) {
   const hit = cacheGet(cacheKey);
   if (hit) return { ...hit, cached: true };
 
+  // The subpath already selects the task — we just need the image and the
+  // vocabulary as text_input.
   const body = {
     image_url: imageUrl,
-    task_prompt: '<OPEN_VOCABULARY_DETECTION>',
     text_input: text,
   };
 
