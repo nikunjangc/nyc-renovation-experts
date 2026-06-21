@@ -103,7 +103,10 @@ app.use((req, res, next) => {
   next();
 });
 
-app.use(express.json());
+// Bump JSON body limit so data URLs (photo + mask) fit. Default is 100kb.
+// Typical photo at 1920x1080 JPEG ~600KB base64 -> ~800KB encoded;
+// add a same-size mask and we need at least ~5MB headroom.
+app.use(express.json({ limit: '12mb' }));
 
 // Rate limiting (basic - consider using express-rate-limit for production)
 const rateLimit = new Map();
@@ -784,10 +787,10 @@ app.options('/api/ds-composite', (req, res) => { dsCors(req, res); res.status(20
 app.post('/api/ds-composite', rateLimiter, async (req, res) => {
   dsCors(req, res);
   try {
-    const { photoUrl, segmentLabel, segmentPosition, product, photoSize, quality } = req.body || {};
+    const { photoUrl, maskDataUrl, segmentLabel, segmentPosition, product, photoSize, quality } = req.body || {};
     if (!photoUrl)       return res.status(400).json({ error: 'photoUrl is required' });
     if (!product?.title) return res.status(400).json({ error: 'product.title is required' });
-    const data = await compositeProduct({ photoUrl, segmentLabel, segmentPosition, product, photoSize, quality });
+    const data = await compositeProduct({ photoUrl, maskDataUrl, segmentLabel, segmentPosition, product, photoSize, quality });
     res.json(data);
   } catch (error) {
     console.error('ds-composite error:', error);

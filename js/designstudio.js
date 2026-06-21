@@ -464,17 +464,22 @@ function switchToMode(mode) {
     b3d.classList.remove('active');  b3d.setAttribute('aria-selected', 'false');
     resetRot?.classList.add('ds-hidden');
     fs?.classList.add('ds-hidden');
+    el('ds-render-room')?.classList.remove('ds-hidden'); // primary action in 2D mode
     hideRetryButton();
     hideThreeDStatus();
-    // Instant CSS-overlay preview shows while the AI composite is computing.
+    // Show the cheap CSS-overlay floater so the user can position the
+    // product. NO AI call yet — that fires only when they click
+    // "Render in my room" (so they can fine-tune the position first and
+    // we don't burn ~$0.04 per product pick).
     setOverlayImage(state.selectedProduct?.thumbnail);
     // Restore the original photo as the backdrop (we may have swapped it
     // for a composite of a different product earlier).
     const photo = el('ds-composite-photo');
     if (photo && state.imageDataUrl) photo.src = state.imageDataUrl;
-    // Kick off the AI composite in the background. If/when it returns, the
-    // backdrop is swapped to the composited image and the floater hidden.
-    runComposite(state.selectedProduct);
+    // If we've already composited THIS product before (cache hit), show it.
+    const cached = state.selectedProduct?.thumbnail
+      && state.compositeByThumb.get(state.selectedProduct.thumbnail);
+    if (cached) showCompositeBackdrop(cached);
   } else {
     img.classList.add('ds-hidden');
     canvas.classList.remove('ds-hidden');
@@ -482,6 +487,8 @@ function switchToMode(mode) {
     b3d.classList.add('active');     b3d.setAttribute('aria-selected', 'true');
     resetRot?.classList.remove('ds-hidden');
     fs?.classList.remove('ds-hidden');
+    el('ds-render-room')?.classList.add('ds-hidden'); // 2D-only action
+    // Lazy 3D: Trellis only fires when the user actually clicks the 3D toggle.
     runOrLoad3D(state.selectedProduct);
   }
 }
@@ -503,25 +510,37 @@ function setOverlayImage(src) {
 }
 
 // ===== AI compositing (OpenAI gpt-image-1) =====
-// Called when the user picks a product in 2D mode. Sends the room photo +
-// product info to /api/ds-composite, gets back a single edited photo with
-// the new product placed naturally in the scene. While it runs, the cheap
-// CSS-overlay floater shows so the user has SOMETHING to look at.
+// Called when the user clicks "Render in my room" in 2D mode. NOT auto-fired
+// on product pick — the user positions/resizes the floater first to mark the
+// exact area, then explicitly triggers the AI call.
+//
+// We send the photo + a PNG mask + a strict prompt to /api/ds-composite. The
+// mask tells OpenAI's gpt-image-1 to ONLY modify pixels inside the floater's
+// rectangle. Everything outside the mask is preserved pixel-identical.
 
 async function runComposite(product) {
   if (!product || !state.imageDataUrl) return;
 
-  // Cache check — re-picking the same product is free.
+  // Cache check — re-rendering the same product is free.
   const cached = product.thumbnail && state.compositeByThumb.get(product.thumbnail);
   if (cached) {
     showCompositeBackdrop(cached);
     return;
   }
 
+  // Build the mask from the floater's current position. If the floater isn't
+  // visible (somehow), fall back to the segment bbox.
+  const bbox = getFloaterBboxInPhotoCoords()
+    || segmentBboxInPhotoCoords(state.selectedSegment);
+  if (!bbox) {
+    showCompositeError('Position the product on the photo first, then try again.');
+    return;
+  }
+  const maskDataUrl = buildMaskDataUrl(bbox);
+
   showCompositeStatus('Generating photoreal preview… (~15-30s)');
 
-  // Avoid stale renders racing each other: tag this call with a token; only
-  // apply the result if the user hasn't picked another product since.
+  // Race-token: only apply the result if the user hasn't moved on.
   const token = Symbol('composite');
   state._activeCompositeToken = token;
 
@@ -532,10 +551,9 @@ async function runComposite(product) {
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({
         photoUrl: state.imageDataUrl,
+        maskDataUrl,
         segmentLabel: seg?.label || 'fixture',
-        segmentPosition: seg?.bbox ? {
-          x: seg.bbox[0], y: seg.bbox[1], w: seg.bbox[2], h: seg.bbox[3],
-        } : null,
+        segmentPosition: bbox, // {x,y,w,h} in natural photo pixels
         product: {
           title: product.title,
           retailer: product.retailer,
@@ -545,7 +563,7 @@ async function runComposite(product) {
       }),
     });
     const data = await res.json().catch(() => ({}));
-    if (state._activeCompositeToken !== token) return; // user moved on
+    if (state._activeCompositeToken !== token) return;
 
     if (!res.ok) {
       const msg = data?.upstream_message || data?.hint || data?.error || `HTTP ${res.status}`;
@@ -564,6 +582,54 @@ async function runComposite(product) {
     console.error('composite failed', err);
     showCompositeError(err.message || 'Composite failed');
   }
+}
+
+// Read the floater's current position+size and convert from displayed CSS px
+// to the photo's natural-pixel coordinate system (which is what the mask
+// must be drawn in).
+function getFloaterBboxInPhotoCoords() {
+  const photo   = el('ds-composite-photo');
+  const floater = el('ds-floater');
+  if (!photo || !floater || !state.imageNaturalSize) return null;
+  if (floater.style.display === 'none') return null;
+
+  const pRect = photo.getBoundingClientRect();
+  const fRect = floater.getBoundingClientRect();
+  if (pRect.width === 0 || pRect.height === 0) return null;
+
+  const sx = state.imageNaturalSize.width  / pRect.width;
+  const sy = state.imageNaturalSize.height / pRect.height;
+
+  // Floater position relative to the photo's top-left, in natural pixels.
+  const x = Math.max(0, Math.round((fRect.left - pRect.left) * sx));
+  const y = Math.max(0, Math.round((fRect.top  - pRect.top ) * sy));
+  const w = Math.min(state.imageNaturalSize.width  - x, Math.round(fRect.width  * sx));
+  const h = Math.min(state.imageNaturalSize.height - y, Math.round(fRect.height * sy));
+  if (w < 4 || h < 4) return null;
+  return { x, y, w, h };
+}
+
+function segmentBboxInPhotoCoords(seg) {
+  if (!seg?.bbox) return null;
+  return { x: seg.bbox[0], y: seg.bbox[1], w: seg.bbox[2], h: seg.bbox[3] };
+}
+
+// Build a PNG mask the same size as the photo. Opaque white everywhere
+// (= preserve) with a transparent rectangle over the target area (= edit
+// here). This is the format OpenAI's /v1/images/edits expects.
+function buildMaskDataUrl(bbox) {
+  const W = state.imageNaturalSize.width;
+  const H = state.imageNaturalSize.height;
+  const canvas = document.createElement('canvas');
+  canvas.width  = W;
+  canvas.height = H;
+  const ctx = canvas.getContext('2d');
+  // Fill with opaque white — everything outside the bbox is preserved.
+  ctx.fillStyle = '#ffffff';
+  ctx.fillRect(0, 0, W, H);
+  // Punch a transparent hole where the AI is allowed to paint.
+  ctx.clearRect(bbox.x, bbox.y, bbox.w, bbox.h);
+  return canvas.toDataURL('image/png');
 }
 
 function showCompositeStatus(text) {
@@ -783,6 +849,15 @@ function setupCompositeView() {
       const f = el('ds-floater');
       if (!document.fullscreenElement && f.requestFullscreen) f.requestFullscreen();
       else if (document.exitFullscreen) document.exitFullscreen();
+    });
+  }
+  // "Render in my room" button — the explicit trigger for the AI composite.
+  const renderBtn = el('ds-render-room');
+  if (renderBtn && !renderBtn.dataset.bound) {
+    renderBtn.dataset.bound = '1';
+    renderBtn.addEventListener('click', () => {
+      if (state.previewMode !== '2d') return;
+      runComposite(state.selectedProduct);
     });
   }
 }

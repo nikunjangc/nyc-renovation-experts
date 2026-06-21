@@ -80,19 +80,30 @@ function describePosition(seg, photo) {
 // Use DeepSeek to write a tight, strict edit prompt. If DeepSeek isn't
 // configured (or call fails), fall back to a canned template — the feature
 // still works.
-async function writeEditPrompt({ segmentLabel, product, positionWords }) {
+async function writeEditPrompt({ segmentLabel, product, positionWords, masked }) {
   const dsKey = process.env.DEEPSEEK_API_KEY;
-  const canned = `Edit this photo to replace the ${segmentLabel} ${positionWords} with: ${product.title}. ` +
-                 `Keep all other elements (walls, floor, lighting, other appliances, cabinets) unchanged. ` +
-                 `Match the photo's lighting and perspective. Photorealistic. No text or watermarks.`;
+  // When a mask is provided, OpenAI strictly preserves pixels OUTSIDE the
+  // mask — we don't need to over-warn the model. But the prompt should still
+  // remind the model to ONLY paint a believable product within the masked
+  // area, and not to e.g. add text/labels.
+  const maskClause = masked
+    ? `Paint only within the masked (transparent) area; the rest of the photo will be preserved automatically by the mask.`
+    : `Keep all other elements (walls, floor, lighting, other appliances, cabinets) unchanged.`;
+
+  const canned = `Replace the ${segmentLabel} ${positionWords} with: ${product.title}. ` +
+                 `${maskClause} ` +
+                 `Match the photo's lighting and perspective. Photorealistic. No text, no watermarks, no labels.`;
   if (!dsKey) return canned;
 
   const sys = `You write a single concise image-edit prompt for an AI image model.
 Hard rules:
 - Output ONLY the prompt text. No preface, no quotes, no JSON, no markdown.
-- Be specific about WHAT to replace and WHERE.
-- ALWAYS include: "Keep all other elements unchanged. Match the original photo's lighting and perspective. Photorealistic. No text or watermarks."
-- 2-3 sentences total. Under 80 words.`;
+- Be specific about WHAT product to render.
+- ${masked
+    ? 'A binary mask is also provided; the model will only paint inside the transparent region. Tell it to render the product naturally within that masked area.'
+    : 'ALWAYS include: "Keep all other elements unchanged. Match the original photo\'s lighting and perspective."'}
+- ALWAYS include: "Photorealistic. No text, no watermarks, no labels."
+- 1-2 sentences total. Under 60 words.`;
   const usr = `Replace the ${segmentLabel} in ${positionWords} of a kitchen/bathroom photo with this product:
 "${product.title}"${product.retailer ? ` (sold at ${product.retailer})` : ''}.
 Write the edit prompt.`;
@@ -120,7 +131,10 @@ Write the edit prompt.`;
   }
 }
 
-async function callOpenAIEdit({ photoBlob, filename, prompt, size = '1024x1024', quality = 'medium' }) {
+// dataUrlToBlob (declared above) is re-used by both photo and mask.
+
+
+async function callOpenAIEdit({ photoBlob, filename, maskBlob, prompt, size = '1024x1024', quality = 'medium' }) {
   const apiKey = process.env.OPENAI_API_KEY;
   if (!apiKey) {
     const err = new Error('OPENAI_API_KEY not configured');
@@ -134,6 +148,12 @@ async function callOpenAIEdit({ photoBlob, filename, prompt, size = '1024x1024',
   const form = new FormData();
   form.append('model', OPENAI_MODEL);
   form.append('image', photoBlob, filename);
+  // Mask is a PNG same-sized as the image: alpha=0 (transparent) = edit here,
+  // alpha=255 (opaque) = preserve pixels untouched. OpenAI enforces this
+  // strictly — pixels outside the mask remain bit-identical to the input.
+  if (maskBlob) {
+    form.append('mask', maskBlob, 'mask.png');
+  }
   form.append('prompt', prompt);
   form.append('n', '1');
   form.append('size', size);
@@ -179,7 +199,7 @@ async function callOpenAIEdit({ photoBlob, filename, prompt, size = '1024x1024',
   return { dataUrl: `data:image/png;base64,${b64}` };
 }
 
-async function compositeProduct({ photoUrl, segmentLabel, segmentPosition, product, photoSize, quality }) {
+async function compositeProduct({ photoUrl, maskDataUrl, segmentLabel, segmentPosition, product, photoSize, quality }) {
   if (!photoUrl)       { const e = new Error('photoUrl is required');      e.status = 400; throw e; }
   if (!product?.title) { const e = new Error('product.title is required'); e.status = 400; throw e; }
 
@@ -199,11 +219,13 @@ async function compositeProduct({ photoUrl, segmentLabel, segmentPosition, produ
   if (hit) return { ...hit, cached: true };
 
   const positionWords = describePosition(segmentPosition, photoSize);
-  const prompt = await writeEditPrompt({ segmentLabel, product, positionWords });
+  const prompt = await writeEditPrompt({ segmentLabel, product, positionWords, masked: !!maskDataUrl });
   const { blob, filename } = dataUrlToBlob(photoUrl);
+  const maskBlob = maskDataUrl ? dataUrlToBlob(maskDataUrl).blob : null;
   const { dataUrl } = await callOpenAIEdit({
     photoBlob: blob,
     filename,
+    maskBlob,
     prompt,
     quality: quality || 'medium',
   });
