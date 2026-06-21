@@ -26,7 +26,7 @@ const crypto = require('crypto');
 //   - Hunyuan3D/v2: queue 432+ deep, multi-hour wait
 //   - TripoSR: queue 0 but worker pool stuck (>60s on queue, >25s on sync)
 //   - SPAR3D: likely on a different worker pool — trying as the next option
-const FAL_MODEL = 'fal-ai/spar3d';
+const FAL_MODEL = 'fal-ai/trellis';
 const SYNC_URL  = `https://fal.run/${FAL_MODEL}`;
 
 // Kept for the legacy queued-status code path (used if SYNC ever 504s and we
