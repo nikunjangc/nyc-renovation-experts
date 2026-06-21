@@ -17,11 +17,16 @@
 
 const crypto = require('crypto');
 
-// Model: fal-ai/triposr. We use fal.ai's SYNCHRONOUS endpoint (fal.run, not
-// queue.fal.run) so the worker pool is different from the heavily-backlogged
-// queue. TripoSR's actual compute is ~2-5s; sync responses comfortably fit
-// inside Vercel's function timeout (10s Hobby / 60s Pro).
-const FAL_MODEL = 'fal-ai/triposr';
+// Model: fal-ai/spar3d (Stability AI's SPAR3D, single-image-to-3D). We use
+// fal.ai's SYNCHRONOUS endpoint (fal.run, not queue.fal.run). SPAR3D is
+// newer than Hunyuan3D/TripoSR and tends to have less queue pressure;
+// quality is comparable to TripoSR with arguably better texture handling.
+//
+// Why not the others, as of this commit:
+//   - Hunyuan3D/v2: queue 432+ deep, multi-hour wait
+//   - TripoSR: queue 0 but worker pool stuck (>60s on queue, >25s on sync)
+//   - SPAR3D: likely on a different worker pool — trying as the next option
+const FAL_MODEL = 'fal-ai/spar3d';
 const SYNC_URL  = `https://fal.run/${FAL_MODEL}`;
 
 // Kept for the legacy queued-status code path (used if SYNC ever 504s and we
