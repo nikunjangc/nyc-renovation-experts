@@ -8,8 +8,8 @@ const { recommendProducts } = require('../backend/product-recommender');
 const { searchProducts } = require('../backend/product-search');
 const { clarifyProject } = require('../backend/project-clarifier');
 const { saveQuoteSubmission, listQuoteSubmissions, updateQuoteStatus } = require('./quote-store');
-const { segmentImage } = require('./ds-segment');
-const { submitProductRender, getRenderStatus } = require('./ds-render3d');
+const { segmentImage } = require('../backend/ds-segment');
+const { submitProductRender, getRenderStatus } = require('../backend/ds-render3d');
 require('dotenv').config();
 
 const app = express();
