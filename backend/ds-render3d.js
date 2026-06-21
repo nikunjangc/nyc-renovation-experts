@@ -115,11 +115,12 @@ async function submitProductRender({ imageUrl }) {
     foreground_ratio: 0.85,
   };
 
-  // Cap our wait at 25s — Vercel Pro gives 60s of function time, but if
-  // fal.ai is taking that long the user experience is bad anyway. Better to
-  // fail fast and let the frontend show a friendly retry message.
+  // Cap our wait at 50s — Vercel Pro gives 60s of function time and Trellis
+  // varies 20-40s in practice. Earlier value (25s) was too tight and caused
+  // intermittent timeouts on slower renders. If even 50s isn't enough, the
+  // frontend's retry button lets users try again without re-doing the wizard.
   const abort = new AbortController();
-  const timeoutHandle = setTimeout(() => abort.abort(), 25_000);
+  const timeoutHandle = setTimeout(() => abort.abort(), 50_000);
 
   let res;
   try {
@@ -135,7 +136,7 @@ async function submitProductRender({ imageUrl }) {
   } catch (e) {
     clearTimeout(timeoutHandle);
     if (e.name === 'AbortError') {
-      const err = new Error(`fal.ai ${FAL_MODEL} timed out after 25s`);
+      const err = new Error(`fal.ai ${FAL_MODEL} timed out after 50s`);
       err.status = 504;
       throw err;
     }

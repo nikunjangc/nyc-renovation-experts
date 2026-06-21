@@ -343,10 +343,18 @@ async function pickProduct(product) {
   state.selectedProduct = product;
   showStage('threeD');
   setupCompositeView();   // photo backdrop + floater placed at segment bbox
+  await runRender3D(product);
+}
+
+// Extracted so the "Retry 3D render" button can call it without re-running
+// the rest of the wizard.
+async function runRender3D(product) {
+  hideRetryButton();
   setThreeDStatus(`Rendering 3D model of ${product.title.slice(0, 50)}…`);
 
   if (!product.thumbnail) {
     setThreeDStatus("No image available for this product, so we can't render 3D. Pick another.");
+    showRetryButton();
     return;
   }
 
@@ -380,8 +388,29 @@ async function pickProduct(product) {
     });
   } catch (err) {
     console.error('3D render failed', err);
-    setThreeDStatus(`Couldn't render 3D model. ${err.message}`);
+    const isTimeout = /timed out|timeout|504/i.test(String(err.message || ''));
+    setThreeDStatus(isTimeout
+      ? "3D render took longer than 50s — Trellis is slow right now. Try again, or pick a different product."
+      : `Couldn't render 3D model. ${err.message}`);
+    showRetryButton();
   }
+}
+
+function showRetryButton() {
+  const btn = el('ds-3d-retry');
+  if (!btn) return;
+  btn.style.display = '';
+  if (!btn.dataset.bound) {
+    btn.dataset.bound = '1';
+    btn.addEventListener('click', () => {
+      if (!state.selectedProduct) return;
+      runRender3D(state.selectedProduct);
+    });
+  }
+}
+function hideRetryButton() {
+  const btn = el('ds-3d-retry');
+  if (btn) btn.style.display = 'none';
 }
 
 async function pollUntilComplete({ requestId, statusUrl, responseUrl, imageUrl }) {
