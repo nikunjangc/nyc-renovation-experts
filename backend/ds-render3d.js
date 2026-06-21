@@ -17,11 +17,16 @@
 
 const crypto = require('crypto');
 
-// Model: fal-ai/triposr. fal.ai's queue endpoints follow the documented
-// /status/{id} and /requests/{id} pattern, and require POST (not GET).
+// Model: fal-ai/triposr. We use fal.ai's SYNCHRONOUS endpoint (fal.run, not
+// queue.fal.run) so the worker pool is different from the heavily-backlogged
+// queue. TripoSR's actual compute is ~2-5s; sync responses comfortably fit
+// inside Vercel's function timeout (10s Hobby / 60s Pro).
 const FAL_MODEL = 'fal-ai/triposr';
-const SUBMIT_URL = `https://queue.fal.run/${FAL_MODEL}`;
+const SYNC_URL  = `https://fal.run/${FAL_MODEL}`;
 
+// Kept for the legacy queued-status code path (used if SYNC ever 504s and we
+// want to fall back). Not active today.
+const QUEUE_URL = `https://queue.fal.run/${FAL_MODEL}`;
 function statusUrlFor(requestId) {
   return `https://queue.fal.run/${FAL_MODEL}/status/${encodeURIComponent(requestId)}`;
 }
@@ -83,10 +88,12 @@ function isValidFalUrl(url) {
   } catch { return false; }
 }
 
-// Submit a render job. Returns { requestId, status, sourceImageUrl, statusUrl, responseUrl }
-// — the URLs are passed back to the frontend so it can include them in the
-// status-check call. Vercel serverless is stateless across invocations, so we
-// can't rely on an in-memory cache between submit and poll.
+// Render a product image as a 3D GLB synchronously. Returns the GLB URL
+// directly on success — no polling.
+//
+// Implementation: POST the image to fal.run (sync endpoint). fal.ai blocks
+// until the model finishes, then returns the result JSON. Works in Vercel's
+// function window for TripoSR (~2-5s compute + ~1-2s network).
 async function submitProductRender({ imageUrl }) {
   const apiKey = requireKey();
   if (!imageUrl) throw new Error('imageUrl is required');
@@ -96,8 +103,6 @@ async function submitProductRender({ imageUrl }) {
     return { status: 'COMPLETED', modelUrl: cached.modelUrl, cached: true };
   }
 
-  // TripoSR body is simpler than Hunyuan3D: just an image_url and a few
-  // optional flags. Defaults are fine for product previews.
   const body = {
     image_url: imageUrl,
     output_format: 'glb',
@@ -105,42 +110,60 @@ async function submitProductRender({ imageUrl }) {
     foreground_ratio: 0.85,
   };
 
-  const res = await fetch(SUBMIT_URL, {
-    method: 'POST',
-    headers: {
-      'Authorization': `Key ${apiKey}`,
-      'Content-Type': 'application/json',
-    },
-    body: JSON.stringify(body),
-  });
+  // Cap our wait at 25s — Vercel Pro gives 60s of function time, but if
+  // fal.ai is taking that long the user experience is bad anyway. Better to
+  // fail fast and let the frontend show a friendly retry message.
+  const abort = new AbortController();
+  const timeoutHandle = setTimeout(() => abort.abort(), 25_000);
+
+  let res;
+  try {
+    res = await fetch(SYNC_URL, {
+      method: 'POST',
+      headers: {
+        'Authorization': `Key ${apiKey}`,
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify(body),
+      signal: abort.signal,
+    });
+  } catch (e) {
+    clearTimeout(timeoutHandle);
+    if (e.name === 'AbortError') {
+      const err = new Error(`fal.ai ${FAL_MODEL} timed out after 25s`);
+      err.status = 504;
+      throw err;
+    }
+    throw e;
+  }
+  clearTimeout(timeoutHandle);
 
   if (!res.ok) {
     const detail = await res.text();
-    const err = new Error(`fal.ai ${FAL_MODEL} submit error: ${res.status}`);
+    const err = new Error(`fal.ai ${FAL_MODEL} sync error: ${res.status}`);
     err.detail = detail.slice(0, 500);
     err.status = res.status;
     throw err;
   }
-  const json = await res.json();
-  const requestId   = json.request_id;
-  const statusUrl   = json.status_url;
-  const responseUrl = json.response_url;
-  if (!requestId) {
-    const err = new Error('fal.ai did not return a request_id');
-    err.detail = JSON.stringify(json).slice(0, 500);
+
+  const result = await res.json();
+  const modelUrl =
+       result?.model_mesh?.url
+    || result?.model_glb?.url
+    || result?.mesh?.url
+    || result?.glb?.url
+    || result?.output?.url
+    || result?.url
+    || null;
+
+  if (!modelUrl) {
+    const err = new Error('fal.ai response had no model URL');
+    err.detail = JSON.stringify(result).slice(0, 500);
     throw err;
   }
 
-  return {
-    status: 'IN_QUEUE',
-    requestId,
-    sourceImageUrl: imageUrl,
-    statusUrl,
-    responseUrl,
-    // Diagnostic: echoes what fal.ai actually returned. Drop in a follow-up
-    // once we've confirmed url shapes in prod logs.
-    _debug_submit_response_keys: Object.keys(json),
-  };
+  modelUrlCacheSet(imageUrl, { modelUrl });
+  return { status: 'COMPLETED', modelUrl };
 }
 
 // Poll job status. Stateless across Vercel instances — we construct the
