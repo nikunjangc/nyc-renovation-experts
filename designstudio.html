@@ -128,14 +128,46 @@
         color: #FDA12B;
         font-size: 1.05rem;
       }
-      .ds-3d-wrap {
-        width: 100%;
-        height: 480px;
-        background: #fff;
-        border-radius: 12px;
+      /* Composite stage: photo as backdrop, 3D model overlay */
+      .ds-composite {
         position: relative;
+        background: #000;
+        border-radius: 12px;
         overflow: hidden;
-        border: 1px solid #eee;
+        user-select: none;
+        touch-action: none; /* lets pointer events handle gestures cleanly */
+      }
+      .ds-composite img {
+        display: block;
+        width: 100%;
+        height: auto;
+        pointer-events: none;
+      }
+      /* The draggable 3D model "floater" — sits on top of the photo. */
+      .ds-3d-floater {
+        position: absolute;
+        cursor: grab;
+        touch-action: none;
+        will-change: transform, width, height;
+      }
+      .ds-3d-floater.dragging { cursor: grabbing; }
+      .ds-3d-floater canvas {
+        display: block;
+        width: 100%;
+        height: 100%;
+        background: transparent;
+      }
+      .ds-3d-resize {
+        position: absolute;
+        right: -6px;
+        bottom: -6px;
+        width: 18px;
+        height: 18px;
+        background: #FDA12B;
+        border: 2px solid #fff;
+        border-radius: 50%;
+        cursor: nwse-resize;
+        box-shadow: 0 2px 6px rgba(0,0,0,0.25);
       }
       .ds-3d-status {
         position: absolute;
@@ -145,11 +177,14 @@
         justify-content: center;
         flex-direction: column;
         gap: 12px;
-        color: #555;
+        color: #fff;
         font-size: 0.95rem;
         text-align: center;
         padding: 20px;
+        background: rgba(0,0,0,0.55);
+        backdrop-filter: blur(2px);
       }
+      .ds-3d-status .text-muted { color: #ccc !important; }
       .ds-loader {
         width: 36px;
         height: 36px;
@@ -299,17 +334,39 @@
           <!-- Stage 5: 3D preview -->
           <div class="ds-stage ds-hidden" id="ds-stage-3d">
             <div class="ds-stage-title">
-              <i class="fas fa-cube text-primary me-2"></i>5. 3D preview
+              <i class="fas fa-cube text-primary me-2"></i>5. Drop it in your room
               <span class="badge">Beta</span>
             </div>
-            <div class="ds-3d-wrap" id="ds-3d-wrap">
+            <p class="text-muted" style="font-size: 0.9rem;">
+              The 3D model is placed where your fixture was. <strong>Drag</strong> to reposition, <strong>scroll / pinch</strong> on the model to resize, <strong>right-click + drag</strong> (or two-finger drag) on the model to rotate it.
+            </p>
+
+            <!-- Composite stage: photo as backdrop, 3D canvas overlay -->
+            <div class="ds-composite" id="ds-composite">
+              <img id="ds-composite-photo" alt="Your room" draggable="false" />
+              <div class="ds-3d-floater" id="ds-3d-floater">
+                <canvas id="ds-3d-canvas"></canvas>
+                <div class="ds-3d-resize" id="ds-3d-resize" title="Drag to resize"></div>
+              </div>
               <div class="ds-3d-status" id="ds-3d-status">
                 <div class="ds-loader"></div>
                 <div id="ds-3d-status-text">Rendering 3D model…</div>
-                <div class="text-muted" style="font-size: 0.8rem;">This usually takes 30-60 seconds.</div>
+                <div class="text-muted" style="font-size: 0.8rem;">~20 seconds with Trellis.</div>
               </div>
             </div>
-            <div class="ds-cost-note">Drag to rotate · pinch / scroll to zoom · double-click to reset</div>
+
+            <div class="d-flex gap-2 mt-3 flex-wrap">
+              <button type="button" class="btn btn-outline-secondary btn-sm" id="ds-3d-reset-pos">
+                <i class="fas fa-undo me-1"></i>Reset position
+              </button>
+              <button type="button" class="btn btn-outline-secondary btn-sm" id="ds-3d-reset-rot">
+                <i class="fas fa-sync-alt me-1"></i>Reset rotation
+              </button>
+              <button type="button" class="btn btn-outline-secondary btn-sm" id="ds-3d-fullscreen">
+                <i class="fas fa-expand me-1"></i>Inspect 3D
+              </button>
+            </div>
+            <div class="ds-cost-note">Tip: a single drag positions the model; the corner handle resizes it.</div>
           </div>
 
         </div>

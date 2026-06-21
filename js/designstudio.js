@@ -342,6 +342,7 @@ function renderProducts(products) {
 async function pickProduct(product) {
   state.selectedProduct = product;
   showStage('threeD');
+  setupCompositeView();   // photo backdrop + floater placed at segment bbox
   setThreeDStatus(`Rendering 3D model of ${product.title.slice(0, 50)}…`);
 
   if (!product.thumbnail) {
@@ -423,40 +424,236 @@ function humanStatus(s) {
 
 function setThreeDStatus(text) {
   const status = el('ds-3d-status');
-  status.classList.remove('ds-hidden');
+  status.style.display = '';
   el('ds-3d-status-text').textContent = text;
 }
 function hideThreeDStatus() {
-  el('ds-3d-status').classList.add('ds-hidden');
+  el('ds-3d-status').style.display = 'none';
 }
 
 function sleep(ms) { return new Promise((r) => setTimeout(r, ms)); }
 
-// ===== three.js viewer =====
+// ===== Composite view (photo + draggable 3D floater) =====
+//
+// Stage 5 layout: the photo is the backdrop image, the 3D <canvas> floats on
+// top, positioned at the selected segment's bbox. The floater is draggable
+// (pointer events) and resizable via a corner handle. The three.js scene
+// itself has a transparent background, so the photo shows through everywhere
+// except the rendered product.
+
+function setupCompositeView() {
+  const photo   = el('ds-composite-photo');
+  const floater = el('ds-3d-floater');
+  if (!photo || !floater) return;
+
+  // 1. Set the photo backdrop.
+  photo.src = state.imageDataUrl;
+
+  // 2. Wait for the image to lay out so we can use its rendered size to
+  //    convert the segment's natural-pixel bbox into floater CSS coords.
+  const apply = () => positionFloaterFromSegment();
+  if (photo.complete && photo.naturalWidth) apply();
+  else photo.onload = apply;
+
+  // 3. Wire drag, resize, and the reset buttons (idempotent — safe to call
+  //    on every pickProduct).
+  bindFloaterDrag();
+  bindFloaterResize();
+
+  const resetPos = el('ds-3d-reset-pos');
+  const resetRot = el('ds-3d-reset-rot');
+  const fs       = el('ds-3d-fullscreen');
+  if (resetPos && !resetPos.dataset.bound) {
+    resetPos.dataset.bound = '1';
+    resetPos.addEventListener('click', positionFloaterFromSegment);
+  }
+  if (resetRot && !resetRot.dataset.bound) {
+    resetRot.dataset.bound = '1';
+    resetRot.addEventListener('click', () => {
+      if (!state.three?.productMesh) return;
+      state.three.productMesh.rotation.set(0, 0, 0);
+      state.three.camera.position.set(0, 0.4, 2.6);
+      state.three.controls?.target.set(0, 0, 0);
+      state.three.controls?.update();
+    });
+  }
+  if (fs && !fs.dataset.bound) {
+    fs.dataset.bound = '1';
+    fs.addEventListener('click', () => {
+      const f = el('ds-3d-floater');
+      if (!document.fullscreenElement && f.requestFullscreen) f.requestFullscreen();
+      else if (document.exitFullscreen) document.exitFullscreen();
+    });
+  }
+}
+
+function positionFloaterFromSegment() {
+  const photo   = el('ds-composite-photo');
+  const floater = el('ds-3d-floater');
+  const seg     = state.selectedSegment;
+  if (!photo || !floater) return;
+
+  const rect = photo.getBoundingClientRect();
+  const composite = el('ds-composite');
+  const compRect = composite.getBoundingClientRect();
+
+  // Convert natural-pixel bbox -> displayed pixel coordinates within the
+  // composite container. If we don't have a segment yet, center a default-
+  // sized floater on the photo.
+  if (seg?.bbox && state.imageNaturalSize) {
+    const sx = rect.width  / state.imageNaturalSize.width;
+    const sy = rect.height / state.imageNaturalSize.height;
+    const left = Math.round((rect.left - compRect.left) + seg.bbox[0] * sx);
+    const top  = Math.round((rect.top  - compRect.top ) + seg.bbox[1] * sy);
+    const w    = Math.max(120, Math.round(seg.bbox[2] * sx));
+    const h    = Math.max(120, Math.round(seg.bbox[3] * sy));
+    Object.assign(floater.style, {
+      left: `${left}px`,
+      top:  `${top}px`,
+      width:  `${w}px`,
+      height: `${h}px`,
+    });
+  } else {
+    const w = Math.min(280, rect.width * 0.5);
+    const h = Math.min(280, rect.height * 0.5);
+    Object.assign(floater.style, {
+      left: `${Math.round((rect.width - w) / 2)}px`,
+      top:  `${Math.round((rect.height - h) / 2)}px`,
+      width:  `${w}px`,
+      height: `${h}px`,
+    });
+  }
+
+  resizeThreeRenderer();
+}
+
+function bindFloaterDrag() {
+  const floater = el('ds-3d-floater');
+  const composite = el('ds-composite');
+  if (!floater || floater.dataset.dragBound) return;
+  floater.dataset.dragBound = '1';
+
+  // We attach the dragstart to the floater wrapper itself, but ignore drags
+  // that originate on the OrbitControls-bearing canvas IF the user is using
+  // a primary (left) pointer with no modifiers — OrbitControls owns rotation
+  // there. Right-button / two-finger gestures continue to rotate via three.
+  // For dragging the whole floater across the photo, the user grabs any
+  // EDGE of the floater (the small padding around the canvas) OR drags
+  // anywhere with the SHIFT key held.
+  //
+  // Simpler v1: a thin drag-bar across the top of the floater is the
+  // dedicated grip. Skip that for now and just make the BORDER 6px area
+  // the grab zone. Inside the canvas, OrbitControls keeps working.
+  //
+  // For a clean first cut we use a different approach: the canvas itself
+  // handles drag-to-position when used with a single primary pointer + the
+  // canvas hit the wrapper; OrbitControls only fires on the canvas surface
+  // and is left in default mode. Net: drag from the bezel area to move,
+  // drag on the canvas to rotate. The corner handle resizes.
+  let dragging = null;
+  floater.addEventListener('pointerdown', (e) => {
+    // If pointerdown lands on the resize handle, let it handle resize.
+    if (e.target.id === 'ds-3d-resize') return;
+    // If pointerdown lands on the inner canvas, let OrbitControls handle it.
+    if (e.target.tagName === 'CANVAS') return;
+    dragging = {
+      startX: e.clientX, startY: e.clientY,
+      startLeft: parseFloat(floater.style.left) || 0,
+      startTop:  parseFloat(floater.style.top)  || 0,
+      pointerId: e.pointerId,
+    };
+    floater.setPointerCapture(e.pointerId);
+    floater.classList.add('dragging');
+  });
+  floater.addEventListener('pointermove', (e) => {
+    if (!dragging || e.pointerId !== dragging.pointerId) return;
+    const dx = e.clientX - dragging.startX;
+    const dy = e.clientY - dragging.startY;
+    let newLeft = dragging.startLeft + dx;
+    let newTop  = dragging.startTop  + dy;
+    // Clamp inside the composite.
+    const compRect    = composite.getBoundingClientRect();
+    const floaterRect = floater.getBoundingClientRect();
+    newLeft = Math.max(-floaterRect.width/2, Math.min(newLeft, compRect.width - floaterRect.width/2));
+    newTop  = Math.max(-floaterRect.height/2, Math.min(newTop,  compRect.height - floaterRect.height/2));
+    floater.style.left = `${newLeft}px`;
+    floater.style.top  = `${newTop}px`;
+  });
+  const end = (e) => {
+    if (!dragging) return;
+    try { floater.releasePointerCapture(dragging.pointerId); } catch {}
+    floater.classList.remove('dragging');
+    dragging = null;
+  };
+  floater.addEventListener('pointerup', end);
+  floater.addEventListener('pointercancel', end);
+}
+
+function bindFloaterResize() {
+  const handle  = el('ds-3d-resize');
+  const floater = el('ds-3d-floater');
+  if (!handle || handle.dataset.bound) return;
+  handle.dataset.bound = '1';
+
+  let r = null;
+  handle.addEventListener('pointerdown', (e) => {
+    e.stopPropagation();
+    r = {
+      startX: e.clientX, startY: e.clientY,
+      startW: floater.offsetWidth, startH: floater.offsetHeight,
+      pointerId: e.pointerId,
+    };
+    handle.setPointerCapture(e.pointerId);
+  });
+  handle.addEventListener('pointermove', (e) => {
+    if (!r || e.pointerId !== r.pointerId) return;
+    const dx = e.clientX - r.startX;
+    const dy = e.clientY - r.startY;
+    const w = Math.max(80,  r.startW + dx);
+    const h = Math.max(80,  r.startH + dy);
+    floater.style.width  = `${w}px`;
+    floater.style.height = `${h}px`;
+    resizeThreeRenderer();
+  });
+  const end = (e) => {
+    if (!r) return;
+    try { handle.releasePointerCapture(r.pointerId); } catch {}
+    r = null;
+  };
+  handle.addEventListener('pointerup', end);
+  handle.addEventListener('pointercancel', end);
+}
+
+// ===== three.js scene attached to the floater's canvas =====
 function ensureThreeScene() {
   if (state.three) return state.three;
-  const wrap = el('ds-3d-wrap');
-  const scene  = new THREE.Scene();
-  scene.background = new THREE.Color(0xf6f7f9);
+  const canvas = el('ds-3d-canvas');
+  if (!canvas) return null;
 
-  const w = wrap.clientWidth || 800;
-  const h = wrap.clientHeight || 480;
+  const scene = new THREE.Scene();
+  // Transparent background so the photo shows through behind the model.
+
+  const w = canvas.clientWidth  || 240;
+  const h = canvas.clientHeight || 240;
   const camera = new THREE.PerspectiveCamera(45, w / h, 0.1, 1000);
-  camera.position.set(0, 0.5, 3);
+  camera.position.set(0, 0.4, 2.6);
 
-  const renderer = new THREE.WebGLRenderer({ antialias: true });
-  renderer.setSize(w, h);
+  const renderer = new THREE.WebGLRenderer({ canvas, antialias: true, alpha: true });
+  renderer.setClearColor(0x000000, 0); // transparent
+  renderer.setSize(w, h, false);
   renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
-  wrap.appendChild(renderer.domElement);
 
-  scene.add(new THREE.AmbientLight(0xffffff, 0.6));
-  const dir = new THREE.DirectionalLight(0xffffff, 0.9);
+  scene.add(new THREE.AmbientLight(0xffffff, 0.7));
+  const dir = new THREE.DirectionalLight(0xffffff, 1.0);
   dir.position.set(2, 4, 3);
   scene.add(dir);
 
-  const controls = new OrbitControls(camera, renderer.domElement);
+  const controls = new OrbitControls(camera, canvas);
   controls.enableDamping = true;
   controls.dampingFactor = 0.08;
+  // Left mouse rotates by default; we disable PAN so dragging the floater
+  // wrapper doesn't conflict with OrbitControls. Wheel zooms.
+  controls.enablePan = false;
 
   let raf;
   const tick = () => {
@@ -466,21 +663,26 @@ function ensureThreeScene() {
   };
   tick();
 
-  // Resize handler
-  window.addEventListener('resize', () => {
-    const ww = wrap.clientWidth || 800;
-    const hh = wrap.clientHeight || 480;
-    renderer.setSize(ww, hh);
-    camera.aspect = ww / hh;
-    camera.updateProjectionMatrix();
-  });
+  window.addEventListener('resize', resizeThreeRenderer);
 
-  state.three = { scene, camera, renderer, controls, productMesh: null, raf };
+  state.three = { scene, camera, renderer, controls, productMesh: null, raf, canvas };
   return state.three;
+}
+
+function resizeThreeRenderer() {
+  if (!state.three) return;
+  const canvas = state.three.canvas;
+  const w = canvas.clientWidth  || 240;
+  const h = canvas.clientHeight || 240;
+  if (w === 0 || h === 0) return;
+  state.three.renderer.setSize(w, h, false);
+  state.three.camera.aspect = w / h;
+  state.three.camera.updateProjectionMatrix();
 }
 
 function loadGlbIntoScene(modelUrl) {
   const three = ensureThreeScene();
+  if (!three) return;
   if (three.productMesh) {
     three.scene.remove(three.productMesh);
     three.productMesh = null;
@@ -499,9 +701,10 @@ function loadGlbIntoScene(modelUrl) {
     three.scene.add(mesh);
     three.productMesh = mesh;
     hideThreeDStatus();
+    resizeThreeRenderer();
   }, undefined, (err) => {
     console.error('GLB load failed', err);
-    setThreeDStatus('Couldn’t load the 3D model.');
+    setThreeDStatus("Couldn't load the 3D model.");
   });
 }
 
