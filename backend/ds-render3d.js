@@ -1,33 +1,32 @@
 // Design Studio: render a 3D model from a 2D product image via fal.ai
-// Hunyuan3D (open-source image-to-3D). Async because Hunyuan3D takes ~30-90s
-// per render — we submit, return a request_id, frontend polls.
+// TripoSR (open-source single-image-to-3D from Stability AI). Fast — ~2-5s
+// per render in normal conditions — and runs on its own queue, which avoids
+// the 400+ job backlog we see on Hunyuan3D.
 //
 // Two endpoints exposed via api/index.js:
 //   POST /api/ds-render3d         body: { imageUrl } -> { requestId, status }
 //   POST /api/ds-render3d-status  body: { requestId } -> { status, modelUrl? }
 //
-// Cost: ~$0.05/render. We cache GLB URLs by source-image hash for 7 days
-// so multiple users selecting the same product share one render.
+// Cost: ~$0.01-0.02/render — lower than Hunyuan3D ($0.05). Cached by
+// source-image hash for 7 days so repeat picks don't burn quota.
 //
-// Implementation note: fal.ai's submit response includes literal status_url,
-// response_url, and cancel_url fields. We capture those at submit time and
-// use them verbatim for subsequent polling — much more robust than guessing
-// URL patterns. Cached in-memory keyed by request_id so a status check
-// doesn't need the frontend to remember anything but the request_id.
+// Trade-off vs Hunyuan3D: lower fidelity. For v1 (showing the user what
+// the replacement product looks like in 3D) this is fine — the alternative
+// is a multi-hour queue wait every time. If/when we want higher fidelity
+// we can layer a "premium 3D" tier that uses Hunyuan3D for paying users.
 
 const crypto = require('crypto');
 
-const SUBMIT_URL = 'https://queue.fal.run/fal-ai/hunyuan3d/v2';
+// Model: fal-ai/triposr. fal.ai's queue endpoints follow the documented
+// /status/{id} and /requests/{id} pattern, and require POST (not GET).
+const FAL_MODEL = 'fal-ai/triposr';
+const SUBMIT_URL = `https://queue.fal.run/${FAL_MODEL}`;
 
-// fal.ai's documented queue URL pattern uses /v2/status/{id} and
-// /v2/requests/{id}, even though the submit response returns URLs without
-// the /v2 segment and with /requests/{id}/status (which 405's). We construct
-// the documented form ourselves rather than trusting submit's URLs.
 function statusUrlFor(requestId) {
-  return `https://queue.fal.run/fal-ai/hunyuan3d/v2/status/${encodeURIComponent(requestId)}`;
+  return `https://queue.fal.run/${FAL_MODEL}/status/${encodeURIComponent(requestId)}`;
 }
 function responseUrlFor(requestId) {
-  return `https://queue.fal.run/fal-ai/hunyuan3d/v2/requests/${encodeURIComponent(requestId)}`;
+  return `https://queue.fal.run/${FAL_MODEL}/requests/${encodeURIComponent(requestId)}`;
 }
 
 // Cache: source-image-hash -> { modelUrl }. So a re-pick of the same product
@@ -97,11 +96,13 @@ async function submitProductRender({ imageUrl }) {
     return { status: 'COMPLETED', modelUrl: cached.modelUrl, cached: true };
   }
 
+  // TripoSR body is simpler than Hunyuan3D: just an image_url and a few
+  // optional flags. Defaults are fine for product previews.
   const body = {
-    input_image_urls: [imageUrl],
-    texture: true,
-    remove_background: true,
-    target_polycount: 50000,
+    image_url: imageUrl,
+    output_format: 'glb',
+    do_remove_background: true,
+    foreground_ratio: 0.85,
   };
 
   const res = await fetch(SUBMIT_URL, {
@@ -115,7 +116,7 @@ async function submitProductRender({ imageUrl }) {
 
   if (!res.ok) {
     const detail = await res.text();
-    const err = new Error(`fal.ai hunyuan3d submit error: ${res.status}`);
+    const err = new Error(`fal.ai ${FAL_MODEL} submit error: ${res.status}`);
     err.detail = detail.slice(0, 500);
     err.status = res.status;
     throw err;
@@ -187,11 +188,12 @@ async function getRenderStatus({ requestId, imageUrl }) {
       throw err;
     }
     const result = await resultRes.json();
-    // Hunyuan3D can put the GLB at any of these field names depending on the
-    // model version — handle all.
+    // TripoSR returns the GLB at `model_mesh.url`. Keep fallbacks for safety
+    // in case fal.ai's wrapper changes the field name.
     const modelUrl =
          result?.model_mesh?.url
       || result?.model_glb?.url
+      || result?.mesh?.url
       || result?.glb?.url
       || result?.output?.url
       || result?.url
