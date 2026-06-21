@@ -1,24 +1,23 @@
-// Design Studio: photo segmentation via fal.ai's Florence-2 open-vocabulary
-// detection. Returns labeled bounding boxes for each detected fixture, which
-// the frontend draws as clickable rectangles on a canvas overlay.
+// Design Studio: photo segmentation via fal.ai's Grounding DINO.
 //
-// Why Florence-2 (not SAM 2):
-//   - Florence-2 is open-vocabulary out of the box (`<OPEN_VOCABULARY_DETECTION>`
-//     task) — pass it our appliance vocabulary as plain text, get labeled
-//     bboxes back. No combo-pipeline needed.
-//   - Bounding boxes are enough to render click targets on a canvas. We don't
-//     need pixel masks for v1 of the click-to-find-product flow.
-//   - Materially cheaper (~$0.003/image vs ~$0.05 for full Grounded-SAM-2),
-//     which matters at the $200/mo budget cap.
+// Returns labeled bounding boxes for each detected fixture, which the
+// frontend draws as clickable rectangles on a canvas overlay.
 //
-// fal.ai docs: https://fal.ai/models/fal-ai/florence-2-large
+// Why Grounding DINO (not Florence-2 or full SAM 2):
+//   - Grounding DINO is *designed* for multi-category open-vocabulary
+//     detection in a single call. Pass it a period-separated list of
+//     categories and it returns one bounding box per detected instance,
+//     labeled with which category matched.
+//   - Florence-2's <OPEN_VOCABULARY_DETECTION> on fal.ai treats the whole
+//     text input as a single phrase to find — wrong shape for our needs.
+//   - Full Grounded-SAM-2 (DINO + SAM 2 pixel masks) is ~17x more expensive
+//     for masks we don't need at v1.
+//
+// fal.ai docs: https://fal.ai/models/fal-ai/grounding-dino
 
 const crypto = require('crypto');
 
-// fal.ai exposes Florence-2 as one model with multiple task subpaths. The
-// open-vocabulary-detection subpath takes a comma/period-separated list of
-// labels and returns the bounding boxes that match.
-const FAL_ENDPOINT = 'https://fal.run/fal-ai/florence-2-large/open-vocabulary-detection';
+const FAL_ENDPOINT = 'https://fal.run/fal-ai/grounding-dino';
 
 // Vocabulary for the open-vocabulary detector. Tuned for kitchen + bath
 // renovation. Period-separated as Florence-2 expects.
@@ -65,11 +64,14 @@ async function segmentImage({ imageUrl, prompts }) {
   const hit = cacheGet(cacheKey);
   if (hit) return { ...hit, cached: true };
 
-  // The subpath already selects the task — we just need the image and the
-  // vocabulary as text_input.
+  // Grounding DINO accepts the period-separated vocabulary as `text_prompt`
+  // and returns one bbox per detected instance, each labeled with which
+  // input category matched.
   const body = {
     image_url: imageUrl,
-    text_input: text,
+    text_prompt: text,
+    box_threshold: 0.3,
+    text_threshold: 0.25,
   };
 
   const res = await fetch(FAL_ENDPOINT, {
@@ -83,7 +85,7 @@ async function segmentImage({ imageUrl, prompts }) {
 
   if (!res.ok) {
     const detail = await res.text();
-    const err = new Error(`fal.ai florence-2-large error: ${res.status}`);
+    const err = new Error(`fal.ai grounding-dino error: ${res.status}`);
     err.detail = detail.slice(0, 500);
     err.status = res.status;
     throw err;
@@ -97,50 +99,56 @@ async function segmentImage({ imageUrl, prompts }) {
   //   { results: { "<OPEN_VOCABULARY_DETECTION>": { bboxes, bboxes_labels } } } (keyed)
   //   { bboxes, labels }                                                 (root)
   // Try all three.
-  const taskOutput =
-       json?.results?.['<OPEN_VOCABULARY_DETECTION>']
-    || json?.['<OPEN_VOCABULARY_DETECTION>']
-    || json?.results
-    || json
-    || {};
+  // Grounding DINO on fal.ai returns roughly:
+  //   { detections: [{ box: [x1,y1,x2,y2] OR {x,y,w,h}, label: "fridge", score: 0.85 }, ...] }
+  // Fall back through likely keys so we're resilient to small wrapper changes.
+  const detections =
+       (Array.isArray(json?.detections)         && json.detections)
+    || (Array.isArray(json?.results?.detections) && json.results.detections)
+    || (Array.isArray(json?.boxes)              && json.boxes)
+    || (Array.isArray(json?.results?.boxes)     && json.results.boxes)
+    || (Array.isArray(json?.results)            && json.results)
+    || [];
 
-  // fal.ai's Florence-2 returns bboxes as an array of OBJECTS, each with
-  // shape { box: [x1,y1,x2,y2], label: "...", score?: 0.8 } OR similar.
-  // We accept any reasonable mix: raw [x1,y1,x2,y2] arrays, objects with
-  // box/bbox/coords + label, or split bboxes[] + bboxes_labels[] arrays.
-  function extractBoxAndLabel(item, index, parallelLabels) {
+  function extractCoords(item) {
+    // Accept any of: [x1,y1,x2,y2], {box:[...]}, {bbox:[...]}, {x,y,w,h}, {x1,y1,x2,y2}
     if (Array.isArray(item) && item.length >= 4) {
-      return { coords: item, label: parallelLabels?.[index] || 'object' };
+      return { x1: item[0], y1: item[1], x2: item[2], y2: item[3] };
     }
     if (item && typeof item === 'object') {
-      const coords = item.box || item.bbox || item.coords || item.coordinates;
-      const label = item.label || item.class || item.category || parallelLabels?.[index] || 'object';
-      if (Array.isArray(coords) && coords.length >= 4) {
-        return { coords, label, score: typeof item.score === 'number' ? item.score : null };
+      const arrLike = item.box || item.bbox || item.coords || item.coordinates;
+      if (Array.isArray(arrLike) && arrLike.length >= 4) {
+        return { x1: arrLike[0], y1: arrLike[1], x2: arrLike[2], y2: arrLike[3] };
+      }
+      if (typeof item.x === 'number' && typeof item.y === 'number'
+          && typeof item.w === 'number' && typeof item.h === 'number') {
+        return { x1: item.x, y1: item.y, x2: item.x + item.w, y2: item.y + item.h };
+      }
+      if (typeof item.x1 === 'number' && typeof item.x2 === 'number') {
+        return { x1: item.x1, y1: item.y1, x2: item.x2, y2: item.y2 };
       }
     }
     return null;
   }
 
-  const rawBoxes =
-       (Array.isArray(taskOutput.bboxes) && taskOutput.bboxes)
-    || (Array.isArray(taskOutput.detections) && taskOutput.detections)
-    || (Array.isArray(taskOutput.boxes) && taskOutput.boxes)
-    || [];
-  const parallelLabels =
-       (Array.isArray(taskOutput.bboxes_labels) && taskOutput.bboxes_labels)
-    || (Array.isArray(taskOutput.labels) && taskOutput.labels)
-    || null;
-
-  const segments = rawBoxes.map((item, i) => {
-    const parsed = extractBoxAndLabel(item, i, parallelLabels);
-    if (!parsed) return null;
-    const [x1, y1, x2, y2] = parsed.coords.map(Math.round);
+  const segments = detections.map((item, i) => {
+    const c = extractCoords(item);
+    if (!c) return null;
+    const x1 = Math.round(c.x1);
+    const y1 = Math.round(c.y1);
+    const x2 = Math.round(c.x2);
+    const y2 = Math.round(c.y2);
+    const rawLabel = (item && typeof item === 'object')
+      ? (item.label || item.class || item.category || item.phrase || 'object')
+      : 'object';
+    const score = (item && typeof item.score === 'number') ? item.score
+                : (item && typeof item.confidence === 'number') ? item.confidence
+                : null;
     return {
       id: `seg-${i}`,
-      label: String(parsed.label).toLowerCase(),
-      confidence: parsed.score ? +parsed.score.toFixed(3) : null,
-      bbox: [x1, y1, Math.max(1, x2 - x1), Math.max(1, y2 - y1)], // [x, y, w, h]
+      label: String(rawLabel).toLowerCase().trim(),
+      confidence: score ? +score.toFixed(3) : null,
+      bbox: [x1, y1, Math.max(1, x2 - x1), Math.max(1, y2 - y1)],
       polygon: null,
     };
   }).filter(Boolean);
@@ -148,10 +156,9 @@ async function segmentImage({ imageUrl, prompts }) {
   const data = {
     segments,
     inferred_categories: [...new Set(segments.map((s) => s.label))],
-    // Diagnostic on zero-segment responses only — drop in a follow-up once
-    // we're confident in the parser. Shows what shape fal.ai actually sent.
+    // Diagnostic on zero-segment responses only — drop once parser is verified.
     _debug_raw_sample: segments.length === 0
-      ? JSON.stringify(rawBoxes).slice(0, 400)
+      ? JSON.stringify(json).slice(0, 600)
       : undefined,
   };
   cacheSet(cacheKey, data);
