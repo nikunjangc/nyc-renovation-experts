@@ -1,6 +1,34 @@
 # Design Studio — Implementation Plan
 **Project:** nycrenovationexperts.com — photo-to-3D kitchen/bath swap engine
-**Status:** Draft v0 (pre-PoC)
+**Status:** v1 (post-decisions, pre-PoC)
+
+---
+
+## Locked decisions (this session)
+
+After reviewing the original draft, the following were locked in:
+
+- **Scope:** 3D is **non-negotiable for v1**, but applied to *replacement products*
+  rather than the full room. The user's photo stays as a 2D backdrop; replacement
+  products (the new fridge, faucet, etc.) are rendered as real 3D models the user
+  can rotate and inspect against that backdrop.
+- **Budget cap:** **$200/month** all-in. Open-source models on fal.ai (TripoSR /
+  Hunyuan3D / Trellis), not Meshy. SerpAPI free/entry tier. DeepSeek (already in
+  use). Aggressive caching at every layer.
+- **3D vendor:** **fal.ai** (open-source models). Per-render cost is roughly
+  $0.02–0.10 — verify on Phase 0 PoC. The Meshy/Tripo commercial path is parked.
+- **Phase 1 reach:** ship with click-to-product + 3D replacement render. Skip
+  full-room 3D reconstruction entirely (it doesn't work well on open-source
+  models and would blow the budget anyway).
+- **Architecture consequence:** see §1 below for the updated data flow. The
+  three.js viewer composites a 2D photo plane with one or more 3D product
+  models — it does *not* render a reconstructed 3D room.
+
+The original component decisions for segmentation, clarifier reuse, and the
+catalog approach (§2.2, §2.4, §2.5 below) are unchanged. Decisions on Meshy
+(§2.1) and full-3D viewer (§2.3) are superseded by the locked decisions above —
+the original analysis is retained for reference and so a future budget bump can
+revisit it cheaply.
 
 ---
 
