@@ -155,8 +155,17 @@ async function getRenderStatus({ requestId, imageUrl }) {
     headers: { 'Authorization': `Key ${apiKey}` },
   });
   if (!statusRes.ok) {
-    const err = new Error(`fal.ai status check error: ${statusRes.status}`);
-    err.detail = (await statusRes.text()).slice(0, 500);
+    // Pull every signal fal.ai sends back. For 405 the `Allow` header lists
+    // valid methods. For 401/403 the body usually says why. For 404 the URL
+    // is wrong. We surface all of it for diagnosis.
+    const body = (await statusRes.text()).slice(0, 500);
+    const headerDump = {
+      allow:        statusRes.headers.get('allow'),
+      content_type: statusRes.headers.get('content-type'),
+      www_auth:     statusRes.headers.get('www-authenticate'),
+    };
+    const err = new Error(`fal.ai status check ${statusRes.status} on ${finalStatusUrl}`);
+    err.detail = `body=${body} | headers=${JSON.stringify(headerDump)}`;
     err.status = statusRes.status;
     throw err;
   }
