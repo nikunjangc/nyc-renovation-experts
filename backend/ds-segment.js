@@ -1,30 +1,32 @@
-// Design Studio: photo segmentation via fal.ai's Grounding DINO.
+// Design Studio: photo segmentation via fal.ai's Florence-2
+// `caption-to-phrase-grounding` task.
 //
-// Returns labeled bounding boxes for each detected fixture, which the
-// frontend draws as clickable rectangles on a canvas overlay.
+// This task is exactly designed for our use case: take a caption containing
+// multiple noun phrases and ground each phrase to its own bounding box in
+// the image. We pass a caption that lists every fixture we want to find
+// ("A refrigerator. A sink. A stove. ...") and get back one bbox per
+// detected instance, labeled with the phrase that matched.
 //
-// Why Grounding DINO (not Florence-2 or full SAM 2):
-//   - Grounding DINO is *designed* for multi-category open-vocabulary
-//     detection in a single call. Pass it a period-separated list of
-//     categories and it returns one bounding box per detected instance,
-//     labeled with which category matched.
-//   - Florence-2's <OPEN_VOCABULARY_DETECTION> on fal.ai treats the whole
-//     text input as a single phrase to find — wrong shape for our needs.
-//   - Full Grounded-SAM-2 (DINO + SAM 2 pixel masks) is ~17x more expensive
-//     for masks we don't need at v1.
+// Why this and not the alternatives we tried:
+//   - `open-vocabulary-detection`: treats the WHOLE text_input as a single
+//     phrase to find, returning one bbox labeled with the whole prompt.
+//     Wrong shape for multi-category detection.
+//   - `grounding-dino` / `grounded-sam-2`: not hosted on fal.ai under those
+//     names.
+//   - Full Grounded-SAM-2 with pixel masks: 17x cost; we only need bboxes.
 //
-// fal.ai docs: https://fal.ai/models/fal-ai/grounding-dino
+// Reference: Microsoft Florence-2 paper, <CAPTION_TO_PHRASE_GROUNDING> task.
 
 const crypto = require('crypto');
 
-const FAL_ENDPOINT = 'https://fal.run/fal-ai/grounding-dino';
+const FAL_ENDPOINT = 'https://fal.run/fal-ai/florence-2-large/caption-to-phrase-grounding';
 
-// Vocabulary for the open-vocabulary detector. Tuned for kitchen + bath
-// renovation. Period-separated as Florence-2 expects.
+// "A " prefix on each noun phrase helps caption-to-phrase-grounding parse
+// distinct phrases reliably (it expects natural-language captions).
 const DEFAULT_PROMPTS =
-  'refrigerator. stove. cooktop. oven. range hood. microwave. dishwasher. ' +
-  'sink. faucet. cabinet. countertop. bathtub. shower. toilet. vanity. ' +
-  'mirror. backsplash. light fixture.';
+  'A refrigerator. A stove. A cooktop. An oven. A range hood. A microwave. ' +
+  'A dishwasher. A sink. A faucet. A cabinet. A countertop. A bathtub. ' +
+  'A shower. A toilet. A vanity. A mirror. A backsplash. A light fixture.';
 
 const cache = new Map();
 const CACHE_TTL_MS = 7 * 24 * 60 * 60 * 1000;
@@ -64,14 +66,11 @@ async function segmentImage({ imageUrl, prompts }) {
   const hit = cacheGet(cacheKey);
   if (hit) return { ...hit, cached: true };
 
-  // Grounding DINO accepts the period-separated vocabulary as `text_prompt`
-  // and returns one bbox per detected instance, each labeled with which
-  // input category matched.
+  // caption-to-phrase-grounding takes the caption as `text_input` and
+  // grounds each noun phrase to a region.
   const body = {
     image_url: imageUrl,
-    text_prompt: text,
-    box_threshold: 0.3,
-    text_threshold: 0.25,
+    text_input: text,
   };
 
   const res = await fetch(FAL_ENDPOINT, {
@@ -85,7 +84,7 @@ async function segmentImage({ imageUrl, prompts }) {
 
   if (!res.ok) {
     const detail = await res.text();
-    const err = new Error(`fal.ai grounding-dino error: ${res.status}`);
+    const err = new Error(`fal.ai florence-2 caption-to-phrase-grounding error: ${res.status}`);
     err.detail = detail.slice(0, 500);
     err.status = res.status;
     throw err;
@@ -99,16 +98,22 @@ async function segmentImage({ imageUrl, prompts }) {
   //   { results: { "<OPEN_VOCABULARY_DETECTION>": { bboxes, bboxes_labels } } } (keyed)
   //   { bboxes, labels }                                                 (root)
   // Try all three.
-  // Grounding DINO on fal.ai returns roughly:
-  //   { detections: [{ box: [x1,y1,x2,y2] OR {x,y,w,h}, label: "fridge", score: 0.85 }, ...] }
-  // Fall back through likely keys so we're resilient to small wrapper changes.
+  // Florence-2 caption-to-phrase-grounding response (from Microsoft's spec):
+  //   { results: { bboxes: [...], labels: ["a refrigerator", ...] } }
+  // OR the fal.ai wrapper might shape each entry as { x, y, w, h, label }
+  // (we saw this with open-vocabulary-detection). Handle both.
+  const results = json?.results || json || {};
   const detections =
-       (Array.isArray(json?.detections)         && json.detections)
-    || (Array.isArray(json?.results?.detections) && json.results.detections)
-    || (Array.isArray(json?.boxes)              && json.boxes)
-    || (Array.isArray(json?.results?.boxes)     && json.results.boxes)
-    || (Array.isArray(json?.results)            && json.results)
+       (Array.isArray(results.bboxes)      && results.bboxes)
+    || (Array.isArray(results.detections)  && results.detections)
+    || (Array.isArray(results.boxes)       && results.boxes)
+    || (Array.isArray(results)             && results)
     || [];
+  // Parallel arrays variant: Florence-2's native shape splits bboxes + labels.
+  const parallelLabels =
+       (Array.isArray(results.bboxes_labels) && results.bboxes_labels)
+    || (Array.isArray(results.labels)        && results.labels)
+    || null;
 
   function extractCoords(item) {
     // Accept any of: [x1,y1,x2,y2], {box:[...]}, {bbox:[...]}, {x,y,w,h}, {x1,y1,x2,y2}
@@ -131,6 +136,13 @@ async function segmentImage({ imageUrl, prompts }) {
     return null;
   }
 
+  // Clean up the label — strip leading articles ("a refrigerator" → "refrigerator")
+  function normalizeLabel(raw) {
+    return String(raw || 'object').toLowerCase().trim()
+      .replace(/^(a |an |the )/, '')
+      .replace(/\s+/g, ' ');
+  }
+
   const segments = detections.map((item, i) => {
     const c = extractCoords(item);
     if (!c) return null;
@@ -139,14 +151,15 @@ async function segmentImage({ imageUrl, prompts }) {
     const x2 = Math.round(c.x2);
     const y2 = Math.round(c.y2);
     const rawLabel = (item && typeof item === 'object')
-      ? (item.label || item.class || item.category || item.phrase || 'object')
-      : 'object';
+      ? (item.label || item.class || item.category || item.phrase)
+      : null;
+    const label = normalizeLabel(rawLabel || parallelLabels?.[i] || 'object');
     const score = (item && typeof item.score === 'number') ? item.score
                 : (item && typeof item.confidence === 'number') ? item.confidence
                 : null;
     return {
       id: `seg-${i}`,
-      label: String(rawLabel).toLowerCase().trim(),
+      label,
       confidence: score ? +score.toFixed(3) : null,
       bbox: [x1, y1, Math.max(1, x2 - x1), Math.max(1, y2 - y1)],
       polygon: null,
