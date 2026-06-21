@@ -6,35 +6,52 @@
 //   POST /api/ds-render3d         body: { imageUrl } -> { requestId, status }
 //   POST /api/ds-render3d-status  body: { requestId } -> { status, modelUrl? }
 //
-// Vendor docs: https://fal.ai/models/fal-ai/hunyuan3d/v2
-//
 // Cost: ~$0.05/render. We cache GLB URLs by source-image hash for 7 days
 // so multiple users selecting the same product share one render.
+//
+// Implementation note: fal.ai's submit response includes literal status_url,
+// response_url, and cancel_url fields. We capture those at submit time and
+// use them verbatim for subsequent polling — much more robust than guessing
+// URL patterns. Cached in-memory keyed by request_id so a status check
+// doesn't need the frontend to remember anything but the request_id.
 
 const crypto = require('crypto');
 
 const SUBMIT_URL = 'https://queue.fal.run/fal-ai/hunyuan3d/v2';
-const STATUS_URL = (id) => `https://queue.fal.run/fal-ai/hunyuan3d/v2/requests/${id}/status`;
-const RESULT_URL = (id) => `https://queue.fal.run/fal-ai/hunyuan3d/v2/requests/${id}`;
 
+// Cache layer 1: requestId -> { statusUrl, responseUrl, sourceImageUrl }.
+// Lets us look up the exact status/result URLs fal.ai handed back at submit
+// time, instead of constructing them from scratch.
+const requestUrls = new Map();
+
+// Cache layer 2: source-image-hash -> { modelUrl }. So a re-pick of the same
+// product doesn't burn another Hunyuan3D render.
 const resultCache = new Map();
-const CACHE_TTL_MS = 7 * 24 * 60 * 60 * 1000;
-const MAX_CACHE = 500;
+
+const CACHE_TTL_MS = 7 * 24 * 60 * 60 * 1000; // 7d
+const MAX_CACHE = 1000;
+
+function trim(map) {
+  if (map.size >= MAX_CACHE) {
+    const oldest = map.keys().next().value;
+    if (oldest) map.delete(oldest);
+  }
+}
 
 function cacheKeyForImage(url) {
   return crypto.createHash('sha256').update(String(url || '')).digest('hex').slice(0, 24);
 }
-function cacheGet(k) {
+
+function modelUrlCacheGet(imageUrl) {
+  const k = cacheKeyForImage(imageUrl);
   const e = resultCache.get(k);
   if (!e) return null;
   if (Date.now() - e.ts > CACHE_TTL_MS) { resultCache.delete(k); return null; }
   return e.data;
 }
-function cacheSet(k, data) {
-  if (resultCache.size >= MAX_CACHE) {
-    const oldest = resultCache.keys().next().value;
-    if (oldest) resultCache.delete(oldest);
-  }
+function modelUrlCacheSet(imageUrl, data) {
+  const k = cacheKeyForImage(imageUrl);
+  trim(resultCache);
   resultCache.set(k, { ts: Date.now(), data });
 }
 
@@ -48,24 +65,19 @@ function requireKey() {
   return k;
 }
 
-// Submit a render job. Returns { requestId, status: 'IN_QUEUE', cachedModelUrl? }
+// Submit a render job. Returns { requestId, status, sourceImageUrl } or
+// { status: 'COMPLETED', modelUrl, cached: true } on a cache hit.
 async function submitProductRender({ imageUrl }) {
   const apiKey = requireKey();
   if (!imageUrl) throw new Error('imageUrl is required');
 
-  // Cache check: if we've already rendered this image, return the URL directly
-  // and skip the fal.ai call.
-  const ck = cacheKeyForImage(imageUrl);
-  const hit = cacheGet(ck);
-  if (hit && hit.modelUrl) {
-    return { status: 'COMPLETED', modelUrl: hit.modelUrl, cached: true };
+  const cached = modelUrlCacheGet(imageUrl);
+  if (cached?.modelUrl) {
+    return { status: 'COMPLETED', modelUrl: cached.modelUrl, cached: true };
   }
 
   const body = {
     input_image_urls: [imageUrl],
-    // Sensible defaults for product renders: clean texture, simplified
-    // topology. Override per call if a specific product needs different
-    // settings.
     texture: true,
     remove_background: true,
     target_polycount: 50000,
@@ -88,12 +100,26 @@ async function submitProductRender({ imageUrl }) {
     throw err;
   }
   const json = await res.json();
-  if (!json.request_id) {
+  const requestId   = json.request_id;
+  const statusUrl   = json.status_url;
+  const responseUrl = json.response_url;
+  if (!requestId) {
     const err = new Error('fal.ai did not return a request_id');
     err.detail = JSON.stringify(json).slice(0, 500);
     throw err;
   }
-  return { status: 'IN_QUEUE', requestId: json.request_id, sourceImageUrl: imageUrl };
+
+  // Stash the literal URLs fal.ai gave back so status checks use them
+  // verbatim instead of guessed paths.
+  trim(requestUrls);
+  requestUrls.set(requestId, {
+    statusUrl,
+    responseUrl,
+    sourceImageUrl: imageUrl,
+    ts: Date.now(),
+  });
+
+  return { status: 'IN_QUEUE', requestId, sourceImageUrl: imageUrl };
 }
 
 // Poll job status. Returns { status, modelUrl?, error? }
@@ -101,7 +127,18 @@ async function getRenderStatus({ requestId, imageUrl }) {
   const apiKey = requireKey();
   if (!requestId) throw new Error('requestId is required');
 
-  const statusRes = await fetch(STATUS_URL(requestId), {
+  // Look up the URLs we captured at submit. Fall back to constructed URLs in
+  // case the cache was evicted (cold start on a different Vercel instance).
+  const cached = requestUrls.get(requestId);
+  const statusUrl =
+       cached?.statusUrl
+    || `${SUBMIT_URL}/requests/${requestId}/status`;
+  const responseUrl =
+       cached?.responseUrl
+    || `${SUBMIT_URL}/requests/${requestId}`;
+  const sourceImage = cached?.sourceImageUrl || imageUrl;
+
+  const statusRes = await fetch(statusUrl, {
     headers: { 'Authorization': `Key ${apiKey}` },
   });
   if (!statusRes.ok) {
@@ -113,8 +150,7 @@ async function getRenderStatus({ requestId, imageUrl }) {
   const statusJson = await statusRes.json();
 
   if (statusJson.status === 'COMPLETED') {
-    // Fetch the result body to get the model URL.
-    const resultRes = await fetch(RESULT_URL(requestId), {
+    const resultRes = await fetch(responseUrl, {
       headers: { 'Authorization': `Key ${apiKey}` },
     });
     if (!resultRes.ok) {
@@ -123,14 +159,22 @@ async function getRenderStatus({ requestId, imageUrl }) {
       throw err;
     }
     const result = await resultRes.json();
-    const modelUrl = result?.model_mesh?.url || result?.model_glb?.url || null;
-    if (modelUrl && imageUrl) {
-      cacheSet(cacheKeyForImage(imageUrl), { modelUrl });
+    // Hunyuan3D can put the GLB at any of these field names depending on the
+    // model version — handle all.
+    const modelUrl =
+         result?.model_mesh?.url
+      || result?.model_glb?.url
+      || result?.glb?.url
+      || result?.output?.url
+      || result?.url
+      || null;
+    if (modelUrl && sourceImage) {
+      modelUrlCacheSet(sourceImage, { modelUrl });
     }
     return { status: 'COMPLETED', modelUrl };
   }
 
-  // IN_QUEUE, IN_PROGRESS, or FAILED
+  // IN_QUEUE, IN_PROGRESS, FAILED, or anything else fal.ai sends back.
   return {
     status: statusJson.status || 'UNKNOWN',
     queuePosition: statusJson.queue_position,
