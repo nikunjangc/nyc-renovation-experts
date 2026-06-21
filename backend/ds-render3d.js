@@ -19,6 +19,17 @@ const crypto = require('crypto');
 
 const SUBMIT_URL = 'https://queue.fal.run/fal-ai/hunyuan3d/v2';
 
+// fal.ai's documented queue URL pattern uses /v2/status/{id} and
+// /v2/requests/{id}, even though the submit response returns URLs without
+// the /v2 segment and with /requests/{id}/status (which 405's). We construct
+// the documented form ourselves rather than trusting submit's URLs.
+function statusUrlFor(requestId) {
+  return `https://queue.fal.run/fal-ai/hunyuan3d/v2/status/${encodeURIComponent(requestId)}`;
+}
+function responseUrlFor(requestId) {
+  return `https://queue.fal.run/fal-ai/hunyuan3d/v2/requests/${encodeURIComponent(requestId)}`;
+}
+
 // Cache: source-image-hash -> { modelUrl }. So a re-pick of the same product
 // doesn't burn another Hunyuan3D render. Per-instance in-memory — fine for
 // repeat hits on the same Vercel instance; cache misses just trigger a fresh
@@ -131,24 +142,16 @@ async function submitProductRender({ imageUrl }) {
   };
 }
 
-// Poll job status. The frontend MUST pass back the statusUrl + responseUrl it
-// received from submit — Vercel serverless is stateless, so we can't look
-// them up server-side. Returns { status, modelUrl?, error? }.
-async function getRenderStatus({ requestId, imageUrl, statusUrl, responseUrl }) {
+// Poll job status. Stateless across Vercel instances — we construct the
+// documented status/result URLs from the requestId.
+async function getRenderStatus({ requestId, imageUrl }) {
   const apiKey = requireKey();
   if (!requestId) throw new Error('requestId is required');
 
-  // Validate the URLs the frontend sent. If they're missing or invalid, fall
-  // back to a constructed guess (which may still 405, but we surface the
-  // error clearly).
-  const safeStatusUrl = isValidFalUrl(statusUrl)
-    ? statusUrl
-    : `${SUBMIT_URL}/requests/${encodeURIComponent(requestId)}/status`;
-  const safeResponseUrl = isValidFalUrl(responseUrl)
-    ? responseUrl
-    : `${SUBMIT_URL}/requests/${encodeURIComponent(requestId)}`;
+  const finalStatusUrl   = statusUrlFor(requestId);
+  const finalResponseUrl = responseUrlFor(requestId);
 
-  const statusRes = await fetch(safeStatusUrl, {
+  const statusRes = await fetch(finalStatusUrl, {
     headers: { 'Authorization': `Key ${apiKey}` },
   });
   if (!statusRes.ok) {
@@ -160,7 +163,7 @@ async function getRenderStatus({ requestId, imageUrl, statusUrl, responseUrl }) 
   const statusJson = await statusRes.json();
 
   if (statusJson.status === 'COMPLETED') {
-    const resultRes = await fetch(safeResponseUrl, {
+    const resultRes = await fetch(finalResponseUrl, {
       headers: { 'Authorization': `Key ${apiKey}` },
     });
     if (!resultRes.ok) {
