@@ -103,23 +103,43 @@ async function segmentImage({ imageUrl, prompts }) {
     || json?.results
     || json
     || {};
-  const bboxes =
+
+  // fal.ai's Florence-2 returns bboxes as an array of OBJECTS, each with
+  // shape { box: [x1,y1,x2,y2], label: "...", score?: 0.8 } OR similar.
+  // We accept any reasonable mix: raw [x1,y1,x2,y2] arrays, objects with
+  // box/bbox/coords + label, or split bboxes[] + bboxes_labels[] arrays.
+  function extractBoxAndLabel(item, index, parallelLabels) {
+    if (Array.isArray(item) && item.length >= 4) {
+      return { coords: item, label: parallelLabels?.[index] || 'object' };
+    }
+    if (item && typeof item === 'object') {
+      const coords = item.box || item.bbox || item.coords || item.coordinates;
+      const label = item.label || item.class || item.category || parallelLabels?.[index] || 'object';
+      if (Array.isArray(coords) && coords.length >= 4) {
+        return { coords, label, score: typeof item.score === 'number' ? item.score : null };
+      }
+    }
+    return null;
+  }
+
+  const rawBoxes =
        (Array.isArray(taskOutput.bboxes) && taskOutput.bboxes)
-    || (Array.isArray(taskOutput.detections) && taskOutput.detections.map(d => d.bbox || d.box))
+    || (Array.isArray(taskOutput.detections) && taskOutput.detections)
+    || (Array.isArray(taskOutput.boxes) && taskOutput.boxes)
     || [];
-  const labels =
+  const parallelLabels =
        (Array.isArray(taskOutput.bboxes_labels) && taskOutput.bboxes_labels)
     || (Array.isArray(taskOutput.labels) && taskOutput.labels)
-    || (Array.isArray(taskOutput.detections) && taskOutput.detections.map(d => d.label))
-    || [];
+    || null;
 
-  const segments = bboxes.map((box, i) => {
-    if (!Array.isArray(box) || box.length < 4) return null;
-    const [x1, y1, x2, y2] = box.map(Math.round);
+  const segments = rawBoxes.map((item, i) => {
+    const parsed = extractBoxAndLabel(item, i, parallelLabels);
+    if (!parsed) return null;
+    const [x1, y1, x2, y2] = parsed.coords.map(Math.round);
     return {
       id: `seg-${i}`,
-      label: String(labels[i] || 'object').toLowerCase(),
-      confidence: null,
+      label: String(parsed.label).toLowerCase(),
+      confidence: parsed.score ? +parsed.score.toFixed(3) : null,
       bbox: [x1, y1, Math.max(1, x2 - x1), Math.max(1, y2 - y1)], // [x, y, w, h]
       polygon: null,
     };
@@ -128,10 +148,11 @@ async function segmentImage({ imageUrl, prompts }) {
   const data = {
     segments,
     inferred_categories: [...new Set(segments.map((s) => s.label))],
-    // Temporary diagnostic: keys at top level of the fal.ai response so we
-    // can confirm our parser shape matches reality. Drop this once verified.
-    _debug_response_keys: segments.length === 0 ? Object.keys(json || {}) : undefined,
-    _debug_results_keys: segments.length === 0 && json?.results ? Object.keys(json.results) : undefined,
+    // Diagnostic on zero-segment responses only — drop in a follow-up once
+    // we're confident in the parser. Shows what shape fal.ai actually sent.
+    _debug_raw_sample: segments.length === 0
+      ? JSON.stringify(rawBoxes).slice(0, 400)
+      : undefined,
   };
   cacheSet(cacheKey, data);
   return data;
