@@ -1,24 +1,28 @@
-// Design Studio: photo segmentation via fal.ai Grounded SAM 2.
+// Design Studio: photo segmentation via fal.ai's Florence-2 open-vocabulary
+// detection. Returns labeled bounding boxes for each detected fixture, which
+// the frontend draws as clickable rectangles on a canvas overlay.
 //
-// Takes an image (as a data URL or public URL) plus a list of object labels we
-// want to find, returns labeled bounding boxes + mask polygons the frontend can
-// draw as click targets on a canvas overlay.
+// Why Florence-2 (not SAM 2):
+//   - Florence-2 is open-vocabulary out of the box (`<OPEN_VOCABULARY_DETECTION>`
+//     task) — pass it our appliance vocabulary as plain text, get labeled
+//     bboxes back. No combo-pipeline needed.
+//   - Bounding boxes are enough to render click targets on a canvas. We don't
+//     need pixel masks for v1 of the click-to-find-product flow.
+//   - Materially cheaper (~$0.003/image vs ~$0.05 for full Grounded-SAM-2),
+//     which matters at the $200/mo budget cap.
 //
-// fal.ai Grounded SAM 2 reference: https://fal.ai/models/fal-ai/grounded-sam-2
-//
-// Cost: ~$0.05 per image. We cache by SHA-256 of the image bytes for 7 days
-// so re-uploads of the same photo are free.
+// fal.ai docs: https://fal.ai/models/fal-ai/florence-2-large
 
 const crypto = require('crypto');
 
-const FAL_ENDPOINT = 'https://fal.run/fal-ai/grounded-sam-2-image';
+const FAL_ENDPOINT = 'https://fal.run/fal-ai/florence-2-large';
 
-// Vocabulary tuned for kitchen + bathroom renovation. Order doesn't matter;
-// Grounding DINO finds whichever ones are present.
+// Vocabulary for the open-vocabulary detector. Tuned for kitchen + bath
+// renovation. Period-separated as Florence-2 expects.
 const DEFAULT_PROMPTS =
   'refrigerator. stove. cooktop. oven. range hood. microwave. dishwasher. ' +
   'sink. faucet. cabinet. countertop. bathtub. shower. toilet. vanity. ' +
-  'mirror. tile. backsplash. light fixture.';
+  'mirror. backsplash. light fixture.';
 
 const cache = new Map();
 const CACHE_TTL_MS = 7 * 24 * 60 * 60 * 1000;
@@ -38,7 +42,7 @@ function cacheSet(key, data) {
   cache.set(key, { ts: Date.now(), data });
 }
 
-function hashImage(input) {
+function hashKey(input) {
   return crypto.createHash('sha256').update(input).digest('hex').slice(0, 24);
 }
 
@@ -50,15 +54,18 @@ async function segmentImage({ imageUrl, prompts }) {
     throw err;
   }
   const text = (prompts && String(prompts).trim()) || DEFAULT_PROMPTS;
-  const cacheKey = hashImage(imageUrl + '|' + text);
+
+  // Cache by (image-content-fingerprint + prompts). For data URLs we only hash
+  // the first 200KB to keep the key derivation fast.
+  const fingerprint = imageUrl.length > 200_000 ? imageUrl.slice(0, 200_000) : imageUrl;
+  const cacheKey = hashKey(fingerprint + '|' + text);
   const hit = cacheGet(cacheKey);
   if (hit) return { ...hit, cached: true };
 
   const body = {
     image_url: imageUrl,
-    prompts: text,
-    box_threshold: 0.3,
-    text_threshold: 0.25,
+    task_prompt: '<OPEN_VOCABULARY_DETECTION>',
+    text_input: text,
   };
 
   const res = await fetch(FAL_ENDPOINT, {
@@ -72,24 +79,36 @@ async function segmentImage({ imageUrl, prompts }) {
 
   if (!res.ok) {
     const detail = await res.text();
-    const err = new Error(`fal.ai grounded-sam-2 error: ${res.status}`);
+    const err = new Error(`fal.ai florence-2-large error: ${res.status}`);
     err.detail = detail.slice(0, 500);
     err.status = res.status;
     throw err;
   }
 
   const json = await res.json();
-  const masks = Array.isArray(json.masks) ? json.masks : [];
 
-  // Normalize fal.ai response into a shape the frontend can render directly.
-  const segments = masks.map((m, i) => ({
-    id: `seg-${i}`,
-    label: String(m.label || 'object').toLowerCase(),
-    confidence: typeof m.score === 'number' ? +m.score.toFixed(3) : null,
-    bbox: Array.isArray(m.bbox) ? m.bbox.map(Math.round) : null,
-    polygon: Array.isArray(m.polygon) ? m.polygon : null,
-    maskUrl: m.mask_url || m.mask || null,
-  })).filter((s) => s.bbox || s.polygon);
+  // Florence-2 returns:
+  //   { results: { "<OPEN_VOCABULARY_DETECTION>": { bboxes: [[x1,y1,x2,y2],...], bboxes_labels: ["fridge",...] } } }
+  // We normalize each entry to { id, label, bbox: [x, y, w, h], confidence }.
+  // (Florence-2 doesn't return per-detection confidence scores — we leave that
+  //  field null so the UI shows the label without a percentage.)
+  const taskOutput = json?.results?.['<OPEN_VOCABULARY_DETECTION>']
+    || json?.['<OPEN_VOCABULARY_DETECTION>']  // some response shapes flatten it
+    || {};
+  const bboxes = Array.isArray(taskOutput.bboxes) ? taskOutput.bboxes : [];
+  const labels = Array.isArray(taskOutput.bboxes_labels) ? taskOutput.bboxes_labels : [];
+
+  const segments = bboxes.map((box, i) => {
+    if (!Array.isArray(box) || box.length < 4) return null;
+    const [x1, y1, x2, y2] = box.map(Math.round);
+    return {
+      id: `seg-${i}`,
+      label: String(labels[i] || 'object').toLowerCase(),
+      confidence: null,
+      bbox: [x1, y1, Math.max(1, x2 - x1), Math.max(1, y2 - y1)], // [x, y, w, h]
+      polygon: null,
+    };
+  }).filter(Boolean);
 
   const data = {
     segments,
