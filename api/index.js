@@ -8,6 +8,8 @@ const { recommendProducts } = require('../backend/product-recommender');
 const { searchProducts } = require('../backend/product-search');
 const { clarifyProject } = require('../backend/project-clarifier');
 const { saveQuoteSubmission, listQuoteSubmissions, updateQuoteStatus } = require('./quote-store');
+const { segmentImage } = require('./ds-segment');
+const { submitProductRender, getRenderStatus } = require('./ds-render3d');
 require('dotenv').config();
 
 const app = express();
@@ -727,6 +729,73 @@ app.options('/api/product-search', (req, res) => {
   res.header('Access-Control-Allow-Headers', 'Content-Type, Authorization, X-Requested-With');
   res.header('Access-Control-Max-Age', '86400');
   res.status(200).send();
+});
+
+// ===== Design Studio =====
+// Three endpoints via fal.ai: segment a photo, kick off a 3D render of a
+// chosen product, poll that render. Upload stays in the browser (resize +
+// base64) so v1 has no Supabase Storage path to manage.
+
+function dsCors(req, res) {
+  setCORSHeaders(req, res);
+  res.header('Access-Control-Allow-Methods', 'GET, POST, OPTIONS');
+}
+
+app.options('/api/ds-segment', (req, res) => { dsCors(req, res); res.status(200).send(); });
+app.post('/api/ds-segment', rateLimiter, async (req, res) => {
+  dsCors(req, res);
+  try {
+    const { imageUrl, prompts } = req.body || {};
+    if (!imageUrl) return res.status(400).json({ error: 'imageUrl is required (data URL or public URL)' });
+    const data = await segmentImage({ imageUrl, prompts });
+    res.json(data);
+  } catch (error) {
+    console.error('ds-segment error:', error);
+    dsCors(req, res);
+    if (error.code === 'NOT_CONFIGURED') return res.status(503).json({ error: 'fal.ai not configured', hint: 'Set FAL_API_KEY in Vercel env vars' });
+    res.status(error.status || 500).json({
+      error: 'Segmentation failed',
+      upstream_message: (error.detail || error.message || '').toString().slice(0, 400),
+    });
+  }
+});
+
+app.options('/api/ds-render3d', (req, res) => { dsCors(req, res); res.status(200).send(); });
+app.post('/api/ds-render3d', rateLimiter, async (req, res) => {
+  dsCors(req, res);
+  try {
+    const { imageUrl } = req.body || {};
+    if (!imageUrl) return res.status(400).json({ error: 'imageUrl is required' });
+    const result = await submitProductRender({ imageUrl });
+    res.json(result);
+  } catch (error) {
+    console.error('ds-render3d error:', error);
+    dsCors(req, res);
+    if (error.code === 'NOT_CONFIGURED') return res.status(503).json({ error: 'fal.ai not configured' });
+    res.status(error.status || 500).json({
+      error: '3D render submit failed',
+      upstream_message: (error.detail || error.message || '').toString().slice(0, 400),
+    });
+  }
+});
+
+app.options('/api/ds-render3d-status', (req, res) => { dsCors(req, res); res.status(200).send(); });
+app.post('/api/ds-render3d-status', rateLimiter, async (req, res) => {
+  dsCors(req, res);
+  try {
+    const { requestId, imageUrl } = req.body || {};
+    if (!requestId) return res.status(400).json({ error: 'requestId is required' });
+    const result = await getRenderStatus({ requestId, imageUrl });
+    res.json(result);
+  } catch (error) {
+    console.error('ds-render3d-status error:', error);
+    dsCors(req, res);
+    if (error.code === 'NOT_CONFIGURED') return res.status(503).json({ error: 'fal.ai not configured' });
+    res.status(error.status || 500).json({
+      error: '3D render status check failed',
+      upstream_message: (error.detail || error.message || '').toString().slice(0, 400),
+    });
+  }
 });
 
 // ===== Quote persistence (Supabase) =====

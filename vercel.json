@@ -111,6 +111,18 @@
       "destination": "/api/index"
     },
     {
+      "source": "/api/ds-segment",
+      "destination": "/api/index"
+    },
+    {
+      "source": "/api/ds-render3d",
+      "destination": "/api/index"
+    },
+    {
+      "source": "/api/ds-render3d-status",
+      "destination": "/api/index"
+    },
+    {
       "source": "/api/self-fix",
       "destination": "/api/self-fix"
     },
