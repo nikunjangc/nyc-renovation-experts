@@ -365,17 +365,25 @@ async function pickProduct(product) {
       return;
     }
 
-    // Poll status until done.
-    const requestId = submitData.requestId;
+    // Poll status until done. The submit response includes the exact
+    // status_url + response_url fal.ai handed back — we MUST pass them
+    // through to status checks because Vercel serverless is stateless
+    // across invocations (can't be remembered server-side).
+    const { requestId, statusUrl, responseUrl } = submitData;
     if (!requestId) throw new Error('No requestId returned from render submit');
-    await pollUntilComplete(requestId, product.thumbnail);
+    await pollUntilComplete({
+      requestId,
+      statusUrl,
+      responseUrl,
+      imageUrl: product.thumbnail,
+    });
   } catch (err) {
     console.error('3D render failed', err);
     setThreeDStatus(`Couldn't render 3D model. ${err.message}`);
   }
 }
 
-async function pollUntilComplete(requestId, imageUrl) {
+async function pollUntilComplete({ requestId, statusUrl, responseUrl, imageUrl }) {
   const startedAt = Date.now();
   const timeoutMs = 180 * 1000;  // 3 minutes hard cap
   let lastStatus = '';
@@ -384,7 +392,7 @@ async function pollUntilComplete(requestId, imageUrl) {
     const res = await fetch(`${API}/api/ds-render3d-status`, {
       method:  'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ requestId, imageUrl }),
+      body: JSON.stringify({ requestId, statusUrl, responseUrl, imageUrl }),
     });
     const data = await res.json();
     if (!res.ok) throw new Error(data.upstream_message || data.error || `HTTP ${res.status}`);
