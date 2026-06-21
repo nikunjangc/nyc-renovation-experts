@@ -10,6 +10,7 @@ const { clarifyProject } = require('../backend/project-clarifier');
 const { saveQuoteSubmission, listQuoteSubmissions, updateQuoteStatus } = require('./quote-store');
 const { segmentImage } = require('../backend/ds-segment');
 const { submitProductRender, getRenderStatus } = require('../backend/ds-render3d');
+const { compositeProduct } = require('../backend/ds-composite');
 require('dotenv').config();
 
 const app = express();
@@ -775,6 +776,29 @@ app.post('/api/ds-render3d', rateLimiter, async (req, res) => {
     res.status(error.status || 500).json({
       error: '3D render submit failed',
       upstream_message: (error.detail || error.message || '').toString().slice(0, 400),
+    });
+  }
+});
+
+app.options('/api/ds-composite', (req, res) => { dsCors(req, res); res.status(200).send(); });
+app.post('/api/ds-composite', rateLimiter, async (req, res) => {
+  dsCors(req, res);
+  try {
+    const { photoUrl, segmentLabel, segmentPosition, product, photoSize, quality } = req.body || {};
+    if (!photoUrl)       return res.status(400).json({ error: 'photoUrl is required' });
+    if (!product?.title) return res.status(400).json({ error: 'product.title is required' });
+    const data = await compositeProduct({ photoUrl, segmentLabel, segmentPosition, product, photoSize, quality });
+    res.json(data);
+  } catch (error) {
+    console.error('ds-composite error:', error);
+    dsCors(req, res);
+    if (error.code === 'NOT_CONFIGURED') return res.status(503).json({
+      error: 'OpenAI not configured',
+      hint: 'Set OPENAI_API_KEY in Vercel env vars and redeploy',
+    });
+    res.status(error.status || 500).json({
+      error: 'Composite failed',
+      upstream_message: (error.detail || error.message || '').toString().slice(0, 500),
     });
   }
 });

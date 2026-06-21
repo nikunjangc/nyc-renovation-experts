@@ -123,6 +123,10 @@
       "destination": "/api/index"
     },
     {
+      "source": "/api/ds-composite",
+      "destination": "/api/index"
+    },
+    {
       "source": "/api/self-fix",
       "destination": "/api/self-fix"
     },

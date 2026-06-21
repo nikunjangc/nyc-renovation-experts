@@ -28,12 +28,13 @@ const state = {
   segments: [],               // [{id, label, bbox, polygon, confidence, custom?}]
   selectedSegment: null,
   clarifications: {},         // active question_id -> chosen_option (for current segment)
-  clarificationsBySeg: {},    // segment.id -> {qid: value} — persists across re-visits to the same segment
+  clarificationsBySeg: {},    // segment.id -> {qid: value}
   selectedProduct: null,      // chosen Product object
   previewMode: '2d',          // '2d' | '3d'
-  modelUrlByThumb: new Map(), // thumbnailUrl -> rendered GLB url
+  modelUrlByThumb: new Map(), // thumbnailUrl -> rendered GLB url (3D cache)
+  compositeByThumb: new Map(),// thumbnailUrl -> AI-composited data URL (2D cache)
   three: null,
-  tagMode: false,             // user is currently placing a custom segment
+  tagMode: false,
 };
 
 // ===== Element refs =====
@@ -465,7 +466,15 @@ function switchToMode(mode) {
     fs?.classList.add('ds-hidden');
     hideRetryButton();
     hideThreeDStatus();
+    // Instant CSS-overlay preview shows while the AI composite is computing.
     setOverlayImage(state.selectedProduct?.thumbnail);
+    // Restore the original photo as the backdrop (we may have swapped it
+    // for a composite of a different product earlier).
+    const photo = el('ds-composite-photo');
+    if (photo && state.imageDataUrl) photo.src = state.imageDataUrl;
+    // Kick off the AI composite in the background. If/when it returns, the
+    // backdrop is swapped to the composited image and the floater hidden.
+    runComposite(state.selectedProduct);
   } else {
     img.classList.add('ds-hidden');
     canvas.classList.remove('ds-hidden');
@@ -487,6 +496,111 @@ function setOverlayImage(src) {
   }
   img.src = src;
   img.alt = state.selectedProduct?.title || 'Selected product';
+  // Make sure the floater is shown again (we hide it once the AI composite
+  // lands — pickin a new product needs to bring it back).
+  const floater = el('ds-floater');
+  if (floater) floater.style.display = '';
+}
+
+// ===== AI compositing (OpenAI gpt-image-1) =====
+// Called when the user picks a product in 2D mode. Sends the room photo +
+// product info to /api/ds-composite, gets back a single edited photo with
+// the new product placed naturally in the scene. While it runs, the cheap
+// CSS-overlay floater shows so the user has SOMETHING to look at.
+
+async function runComposite(product) {
+  if (!product || !state.imageDataUrl) return;
+
+  // Cache check — re-picking the same product is free.
+  const cached = product.thumbnail && state.compositeByThumb.get(product.thumbnail);
+  if (cached) {
+    showCompositeBackdrop(cached);
+    return;
+  }
+
+  showCompositeStatus('Generating photoreal preview… (~15-30s)');
+
+  // Avoid stale renders racing each other: tag this call with a token; only
+  // apply the result if the user hasn't picked another product since.
+  const token = Symbol('composite');
+  state._activeCompositeToken = token;
+
+  try {
+    const seg = state.selectedSegment;
+    const res = await fetch(`${API}/api/ds-composite`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        photoUrl: state.imageDataUrl,
+        segmentLabel: seg?.label || 'fixture',
+        segmentPosition: seg?.bbox ? {
+          x: seg.bbox[0], y: seg.bbox[1], w: seg.bbox[2], h: seg.bbox[3],
+        } : null,
+        product: {
+          title: product.title,
+          retailer: product.retailer,
+          thumbnail: product.thumbnail,
+        },
+        photoSize: state.imageNaturalSize,
+      }),
+    });
+    const data = await res.json().catch(() => ({}));
+    if (state._activeCompositeToken !== token) return; // user moved on
+
+    if (!res.ok) {
+      const msg = data?.upstream_message || data?.hint || data?.error || `HTTP ${res.status}`;
+      hideCompositeStatus();
+      showCompositeError(msg);
+      return;
+    }
+    if (data.imageDataUrl) {
+      state.compositeByThumb.set(product.thumbnail, data.imageDataUrl);
+      showCompositeBackdrop(data.imageDataUrl);
+    } else {
+      showCompositeError("AI returned no image.");
+    }
+  } catch (err) {
+    if (state._activeCompositeToken !== token) return;
+    console.error('composite failed', err);
+    showCompositeError(err.message || 'Composite failed');
+  }
+}
+
+function showCompositeStatus(text) {
+  const status = el('ds-3d-status');
+  if (!status) return;
+  status.style.display = '';
+  el('ds-3d-status-text').textContent = text;
+}
+function hideCompositeStatus() {
+  const status = el('ds-3d-status');
+  if (status) status.style.display = 'none';
+}
+
+function showCompositeBackdrop(dataUrl) {
+  const photo = el('ds-composite-photo');
+  const floater = el('ds-floater');
+  if (photo) photo.src = dataUrl;
+  // Hide the CSS overlay floater — the composite already has the product
+  // baked into the image.
+  if (floater) floater.style.display = 'none';
+  hideCompositeStatus();
+}
+
+function showCompositeError(message) {
+  const status = el('ds-3d-status');
+  if (!status) return;
+  status.style.display = '';
+  const txt = el('ds-3d-status-text');
+  if (txt) {
+    txt.innerHTML = `Couldn't render photoreal preview. <br>
+      <span style="font-size: 0.8rem; opacity: 0.85;">${escapeHtml(message).slice(0, 200)}</span><br>
+      <span style="font-size: 0.8rem;">Showing the quick overlay instead.</span>`;
+  }
+  // Auto-hide the error after 6s so the user can see the CSS overlay.
+  setTimeout(() => {
+    if (status.textContent.includes("Couldn't render")) hideCompositeStatus();
+  }, 6000);
 }
 
 // Wraps the 3D-render flow with a per-product cache: if we've already
