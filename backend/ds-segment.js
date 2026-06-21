@@ -169,10 +169,6 @@ async function segmentImage({ imageUrl, prompts }) {
   const data = {
     segments,
     inferred_categories: [...new Set(segments.map((s) => s.label))],
-    // Diagnostic on zero-segment responses only — drop once parser is verified.
-    _debug_raw_sample: segments.length === 0
-      ? JSON.stringify(json).slice(0, 600)
-      : undefined,
   };
   cacheSet(cacheKey, data);
   return data;
