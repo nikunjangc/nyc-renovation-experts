@@ -64,6 +64,21 @@
         height: auto;
         cursor: crosshair;
       }
+      .ds-canvas-wrap.tagmode canvas { cursor: copy; }
+      .ds-tagmode-banner {
+        position: absolute;
+        top: 12px;
+        left: 12px;
+        right: 12px;
+        background: rgba(253,161,43,0.95);
+        color: #fff;
+        padding: 10px 14px;
+        border-radius: 8px;
+        font-size: 0.9rem;
+        text-align: center;
+        z-index: 10;
+        box-shadow: 0 4px 12px rgba(0,0,0,0.25);
+      }
       .ds-segment-list {
         display: flex;
         flex-wrap: wrap;
@@ -149,8 +164,27 @@
         cursor: grab;
         touch-action: none;
         will-change: transform, width, height;
+        outline: 2px dashed rgba(253,161,43,0.55);
+        outline-offset: 2px;
       }
-      .ds-floater.dragging { cursor: grabbing; }
+      .ds-floater.dragging { cursor: grabbing; outline-color: #FDA12B; }
+      /* Visible drag affordance — a small badge in the top-left of the floater
+         so it's unambiguous you can grab and drop it anywhere. */
+      .ds-floater::before {
+        content: "↕ drag";
+        position: absolute;
+        top: -22px;
+        left: 0;
+        background: #FDA12B;
+        color: #fff;
+        font-size: 0.7rem;
+        font-weight: 600;
+        padding: 3px 8px;
+        border-radius: 12px;
+        box-shadow: 0 2px 6px rgba(0,0,0,0.25);
+        pointer-events: none;
+        opacity: 0.92;
+      }
       .ds-floater canvas,
       .ds-floater .ds-floater-img {
         display: block;
@@ -358,8 +392,14 @@
             </div>
             <div class="ds-canvas-wrap" id="ds-canvas-wrap">
               <canvas id="ds-canvas"></canvas>
+              <div id="ds-tagmode-banner" class="ds-tagmode-banner ds-hidden">
+                <i class="fas fa-crosshairs me-2"></i>Click the photo where the fixture is. <button type="button" class="btn btn-sm btn-link text-white p-0 ms-2" id="ds-tagmode-cancel">Cancel</button>
+              </div>
             </div>
             <div class="ds-segment-list" id="ds-segment-list"></div>
+            <button type="button" class="btn btn-outline-primary btn-sm mt-2" id="ds-add-custom">
+              <i class="fas fa-plus me-1"></i>Add a custom area (AI missed something)
+            </button>
             <div class="ds-cost-note">Click a chip above (or directly on the photo) to find replacement products.</div>
           </div>
 
@@ -381,6 +421,9 @@
           <div class="ds-stage ds-hidden" id="ds-stage-products">
             <div class="ds-stage-title">
               <i class="fas fa-shopping-bag text-primary me-2"></i>4. Replacement products
+              <button type="button" class="btn btn-sm btn-link p-0 ms-2" id="ds-refine-link" style="font-size:0.85rem;">
+                <i class="fas fa-sliders-h me-1"></i>Refine preferences
+              </button>
             </div>
             <div class="ds-product-grid" id="ds-product-grid"></div>
             <div class="ds-cost-note">Real prices from Home Depot, Lowe's, IKEA, Amazon &amp; more. Click any product to preview it in 3D.</div>

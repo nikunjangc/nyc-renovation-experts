@@ -25,13 +25,15 @@ const API = window.BACKEND_API_URL || 'http://localhost:3001';
 const state = {
   imageDataUrl: null,         // resized photo, sent to backend
   imageNaturalSize: null,     // { width, height } of the resized image
-  segments: [],               // [{id, label, bbox, polygon, confidence}]
+  segments: [],               // [{id, label, bbox, polygon, confidence, custom?}]
   selectedSegment: null,
-  clarifications: {},         // { question_id: chosen_option }
+  clarifications: {},         // active question_id -> chosen_option (for current segment)
+  clarificationsBySeg: {},    // segment.id -> {qid: value} — persists across re-visits to the same segment
   selectedProduct: null,      // chosen Product object
-  previewMode: '2d',          // '2d' (instant img overlay) | '3d' (Trellis-rendered model)
-  modelUrlByThumb: new Map(), // thumbnailUrl -> rendered GLB url (cache so toggling 2D↔3D is instant after first render)
-  three: null,                // { scene, camera, renderer, controls, productMesh }
+  previewMode: '2d',          // '2d' | '3d'
+  modelUrlByThumb: new Map(), // thumbnailUrl -> rendered GLB url
+  three: null,
+  tagMode: false,             // user is currently placing a custom segment
 };
 
 // ===== Element refs =====
@@ -146,40 +148,109 @@ function drawSegmentationOverlay() {
   wrap.style.maxWidth = `${Math.min(width, 800)}px`;
 
   const ctx = canvas.getContext('2d');
-  const img = new Image();
-  img.onload = () => {
-    ctx.drawImage(img, 0, 0);
-    // Draw each segment as a translucent box with a label tag.
-    state.segments.forEach((seg) => {
-      drawSegmentBox(ctx, seg, false);
-    });
-  };
-  img.src = state.imageDataUrl;
+  redrawSegments();
 
   canvas.onclick = (e) => {
     const rect  = canvas.getBoundingClientRect();
     const x = (e.clientX - rect.left) * (canvas.width / rect.width);
     const y = (e.clientY - rect.top)  * (canvas.height / rect.height);
+
+    if (state.tagMode) {
+      addCustomSegmentAt(x, y);
+      return;
+    }
     const hit = state.segments.find((s) =>
       s.bbox && x >= s.bbox[0] && x <= s.bbox[0] + s.bbox[2] &&
                 y >= s.bbox[1] && y <= s.bbox[1] + s.bbox[3]);
     if (hit) selectSegment(hit);
   };
+
+  // Wire the "+ Add custom area" button + cancel banner button (idempotent).
+  const addBtn = el('ds-add-custom');
+  if (addBtn && !addBtn.dataset.bound) {
+    addBtn.dataset.bound = '1';
+    addBtn.addEventListener('click', () => enterTagMode(true));
+  }
+  const cancelBtn = el('ds-tagmode-cancel');
+  if (cancelBtn && !cancelBtn.dataset.bound) {
+    cancelBtn.dataset.bound = '1';
+    cancelBtn.addEventListener('click', () => enterTagMode(false));
+  }
+}
+
+// Re-renders the photo + every segment box. Called whenever segments change
+// (new detection, custom add, selection highlight).
+function redrawSegments(highlight) {
+  const canvas = el('ds-canvas');
+  if (!canvas) return;
+  const ctx = canvas.getContext('2d');
+  const img = new Image();
+  img.onload = () => {
+    ctx.drawImage(img, 0, 0);
+    state.segments.forEach((seg) => drawSegmentBox(ctx, seg, seg === highlight));
+  };
+  img.src = state.imageDataUrl;
+}
+
+function enterTagMode(on) {
+  state.tagMode = !!on;
+  const wrap   = el('ds-canvas-wrap');
+  const banner = el('ds-tagmode-banner');
+  const btn    = el('ds-add-custom');
+  if (wrap)   wrap.classList.toggle('tagmode', state.tagMode);
+  if (banner) banner.classList.toggle('ds-hidden', !state.tagMode);
+  if (btn)    btn.disabled = state.tagMode;
+}
+
+// Drop a new custom-tagged segment centered on the clicked photo coordinate.
+function addCustomSegmentAt(x, y) {
+  // Sensible default size: ~20% of the photo's smaller dimension. The user
+  // can resize via the floater's corner handle later.
+  const minEdge = Math.min(state.imageNaturalSize.width, state.imageNaturalSize.height);
+  const w = Math.round(minEdge * 0.22);
+  const h = Math.round(minEdge * 0.22);
+  const bx = Math.max(0, Math.round(x - w / 2));
+  const by = Math.max(0, Math.round(y - h / 2));
+
+  const labelRaw = (window.prompt('What is this? (e.g. sink, vanity, microwave)') || '').trim();
+  if (!labelRaw) { enterTagMode(false); return; }
+
+  const id = `custom-${Date.now()}`;
+  const seg = {
+    id,
+    label: labelRaw.toLowerCase(),
+    confidence: null,
+    bbox: [bx, by, w, h],
+    polygon: null,
+    custom: true,
+  };
+  state.segments.push(seg);
+  enterTagMode(false);
+  redrawSegments();
+  renderSegmentChips();
+  // Auto-select the new segment so the user goes straight into clarification.
+  selectSegment(seg);
 }
 
 function drawSegmentBox(ctx, seg, selected) {
   if (!seg.bbox) return;
   const [x, y, w, h] = seg.bbox;
-  ctx.strokeStyle = selected ? '#FDA12B' : 'rgba(253,161,43,0.85)';
+  const color = seg.custom ? '#0d6efd' : '#FDA12B';
+  const rgba  = seg.custom ? 'rgba(13,110,253' : 'rgba(253,161,43';
+  ctx.strokeStyle = selected ? color : `${rgba},0.85)`;
   ctx.lineWidth = selected ? 4 : 2;
+  // Dashed for custom segments to distinguish from AI-detected.
+  ctx.setLineDash(seg.custom ? [10, 6] : []);
   ctx.strokeRect(x, y, w, h);
-  ctx.fillStyle = selected ? 'rgba(253,161,43,0.20)' : 'rgba(253,161,43,0.08)';
+  ctx.setLineDash([]);
+  ctx.fillStyle = selected ? `${rgba},0.20)` : `${rgba},0.08)`;
   ctx.fillRect(x, y, w, h);
   // Label background + text
   ctx.font = 'bold 14px sans-serif';
-  const label = `${seg.label}${seg.confidence ? ` ${Math.round(seg.confidence * 100)}%` : ''}`;
+  const prefix = seg.custom ? '+ ' : '';
+  const label = `${prefix}${seg.label}${seg.confidence ? ` ${Math.round(seg.confidence * 100)}%` : ''}`;
   const m = ctx.measureText(label);
-  ctx.fillStyle = '#FDA12B';
+  ctx.fillStyle = color;
   ctx.fillRect(x, y - 22, m.width + 12, 22);
   ctx.fillStyle = '#fff';
   ctx.fillText(label, x + 6, y - 6);
@@ -188,14 +259,18 @@ function drawSegmentBox(ctx, seg, selected) {
 function renderSegmentChips() {
   const list = el('ds-segment-list');
   if (!state.segments.length) {
-    list.innerHTML = `<div class="text-muted small">No fixtures recognized. Try a clearer head-on photo.</div>`;
+    list.innerHTML = `<div class="text-muted small">No fixtures recognized. Try a clearer head-on photo or use "Add a custom area" below.</div>`;
     return;
   }
-  list.innerHTML = state.segments.map((s, i) => `
-    <button type="button" class="ds-seg-chip" data-seg-i="${i}">
-      ${esc(s.label)}${s.confidence ? ` · ${Math.round(s.confidence * 100)}%` : ''}
-    </button>
-  `).join('');
+  list.innerHTML = state.segments.map((s, i) => {
+    const customStyle = s.custom ? 'background:#fff;border-color:#0d6efd;color:#0d6efd;' : '';
+    const customMark  = s.custom ? '<i class="fas fa-plus me-1" style="font-size:0.7rem;"></i>' : '';
+    return `
+      <button type="button" class="ds-seg-chip" data-seg-i="${i}" style="${customStyle}">
+        ${customMark}${esc(s.label)}${s.confidence ? ` · ${Math.round(s.confidence * 100)}%` : ''}
+      </button>
+    `;
+  }).join('');
   list.querySelectorAll('[data-seg-i]').forEach((btn) => {
     btn.addEventListener('click', () => selectSegment(state.segments[+btn.dataset.segI]));
   });
@@ -204,16 +279,11 @@ function renderSegmentChips() {
 // ===== 3. Clarify =====
 async function selectSegment(seg) {
   state.selectedSegment = seg;
-  state.clarifications = {};
+  // Restore any clarifications the user already picked for THIS segment, so
+  // re-clicking a segment doesn't wipe their preferences.
+  state.clarifications = { ...(state.clarificationsBySeg[seg.id] || {}) };
   // Highlight in canvas
-  const canvas = el('ds-canvas');
-  const ctx = canvas.getContext('2d');
-  const img = new Image();
-  img.onload = () => {
-    ctx.drawImage(img, 0, 0);
-    state.segments.forEach((s) => drawSegmentBox(ctx, s, s === seg));
-  };
-  img.src = state.imageDataUrl;
+  redrawSegments(seg);
 
   // Highlight chip
   document.querySelectorAll('.ds-seg-chip').forEach((c, i) =>
@@ -256,16 +326,19 @@ function inferProjectType(label) {
 
 function renderClarifyQuestions(questions) {
   const container = el('ds-clarify-questions');
-  container.innerHTML = questions.map((q) => `
+  container.innerHTML = questions.map((q) => {
+    const current = state.clarifications[q.id];
+    return `
     <div class="mb-3" data-qid="${esc(q.id)}">
       <div class="fw-semibold mb-2">${esc(q.label || q.question)}</div>
       <div class="text-muted small mb-2">${esc(q.question)}</div>
       <div>
         ${q.options.map((opt) =>
-          `<button type="button" class="cq-chip" data-value="${esc(opt)}">${esc(opt)}</button>`
+          `<button type="button" class="cq-chip${current === opt ? ' selected' : ''}" data-value="${esc(opt)}">${esc(opt)}</button>`
         ).join('')}
       </div>
-    </div>`).join('');
+    </div>`;
+  }).join('');
   container.querySelectorAll('[data-qid]').forEach((group) => {
     const qid = group.dataset.qid;
     group.querySelectorAll('.cq-chip').forEach((chip) => {
@@ -273,16 +346,40 @@ function renderClarifyQuestions(questions) {
         group.querySelectorAll('.cq-chip').forEach((c) => c.classList.remove('selected'));
         chip.classList.add('selected');
         state.clarifications[qid] = chip.dataset.value;
+        // Persist for the active segment so navigating away and back keeps picks.
+        if (state.selectedSegment) {
+          state.clarificationsBySeg[state.selectedSegment.id] = { ...state.clarifications };
+        }
       });
     });
   });
   el('ds-clarify-skip').onclick   = () => { state.clarifications = {}; fetchProducts(state.selectedSegment.label); };
-  el('ds-clarify-submit').onclick = () => fetchProducts(state.selectedSegment.label);
+  el('ds-clarify-submit').onclick = () => {
+    if (state.selectedSegment) {
+      state.clarificationsBySeg[state.selectedSegment.id] = { ...state.clarifications };
+    }
+    fetchProducts(state.selectedSegment.label);
+  };
 }
 
 // ===== 4. Products =====
 async function fetchProducts(label) {
   showStage('products');
+  // Wire the "Refine preferences" link (idempotent) so users can jump back
+  // to the clarifier section to change a chip and re-search without
+  // re-clicking the segment from scratch.
+  const refineBtn = el('ds-refine-link');
+  if (refineBtn && !refineBtn.dataset.bound) {
+    refineBtn.dataset.bound = '1';
+    refineBtn.addEventListener('click', (e) => {
+      e.preventDefault();
+      // Re-render clarifier with current selections highlighted, then scroll.
+      const stageClarify = el('ds-stage-clarify');
+      if (stageClarify) {
+        stageClarify.scrollIntoView({ behavior: 'smooth', block: 'start' });
+      }
+    });
+  }
   const grid = el('ds-product-grid');
   grid.innerHTML = `<div class="ds-loader" style="margin: 30px auto; grid-column: 1/-1;"></div>`;
 
