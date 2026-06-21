@@ -128,34 +128,89 @@
         color: #FDA12B;
         font-size: 1.05rem;
       }
-      /* Composite stage: photo as backdrop, 3D model overlay */
+      /* Composite stage: photo as backdrop, 2D or 3D model overlay */
       .ds-composite {
         position: relative;
         background: #000;
         border-radius: 12px;
         overflow: hidden;
         user-select: none;
-        touch-action: none; /* lets pointer events handle gestures cleanly */
+        touch-action: none;
       }
-      .ds-composite img {
+      #ds-composite-photo {
         display: block;
         width: 100%;
         height: auto;
         pointer-events: none;
       }
-      /* The draggable 3D model "floater" — sits on top of the photo. */
-      .ds-3d-floater {
+      /* The draggable floater — holds either the 2D <img> or the 3D <canvas>. */
+      .ds-floater {
         position: absolute;
         cursor: grab;
         touch-action: none;
         will-change: transform, width, height;
       }
-      .ds-3d-floater.dragging { cursor: grabbing; }
-      .ds-3d-floater canvas {
+      .ds-floater.dragging { cursor: grabbing; }
+      .ds-floater canvas,
+      .ds-floater .ds-floater-img {
         display: block;
         width: 100%;
         height: 100%;
         background: transparent;
+      }
+      /* 2D overlay: CSS mix-blend "multiply" makes the typical white retailer
+         background blend with the photo behind it — quick & free background
+         removal for ~80% of product photos. Real cutout (birefnet) is a
+         follow-up. */
+      .ds-floater-img {
+        object-fit: contain;
+        mix-blend-mode: multiply;
+        pointer-events: none; /* don't intercept drag gestures */
+      }
+      /* Mode toggle + tool row */
+      .ds-mode-row {
+        display: flex;
+        gap: 12px;
+        align-items: center;
+        flex-wrap: wrap;
+      }
+      .ds-mode-toggle {
+        display: inline-flex;
+        background: #f0f0f0;
+        border-radius: 30px;
+        padding: 4px;
+      }
+      .ds-mode-btn {
+        border: none;
+        background: transparent;
+        color: #555;
+        padding: 8px 16px;
+        border-radius: 24px;
+        font-size: 0.88rem;
+        font-weight: 600;
+        cursor: pointer;
+        transition: background 0.15s, color 0.15s;
+        display: inline-flex;
+        align-items: center;
+      }
+      .ds-mode-btn:hover { color: #FDA12B; }
+      .ds-mode-btn.active {
+        background: #FDA12B;
+        color: #fff;
+        box-shadow: 0 2px 6px rgba(253,161,43,0.4);
+      }
+      .ds-mode-sub {
+        font-size: 0.72rem;
+        opacity: 0.7;
+        margin-left: 8px;
+        font-weight: 400;
+      }
+      .ds-mode-btn.active .ds-mode-sub { opacity: 0.9; }
+      .ds-mode-tools {
+        display: flex;
+        gap: 6px;
+        margin-left: auto;
+        flex-wrap: wrap;
       }
       .ds-3d-resize {
         position: absolute;
@@ -341,35 +396,55 @@
               The 3D model is placed where your fixture was. <strong>Drag</strong> to reposition, <strong>scroll / pinch</strong> on the model to resize, <strong>right-click + drag</strong> (or two-finger drag) on the model to rotate it.
             </p>
 
-            <!-- Composite stage: photo as backdrop, 3D canvas overlay -->
+            <!-- Composite stage: photo as backdrop, 2D image OR 3D canvas overlay -->
             <div class="ds-composite" id="ds-composite">
               <img id="ds-composite-photo" alt="Your room" draggable="false" />
-              <div class="ds-3d-floater" id="ds-3d-floater">
-                <canvas id="ds-3d-canvas"></canvas>
+              <div class="ds-floater" id="ds-floater">
+                <!-- 2D mode (default): product image. CSS mix-blend-mode hides
+                     the white retailer background against the photo. -->
+                <img id="ds-floater-img" class="ds-floater-img" alt="" draggable="false" />
+                <!-- 3D mode (opt-in): three.js canvas with transparent bg. -->
+                <canvas id="ds-3d-canvas" class="ds-hidden"></canvas>
                 <div class="ds-3d-resize" id="ds-3d-resize" title="Drag to resize"></div>
               </div>
-              <div class="ds-3d-status" id="ds-3d-status">
+              <div class="ds-3d-status ds-hidden" id="ds-3d-status">
                 <div class="ds-loader"></div>
                 <div id="ds-3d-status-text">Rendering 3D model…</div>
-                <div class="text-muted" style="font-size: 0.8rem;">~20 seconds with Trellis.</div>
+                <div class="text-muted" style="font-size: 0.8rem;">~20-40 seconds with Trellis.</div>
               </div>
             </div>
 
-            <div class="d-flex gap-2 mt-3 flex-wrap">
-              <button type="button" class="btn btn-primary btn-sm" id="ds-3d-retry" style="display:none;">
-                <i class="fas fa-redo me-1"></i>Retry 3D render
-              </button>
-              <button type="button" class="btn btn-outline-secondary btn-sm" id="ds-3d-reset-pos">
-                <i class="fas fa-undo me-1"></i>Reset position
-              </button>
-              <button type="button" class="btn btn-outline-secondary btn-sm" id="ds-3d-reset-rot">
-                <i class="fas fa-sync-alt me-1"></i>Reset rotation
-              </button>
-              <button type="button" class="btn btn-outline-secondary btn-sm" id="ds-3d-fullscreen">
-                <i class="fas fa-expand me-1"></i>Inspect 3D
-              </button>
+            <!-- Mode toggle: 2D is default & instant; 3D is opt-in. -->
+            <div class="ds-mode-row mt-3">
+              <div class="ds-mode-toggle" role="tablist" aria-label="Preview mode">
+                <button type="button" class="ds-mode-btn active" id="ds-mode-2d" role="tab" aria-selected="true">
+                  <i class="fas fa-image me-1"></i>2D overlay
+                  <span class="ds-mode-sub">instant</span>
+                </button>
+                <button type="button" class="ds-mode-btn" id="ds-mode-3d" role="tab" aria-selected="false">
+                  <i class="fas fa-cube me-1"></i>View in 3D
+                  <span class="ds-mode-sub">~20-40s</span>
+                </button>
+              </div>
+              <div class="ds-mode-tools">
+                <button type="button" class="btn btn-primary btn-sm ds-hidden" id="ds-3d-retry">
+                  <i class="fas fa-redo me-1"></i>Retry 3D
+                </button>
+                <button type="button" class="btn btn-outline-secondary btn-sm" id="ds-3d-reset-pos">
+                  <i class="fas fa-undo me-1"></i>Reset position
+                </button>
+                <button type="button" class="btn btn-outline-secondary btn-sm ds-hidden" id="ds-3d-reset-rot">
+                  <i class="fas fa-sync-alt me-1"></i>Reset rotation
+                </button>
+                <button type="button" class="btn btn-outline-secondary btn-sm ds-hidden" id="ds-3d-fullscreen">
+                  <i class="fas fa-expand me-1"></i>Inspect
+                </button>
+              </div>
             </div>
-            <div class="ds-cost-note">Tip: a single drag positions the model; the corner handle resizes it.</div>
+            <div class="ds-cost-note">
+              <strong>2D mode:</strong> instant overlay using the retailer's product image.
+              <strong>3D mode:</strong> AI-generated 3D model you can rotate (kicks off on click; ~20-40s).
+            </div>
           </div>
 
         </div>

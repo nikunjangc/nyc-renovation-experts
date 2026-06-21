@@ -29,6 +29,8 @@ const state = {
   selectedSegment: null,
   clarifications: {},         // { question_id: chosen_option }
   selectedProduct: null,      // chosen Product object
+  previewMode: '2d',          // '2d' (instant img overlay) | '3d' (Trellis-rendered model)
+  modelUrlByThumb: new Map(), // thumbnailUrl -> rendered GLB url (cache so toggling 2D↔3D is instant after first render)
   three: null,                // { scene, camera, renderer, controls, productMesh }
 };
 
@@ -342,12 +344,69 @@ function renderProducts(products) {
 async function pickProduct(product) {
   state.selectedProduct = product;
   showStage('threeD');
-  setupCompositeView();   // photo backdrop + floater placed at segment bbox
+  setupCompositeView();
+  // Default: 2D overlay. Instant, free, no fal.ai call. User can opt into 3D
+  // via the toggle when they want it.
+  switchToMode('2d');
+}
+
+function switchToMode(mode) {
+  state.previewMode = mode;
+  const img    = el('ds-floater-img');
+  const canvas = el('ds-3d-canvas');
+  const b2d    = el('ds-mode-2d');
+  const b3d    = el('ds-mode-3d');
+  const resetRot = el('ds-3d-reset-rot');
+  const fs       = el('ds-3d-fullscreen');
+
+  if (mode === '2d') {
+    img.classList.remove('ds-hidden');
+    canvas.classList.add('ds-hidden');
+    b2d.classList.add('active');     b2d.setAttribute('aria-selected', 'true');
+    b3d.classList.remove('active');  b3d.setAttribute('aria-selected', 'false');
+    resetRot?.classList.add('ds-hidden');
+    fs?.classList.add('ds-hidden');
+    hideRetryButton();
+    hideThreeDStatus();
+    setOverlayImage(state.selectedProduct?.thumbnail);
+  } else {
+    img.classList.add('ds-hidden');
+    canvas.classList.remove('ds-hidden');
+    b2d.classList.remove('active');  b2d.setAttribute('aria-selected', 'false');
+    b3d.classList.add('active');     b3d.setAttribute('aria-selected', 'true');
+    resetRot?.classList.remove('ds-hidden');
+    fs?.classList.remove('ds-hidden');
+    runOrLoad3D(state.selectedProduct);
+  }
+}
+
+function setOverlayImage(src) {
+  const img = el('ds-floater-img');
+  if (!img) return;
+  if (!src) {
+    img.removeAttribute('src');
+    img.alt = 'No image available';
+    return;
+  }
+  img.src = src;
+  img.alt = state.selectedProduct?.title || 'Selected product';
+}
+
+// Wraps the 3D-render flow with a per-product cache: if we've already
+// rendered THIS product's GLB, swap straight to it without another fal.ai
+// call. Otherwise kick off Trellis.
+async function runOrLoad3D(product) {
+  if (!product) return;
+  hideRetryButton();
+  const cached = product.thumbnail && state.modelUrlByThumb.get(product.thumbnail);
+  if (cached) {
+    loadGlbIntoScene(cached);
+    return;
+  }
   await runRender3D(product);
 }
 
-// Extracted so the "Retry 3D render" button can call it without re-running
-// the rest of the wizard.
+// Extracted so the Retry button can call it without re-running the wizard.
 async function runRender3D(product) {
   hideRetryButton();
   setThreeDStatus(`Rendering 3D model of ${product.title.slice(0, 50)}…`);
@@ -472,7 +531,7 @@ function sleep(ms) { return new Promise((r) => setTimeout(r, ms)); }
 
 function setupCompositeView() {
   const photo   = el('ds-composite-photo');
-  const floater = el('ds-3d-floater');
+  const floater = el('ds-floater');
   if (!photo || !floater) return;
 
   // 1. Set the photo backdrop.
@@ -484,10 +543,11 @@ function setupCompositeView() {
   if (photo.complete && photo.naturalWidth) apply();
   else photo.onload = apply;
 
-  // 3. Wire drag, resize, and the reset buttons (idempotent — safe to call
-  //    on every pickProduct).
+  // 3. Wire drag, resize, mode toggle, and the reset buttons (idempotent —
+  //    safe to call on every pickProduct).
   bindFloaterDrag();
   bindFloaterResize();
+  bindModeToggle();
 
   const resetPos = el('ds-3d-reset-pos');
   const resetRot = el('ds-3d-reset-rot');
@@ -509,7 +569,7 @@ function setupCompositeView() {
   if (fs && !fs.dataset.bound) {
     fs.dataset.bound = '1';
     fs.addEventListener('click', () => {
-      const f = el('ds-3d-floater');
+      const f = el('ds-floater');
       if (!document.fullscreenElement && f.requestFullscreen) f.requestFullscreen();
       else if (document.exitFullscreen) document.exitFullscreen();
     });
@@ -518,7 +578,7 @@ function setupCompositeView() {
 
 function positionFloaterFromSegment() {
   const photo   = el('ds-composite-photo');
-  const floater = el('ds-3d-floater');
+  const floater = el('ds-floater');
   const seg     = state.selectedSegment;
   if (!photo || !floater) return;
 
@@ -557,7 +617,7 @@ function positionFloaterFromSegment() {
 }
 
 function bindFloaterDrag() {
-  const floater = el('ds-3d-floater');
+  const floater = el('ds-floater');
   const composite = el('ds-composite');
   if (!floater || floater.dataset.dragBound) return;
   floater.dataset.dragBound = '1';
@@ -620,7 +680,7 @@ function bindFloaterDrag() {
 
 function bindFloaterResize() {
   const handle  = el('ds-3d-resize');
-  const floater = el('ds-3d-floater');
+  const floater = el('ds-floater');
   if (!handle || handle.dataset.bound) return;
   handle.dataset.bound = '1';
 
@@ -710,6 +770,11 @@ function resizeThreeRenderer() {
 }
 
 function loadGlbIntoScene(modelUrl) {
+  // Cache the rendered model URL by thumbnail so toggling back to 3D for the
+  // same product later is instant.
+  if (state.selectedProduct?.thumbnail) {
+    state.modelUrlByThumb.set(state.selectedProduct.thumbnail, modelUrl);
+  }
   const three = ensureThreeScene();
   if (!three) return;
   if (three.productMesh) {
@@ -734,7 +799,22 @@ function loadGlbIntoScene(modelUrl) {
   }, undefined, (err) => {
     console.error('GLB load failed', err);
     setThreeDStatus("Couldn't load the 3D model.");
+    showRetryButton();
   });
+}
+
+// Mode toggle wiring — done once on first composite setup.
+function bindModeToggle() {
+  const b2d = el('ds-mode-2d');
+  const b3d = el('ds-mode-3d');
+  if (b2d && !b2d.dataset.bound) {
+    b2d.dataset.bound = '1';
+    b2d.addEventListener('click', () => switchToMode('2d'));
+  }
+  if (b3d && !b3d.dataset.bound) {
+    b3d.dataset.bound = '1';
+    b3d.addEventListener('click', () => switchToMode('3d'));
+  }
 }
 
 // ===== Boot =====
