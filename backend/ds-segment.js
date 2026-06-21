@@ -91,16 +91,27 @@ async function segmentImage({ imageUrl, prompts }) {
 
   const json = await res.json();
 
-  // Florence-2 returns:
-  //   { results: { "<OPEN_VOCABULARY_DETECTION>": { bboxes: [[x1,y1,x2,y2],...], bboxes_labels: ["fridge",...] } } }
-  // We normalize each entry to { id, label, bbox: [x, y, w, h], confidence }.
-  // (Florence-2 doesn't return per-detection confidence scores — we leave that
-  //  field null so the UI shows the label without a percentage.)
-  const taskOutput = json?.results?.['<OPEN_VOCABULARY_DETECTION>']
-    || json?.['<OPEN_VOCABULARY_DETECTION>']  // some response shapes flatten it
+  // Florence-2 response shape varies depending on whether the URL uses a task
+  // subpath. With the subpath, fal.ai may return either:
+  //   { results: { bboxes: [...], labels: [...] } }                     (flat)
+  //   { results: { "<OPEN_VOCABULARY_DETECTION>": { bboxes, bboxes_labels } } } (keyed)
+  //   { bboxes, labels }                                                 (root)
+  // Try all three.
+  const taskOutput =
+       json?.results?.['<OPEN_VOCABULARY_DETECTION>']
+    || json?.['<OPEN_VOCABULARY_DETECTION>']
+    || json?.results
+    || json
     || {};
-  const bboxes = Array.isArray(taskOutput.bboxes) ? taskOutput.bboxes : [];
-  const labels = Array.isArray(taskOutput.bboxes_labels) ? taskOutput.bboxes_labels : [];
+  const bboxes =
+       (Array.isArray(taskOutput.bboxes) && taskOutput.bboxes)
+    || (Array.isArray(taskOutput.detections) && taskOutput.detections.map(d => d.bbox || d.box))
+    || [];
+  const labels =
+       (Array.isArray(taskOutput.bboxes_labels) && taskOutput.bboxes_labels)
+    || (Array.isArray(taskOutput.labels) && taskOutput.labels)
+    || (Array.isArray(taskOutput.detections) && taskOutput.detections.map(d => d.label))
+    || [];
 
   const segments = bboxes.map((box, i) => {
     if (!Array.isArray(box) || box.length < 4) return null;
@@ -117,6 +128,10 @@ async function segmentImage({ imageUrl, prompts }) {
   const data = {
     segments,
     inferred_categories: [...new Set(segments.map((s) => s.label))],
+    // Temporary diagnostic: keys at top level of the fal.ai response so we
+    // can confirm our parser shape matches reality. Drop this once verified.
+    _debug_response_keys: segments.length === 0 ? Object.keys(json || {}) : undefined,
+    _debug_results_keys: segments.length === 0 && json?.results ? Object.keys(json.results) : undefined,
   };
   cacheSet(cacheKey, data);
   return data;
