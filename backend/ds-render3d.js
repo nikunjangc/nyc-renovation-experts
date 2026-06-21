@@ -151,29 +151,35 @@ async function getRenderStatus({ requestId, imageUrl }) {
   const finalStatusUrl   = statusUrlFor(requestId);
   const finalResponseUrl = responseUrlFor(requestId);
 
+  // fal.ai's queue status endpoint requires POST (confirmed via the `Allow`
+  // header on the 405 we used to see — atypical for a status check but that's
+  // what the API wants). Empty body is accepted.
   const statusRes = await fetch(finalStatusUrl, {
-    headers: { 'Authorization': `Key ${apiKey}` },
+    method: 'POST',
+    headers: {
+      'Authorization': `Key ${apiKey}`,
+      'Content-Type': 'application/json',
+    },
+    body: '{}',
   });
   if (!statusRes.ok) {
-    // Pull every signal fal.ai sends back. For 405 the `Allow` header lists
-    // valid methods. For 401/403 the body usually says why. For 404 the URL
-    // is wrong. We surface all of it for diagnosis.
     const body = (await statusRes.text()).slice(0, 500);
-    const headerDump = {
-      allow:        statusRes.headers.get('allow'),
-      content_type: statusRes.headers.get('content-type'),
-      www_auth:     statusRes.headers.get('www-authenticate'),
-    };
     const err = new Error(`fal.ai status check ${statusRes.status} on ${finalStatusUrl}`);
-    err.detail = `body=${body} | headers=${JSON.stringify(headerDump)}`;
+    err.detail = `body=${body}`;
     err.status = statusRes.status;
     throw err;
   }
   const statusJson = await statusRes.json();
 
   if (statusJson.status === 'COMPLETED') {
+    // Same pattern as status — fal.ai's queue API uses POST for both.
     const resultRes = await fetch(finalResponseUrl, {
-      headers: { 'Authorization': `Key ${apiKey}` },
+      method: 'POST',
+      headers: {
+        'Authorization': `Key ${apiKey}`,
+        'Content-Type': 'application/json',
+      },
+      body: '{}',
     });
     if (!resultRes.ok) {
       const err = new Error(`fal.ai result fetch error: ${resultRes.status}`);
