@@ -21,6 +21,20 @@ import { GLTFLoader }    from 'three/addons/loaders/GLTFLoader.js';
 
 const API = window.BACKEND_API_URL || 'http://localhost:3001';
 
+// ===== Spinner overlay =====
+function showSpinner(message = 'Processing…') {
+  const spinner = el('spinner');
+  if (spinner) {
+    spinner.style.display = 'flex';
+    const text = spinner.querySelector('p');
+    if (text) text.textContent = message;
+  }
+}
+function hideSpinner() {
+  const spinner = el('spinner');
+  if (spinner) spinner.style.display = 'none';
+}
+
 // ===== State =====
 const state = {
   imageDataUrl: null,         // resized photo, sent to backend
@@ -538,6 +552,7 @@ async function runComposite(product) {
   }
   const maskDataUrl = buildMaskDataUrl(bbox);
 
+  showSpinner('Rendering in your room… (~15–30s)');
   showCompositeStatus('Generating photoreal preview… (~15-30s)');
 
   // Race-token: only apply the result if the user hasn't moved on.
@@ -567,19 +582,23 @@ async function runComposite(product) {
 
     if (!res.ok) {
       const msg = data?.upstream_message || data?.hint || data?.error || `HTTP ${res.status}`;
+      hideSpinner();
       hideCompositeStatus();
       showCompositeError(msg);
       return;
     }
     if (data.imageDataUrl) {
       state.compositeByThumb.set(product.thumbnail, data.imageDataUrl);
+      hideSpinner();
       showCompositeBackdrop(data.imageDataUrl);
     } else {
+      hideSpinner();
       showCompositeError("AI returned no image.");
     }
   } catch (err) {
     if (state._activeCompositeToken !== token) return;
     console.error('composite failed', err);
+    hideSpinner();
     showCompositeError(err.message || 'Composite failed');
   }
 }
@@ -686,9 +705,11 @@ async function runOrLoad3D(product) {
 // Extracted so the Retry button can call it without re-running the wizard.
 async function runRender3D(product) {
   hideRetryButton();
+  showSpinner('Building 3D view…');
   setThreeDStatus(`Rendering 3D model of ${product.title.slice(0, 50)}…`);
 
   if (!product.thumbnail) {
+    hideSpinner();
     setThreeDStatus("No image available for this product, so we can't render 3D. Pick another.");
     showRetryButton();
     return;
@@ -706,6 +727,7 @@ async function runRender3D(product) {
 
     if (submitData.status === 'COMPLETED' && submitData.modelUrl) {
       // Cache hit — render directly.
+      hideSpinner();
       loadGlbIntoScene(submitData.modelUrl);
       return;
     }
@@ -722,7 +744,9 @@ async function runRender3D(product) {
       responseUrl,
       imageUrl: product.thumbnail,
     });
+    hideSpinner();
   } catch (err) {
+    hideSpinner();
     console.error('3D render failed', err);
     const isTimeout = /timed out|timeout|504/i.test(String(err.message || ''));
     setThreeDStatus(isTimeout
@@ -1105,5 +1129,6 @@ function bindModeToggle() {
 
 // ===== Boot =====
 window.addEventListener('DOMContentLoaded', () => {
+  hideSpinner(); // Hide the spinner on page load
   setupUpload();
 });
