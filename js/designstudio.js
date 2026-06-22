@@ -47,9 +47,10 @@ const state = {
   clarifications: {},         // active question_id -> chosen_option (for current segment)
   clarificationsBySeg: {},    // segment.id -> {qid: value}
   selectedProduct: null,      // chosen Product object
+  workingPhoto: null,         // cumulative edited photo — edits stack onto this
+  baseMode: 'edited',         // 'edited' | 'original' — what the NEXT render builds on
   previewMode: '2d',          // '2d' | '3d'
   modelUrlByThumb: new Map(), // thumbnailUrl -> rendered GLB url (3D cache)
-  compositeByThumb: new Map(),// thumbnailUrl -> AI-composited data URL (2D cache)
   three: null,
   tagMode: false,
 };
@@ -122,6 +123,8 @@ async function handleFile(file) {
   if (file.size > 12 * 1024 * 1024) { alert('Please choose an image under 12MB.'); return; }
   const { dataUrl, width, height } = await fileToResizedDataUrl(file);
   state.imageDataUrl     = dataUrl;
+  state.workingPhoto     = dataUrl;   // edits stack onto this; starts as original
+  state.baseMode         = 'edited';
   state.imageNaturalSize = { width, height };
   showStage('segment');
   await runSegmentation();
@@ -489,14 +492,16 @@ function switchToMode(mode) {
     // "Render in my room" (so they can fine-tune the position first and
     // we don't burn ~$0.04 per product pick).
     setOverlayImage(state.selectedProduct?.thumbnail);
-    // Restore the original photo as the backdrop (we may have swapped it
-    // for a composite of a different product earlier).
+    // Show the current base as the backdrop. Edits STACK: the working photo
+    // already holds previous changes (e.g. the new faucet), so picking the
+    // stove next keeps the faucet. The base toggle decides whether we build on
+    // those edits or start from the original.
     const photo = el('ds-composite-photo');
-    if (photo && state.imageDataUrl) photo.src = state.imageDataUrl;
-    // If we've already composited THIS product before (cache hit), show it.
-    const cached = state.selectedProduct?.thumbnail
-      && state.compositeByThumb.get(state.selectedProduct.thumbnail);
-    if (cached) showCompositeBackdrop(cached);
+    if (photo) photo.src = currentBasePhoto();
+    // Show the stacking controls (base toggle + reset) in 2D mode.
+    el('ds-base-toggle')?.classList.remove('ds-hidden');
+    el('ds-reset-original')?.classList.remove('ds-hidden');
+    updateBaseToggleUI();
   } else {
     img.classList.add('ds-hidden');
     canvas.classList.remove('ds-hidden');
@@ -505,6 +510,8 @@ function switchToMode(mode) {
     resetRot?.classList.remove('ds-hidden');
     fs?.classList.remove('ds-hidden');
     el('ds-render-room')?.classList.add('ds-hidden'); // 2D-only action
+    el('ds-base-toggle')?.classList.add('ds-hidden');
+    el('ds-reset-original')?.classList.add('ds-hidden');
     // Lazy 3D: Trellis only fires when the user actually clicks the 3D toggle.
     runOrLoad3D(state.selectedProduct);
   }
@@ -552,12 +559,9 @@ function setRenderBtnBusy(busy) {
 async function runComposite(product) {
   if (!product || !state.imageDataUrl) return;
 
-  // Cache check — re-rendering the same product is free.
-  const cached = product.thumbnail && state.compositeByThumb.get(product.thumbnail);
-  if (cached) {
-    showCompositeBackdrop(cached);
-    return;
-  }
+  // Edits STACK: render onto whatever base the toggle selects — the running
+  // working photo (keeps prior changes) or the pristine original.
+  const base = currentBasePhoto();
 
   // Build the mask from the floater's current position. If the floater isn't
   // visible (somehow), fall back to the segment bbox.
@@ -584,7 +588,7 @@ async function runComposite(product) {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({
-        photoUrl: state.imageDataUrl,
+        photoUrl: base,
         maskDataUrl,
         segmentLabel: seg?.label || 'fixture',
         segmentPosition: bbox, // {x,y,w,h} in natural photo pixels
@@ -617,11 +621,14 @@ async function runComposite(product) {
       // selected box: everything OUTSIDE the box stays bit-identical.
       let finalUrl = data.imageDataUrl;
       try {
-        finalUrl = await compositeMaskedRegion(state.imageDataUrl, data.imageDataUrl, bbox);
+        finalUrl = await compositeMaskedRegion(base, data.imageDataUrl, bbox);
       } catch (e) {
         console.warn('client composite failed; showing raw GPT result', e);
       }
-      state.compositeByThumb.set(product.thumbnail, finalUrl);
+      // This becomes the new running photo so the NEXT edit stacks on it.
+      state.workingPhoto = finalUrl;
+      state.baseMode = 'edited';
+      updateBaseToggleUI();
       // Keep the spinner up until the new image has actually painted.
       await showCompositeBackdrop(finalUrl);
       hideSpinner();
@@ -915,8 +922,8 @@ function setupCompositeView() {
   const floater = el('ds-floater');
   if (!photo || !floater) return;
 
-  // 1. Set the photo backdrop.
-  photo.src = state.imageDataUrl;
+  // 1. Set the photo backdrop to the current base (keeps stacked edits).
+  photo.src = currentBasePhoto();
 
   // 2. Wait for the image to lay out so we can use its rendered size to
   //    convert the segment's natural-pixel bbox into floater CSS coords.
@@ -964,6 +971,59 @@ function setupCompositeView() {
       runComposite(state.selectedProduct);
     });
   }
+
+  // Stacking controls: choose what the next render builds on, and reset.
+  const baseEdited = el('ds-base-edited');
+  if (baseEdited && !baseEdited.dataset.bound) {
+    baseEdited.dataset.bound = '1';
+    baseEdited.addEventListener('click', () => setBaseMode('edited'));
+  }
+  const baseOriginal = el('ds-base-original');
+  if (baseOriginal && !baseOriginal.dataset.bound) {
+    baseOriginal.dataset.bound = '1';
+    baseOriginal.addEventListener('click', () => setBaseMode('original'));
+  }
+  const resetBtn = el('ds-reset-original');
+  if (resetBtn && !resetBtn.dataset.bound) {
+    resetBtn.dataset.bound = '1';
+    resetBtn.addEventListener('click', resetToOriginal);
+  }
+}
+
+// ===== Edit stacking (base selection) =====
+// What the next render composites onto: the running working photo (keeps
+// prior edits like the new faucet) or the pristine original.
+function currentBasePhoto() {
+  return state.baseMode === 'original'
+    ? state.imageDataUrl
+    : (state.workingPhoto || state.imageDataUrl);
+}
+
+function updateBaseToggleUI() {
+  const edited   = el('ds-base-edited');
+  const original = el('ds-base-original');
+  if (edited)   edited.classList.toggle('active', state.baseMode === 'edited');
+  if (original) original.classList.toggle('active', state.baseMode === 'original');
+}
+
+// Switch the base for the next render and reflect it on screen immediately so
+// the user sees exactly what they'll be editing.
+function setBaseMode(mode) {
+  state.baseMode = mode;
+  updateBaseToggleUI();
+  const photo = el('ds-composite-photo');
+  if (photo) photo.src = currentBasePhoto();
+  setOverlayImage(state.selectedProduct?.thumbnail);
+}
+
+// Throw away all stacked edits and return to the untouched photo.
+function resetToOriginal() {
+  state.workingPhoto = state.imageDataUrl;
+  state.baseMode = 'edited';
+  updateBaseToggleUI();
+  const photo = el('ds-composite-photo');
+  if (photo) photo.src = state.imageDataUrl;
+  setOverlayImage(state.selectedProduct?.thumbnail);
 }
 
 function positionFloaterFromSegment() {

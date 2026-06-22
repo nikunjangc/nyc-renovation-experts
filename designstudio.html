@@ -486,6 +486,14 @@
                 <button type="button" class="btn btn-primary btn-sm" id="ds-render-room">
                   <i class="fas fa-magic me-1"></i>Render in my room
                 </button>
+                <!-- Stacking: what the next render builds on. -->
+                <div class="btn-group btn-group-sm ds-hidden" id="ds-base-toggle" role="group" aria-label="Build next change on">
+                  <button type="button" class="btn btn-outline-secondary active" id="ds-base-edited" title="Keep previous changes (e.g. the new faucet) and add to them">On my edits</button>
+                  <button type="button" class="btn btn-outline-secondary" id="ds-base-original" title="Start this change from the untouched photo">On original</button>
+                </div>
+                <button type="button" class="btn btn-outline-secondary btn-sm ds-hidden" id="ds-reset-original" title="Discard all changes and go back to your uploaded photo">
+                  <i class="fas fa-undo me-1"></i>Reset to original
+                </button>
                 <button type="button" class="btn btn-primary btn-sm ds-hidden" id="ds-3d-retry">
                   <i class="fas fa-redo me-1"></i>Retry 3D
                 </button>
