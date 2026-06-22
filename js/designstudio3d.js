@@ -354,14 +354,15 @@ function wrap(inner, entry) {
   return group;
 }
 
+// Uniformly scale a loaded model to fit the catalog's feet box, centered on
+// X/Z and grounded at y=0. Scale first, then offset by the scaled bounds.
 function fitToFeet(obj, entry) {
-  const bbox = new THREE.Box3().setFromObject(obj);
-  const size = new THREE.Vector3(); bbox.getSize(size);
-  const center = new THREE.Vector3(); bbox.getCenter(center);
-  obj.position.sub(center);
-  obj.position.y += size.y / 2;
+  const box = new THREE.Box3().setFromObject(obj);
+  const size = box.getSize(new THREE.Vector3());
+  const center = box.getCenter(new THREE.Vector3());
   const s = Math.min(entry.w / (size.x || 1), entry.h / (size.y || 1), entry.d / (size.z || 1));
-  obj.scale.multiplyScalar(s);
+  obj.scale.setScalar(s);
+  obj.position.set(-center.x * s, -box.min.y * s, -center.z * s);
 }
 
 function centerOfPlan() {
