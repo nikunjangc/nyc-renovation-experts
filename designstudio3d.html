@@ -96,7 +96,7 @@
     <!-- Main -->
     <div class="container py-3">
       <p class="text-muted mb-4">
-        Pick an apartment layout, then click furniture and fixtures to drop them into the room.
+        Each layout opens as a <strong>ready-to-go furnished room</strong> — start playing right away, or click furniture and fixtures to add your own.
         <strong>Drag</strong> to move, press <strong>R</strong> (or the Rotate button) to spin a piece, <strong>Delete</strong> to remove it.
         Switch between a <strong>2D plan</strong> and a <strong>3D view</strong>, then turn your design into a free renovation quote.
         <span class="d-block mt-2" style="font-size:0.85rem;">Furniture uses real low-poly 3D models (Kenney Furniture Kit, CC0). Add your own by dropping a .glb in /models/ — see DESIGN-STUDIO-3D-PLAN.md.</span>
@@ -124,6 +124,7 @@
             </div>
             <button type="button" id="ds3-tool-rotate" class="btn btn-outline-secondary btn-sm" disabled><i class="fas fa-sync-alt me-1"></i>Rotate</button>
             <button type="button" id="ds3-tool-delete" class="btn btn-outline-danger btn-sm" disabled><i class="fas fa-trash me-1"></i>Delete</button>
+            <button type="button" id="ds3-furnish" class="btn btn-outline-primary btn-sm" title="Reset to the ready-made furnished layout"><i class="fas fa-magic me-1"></i>Furnish</button>
             <button type="button" id="ds3-tool-clear" class="btn btn-outline-secondary btn-sm"><i class="fas fa-broom me-1"></i>Clear</button>
             <span id="ds3-selinfo" class="ds3-selinfo"></span>
           </div>
@@ -136,7 +137,7 @@
             <button type="button" id="ds3-quote" class="btn btn-primary"><i class="fas fa-file-invoice-dollar me-2"></i>Get a free quote for this design</button>
             <button type="button" id="ds3-export" class="btn btn-outline-secondary"><i class="fas fa-camera me-2"></i>Download image</button>
           </div>
-          <div class="ds3-hint">Your design saves automatically in this browser. Tip: use <strong>2D plan</strong> to lay things out, then <strong>3D view</strong> to walk around.</div>
+          <div class="ds3-hint">Opens as a furnished room — drag things around, or hit <strong>Furnish</strong> to reset the layout / <strong>Clear</strong> to empty it. Your design saves automatically in this browser.</div>
         </div>
       </div>
     </div>

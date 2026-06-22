@@ -16,5 +16,22 @@
     { "label": "Bath", "x": 18, "y": 13 }
   ],
   "doors": [ { "wall": 2, "at": 0.2 } ],
-  "windows": [ { "wall": 0, "at": 0.4 }, { "wall": 0, "at": 0.75 } ]
+  "windows": [ { "wall": 0, "at": 0.4 }, { "wall": 0, "at": 0.75 } ],
+  "furniture": [
+    { "id": "sofa",        "x": 5,    "z": 4 },
+    { "id": "coffee",      "x": 5,    "z": 6.3 },
+    { "id": "tvstand",     "x": 3,    "z": 1.6 },
+    { "id": "tv",          "x": 3,    "z": 1.3 },
+    { "id": "bed",         "x": 4.5,  "z": 12 },
+    { "id": "nightstand",  "x": 1.8,  "z": 12.3 },
+    { "id": "floorlamp",   "x": 1.8,  "z": 8 },
+    { "id": "plant",       "x": 11.5, "z": 2.5 },
+    { "id": "fridge",      "x": 20,   "z": 2 },
+    { "id": "range",       "x": 16.5, "z": 2 },
+    { "id": "sinkcounter", "x": 18.5, "z": 2.3 },
+    { "id": "island",      "x": 18,   "z": 6.5 },
+    { "id": "toilet",      "x": 16,   "z": 14 },
+    { "id": "vanity",      "x": 20,   "z": 12.5 },
+    { "id": "bathtub",     "x": 18,   "z": 14.5 }
+  ]
 }

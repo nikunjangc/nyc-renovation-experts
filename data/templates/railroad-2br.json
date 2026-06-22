@@ -26,5 +26,27 @@
   "windows": [
     { "wall": 0, "at": 0.15 },
     { "wall": 2, "at": 0.85 }
+  ],
+  "furniture": [
+    { "id": "sofa",        "x": 5,    "z": 3 },
+    { "id": "armchair",    "x": 9.5,  "z": 3.5 },
+    { "id": "rug",         "x": 5,    "z": 5.3 },
+    { "id": "coffee",      "x": 5,    "z": 5.3 },
+    { "id": "tvstand",     "x": 5,    "z": 11 },
+    { "id": "tv",          "x": 5,    "z": 11.3 },
+    { "id": "floorlamp",   "x": 1.8,  "z": 2 },
+    { "id": "plant",       "x": 11,   "z": 2 },
+    { "id": "bed",         "x": 20,   "z": 8 },
+    { "id": "wardrobe",    "x": 15.5, "z": 1.8 },
+    { "id": "dresser",     "x": 24.5, "z": 2.5 },
+    { "id": "nightstand",  "x": 16.5, "z": 10.8 },
+    { "id": "nightstand",  "x": 23.5, "z": 10.8 },
+    { "id": "fridge",      "x": 38,   "z": 11.2 },
+    { "id": "range",       "x": 30,   "z": 11.5 },
+    { "id": "sinkcounter", "x": 34,   "z": 11.5 },
+    { "id": "island",      "x": 32.5, "z": 8 },
+    { "id": "cabinet",     "x": 28.5, "z": 11.5 },
+    { "id": "toilet",      "x": 29,   "z": 2 },
+    { "id": "vanity",      "x": 31.5, "z": 2 }
   ]
 }

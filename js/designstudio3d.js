@@ -106,8 +106,8 @@ async function init() {
   onResize();
   animate();
 
-  // Restore a saved design if present, else load the first template.
-  if (!restore()) loadTemplate(state.templates[0]);
+  // Restore a saved design if present, else open the first template furnished.
+  if (!restore()) loadTemplate(state.templates[0], true);
 }
 
 /* ---------- data ------------------------------------------------------- */
@@ -124,7 +124,9 @@ async function loadData() {
 }
 
 /* ---------- template (walls + floor) ----------------------------------- */
-function loadTemplate(tpl) {
+// furnish=true drops the template's pre-placed furniture in (a "ready-to-go"
+// furnished room). restore() passes false so saved items aren't doubled up.
+function loadTemplate(tpl, furnish = false) {
   if (!tpl) return;
   state.template = tpl;
   if (state.templateGroup) state.scene.remove(state.templateGroup);
@@ -176,6 +178,19 @@ function loadTemplate(tpl) {
   state.orbit.update();
 
   document.getElementById('ds3-current-template').textContent = tpl.name;
+
+  // Ready-to-go playground: drop in the template's pre-placed furniture.
+  if (furnish) furnishFromTemplate(tpl);
+}
+
+// Place every item listed in a template's "furniture" array.
+function furnishFromTemplate(tpl) {
+  (tpl.furniture || []).forEach((f) => {
+    const entry = state.catalog?.items.find((e) => e.id === f.id);
+    if (entry) addItem(entry, f.x, f.z, f.rot || 0, f.scale || 1);
+  });
+  select(null);
+  save();
 }
 
 function fit2dCamera(w, d) {
@@ -488,8 +503,7 @@ function renderTemplatePicker() {
   sel.addEventListener('change', () => {
     const tpl = state.templates.find((t) => t.id === sel.value);
     clearItems();
-    loadTemplate(tpl);
-    save();
+    loadTemplate(tpl, true);   // switch templates -> open furnished
   });
 }
 
@@ -528,6 +542,7 @@ function bindUI() {
   document.getElementById('ds3-tool-rotate').addEventListener('click', () => state.gizmo.setMode(state.gizmo.mode === 'rotate' ? 'translate' : 'rotate'));
   document.getElementById('ds3-tool-delete').addEventListener('click', deleteSelected);
   document.getElementById('ds3-tool-clear').addEventListener('click', () => { clearItems(); save(); });
+  document.getElementById('ds3-furnish').addEventListener('click', () => { clearItems(); loadTemplate(state.template, true); });
   document.getElementById('ds3-export').addEventListener('click', exportImage);
   document.getElementById('ds3-quote').addEventListener('click', sendToQuote);
 }
