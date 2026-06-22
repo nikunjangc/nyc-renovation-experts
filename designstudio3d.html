@@ -1,0 +1,200 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <base href="/">
+    <meta charset="utf-8" />
+    <title>Design Studio 3D | NYC Renovation Experts</title>
+    <meta content="width=device-width, initial-scale=1.0" name="viewport" />
+    <meta content="Plan your room in 3D. Pick an apartment template, drag in furniture and fixtures — sofa, fridge, oven, vanity, lighting — then get a free renovation quote for your design." name="description" />
+
+    <link href="img/favicon.ico" rel="icon" />
+
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link href="https://fonts.googleapis.com/css2?family=Roboto:wght@400;500&family=Poppins:wght@600;700&display=swap" rel="stylesheet" />
+
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.10.0/css/all.min.css" rel="stylesheet" />
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.4.1/font/bootstrap-icons.css" rel="stylesheet" />
+    <link href="lib/animate/animate.min.css" rel="stylesheet" />
+    <link href="lib/owlcarousel/assets/owl.carousel.min.css" rel="stylesheet" />
+    <link href="css/bootstrap.min.css" rel="stylesheet" />
+    <link href="css/style.css" rel="stylesheet" />
+
+    <style>
+      .ds3-shell { display: grid; grid-template-columns: 260px 1fr; gap: 18px; }
+      @media (max-width: 900px) { .ds3-shell { grid-template-columns: 1fr; } }
+      .ds3-panel { background: #fff; border-radius: 14px; box-shadow: 0 6px 24px rgba(0,0,0,0.05); padding: 16px; }
+      .ds3-cat-title { font-weight: 700; font-size: 0.78rem; text-transform: uppercase; letter-spacing: 0.04em; color: #FDA12B; margin: 14px 0 8px; }
+      .ds3-cat-title:first-child { margin-top: 0; }
+      .ds3-cat-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; }
+      .ds3-item { border: 1.5px solid #eee; background: #fff; border-radius: 10px; padding: 10px 6px; font-size: 0.72rem; font-weight: 600; color: #444; cursor: pointer; display: flex; flex-direction: column; align-items: center; gap: 6px; transition: all 0.15s; }
+      .ds3-item:hover { border-color: #FDA12B; color: #FDA12B; transform: translateY(-1px); }
+      .ds3-item i { font-size: 18px; color: #FDA12B; }
+      .ds3-catalog-wrap { max-height: 540px; overflow-y: auto; }
+      .ds3-stage { position: relative; background: #eef1f4; border-radius: 14px; overflow: hidden; }
+      .ds3-stage canvas { display: block; width: 100%; height: auto; touch-action: none; }
+      .ds3-toolbar { display: flex; flex-wrap: wrap; gap: 8px; align-items: center; margin-bottom: 12px; }
+      .ds3-mode-toggle { display: inline-flex; background: #f0f0f0; border-radius: 30px; padding: 4px; }
+      .ds3-mode-btn { border: none; background: transparent; color: #555; padding: 7px 16px; border-radius: 24px; font-size: 0.85rem; font-weight: 600; cursor: pointer; }
+      .ds3-mode-btn.active { background: #FDA12B; color: #fff; box-shadow: 0 2px 6px rgba(253,161,43,0.4); }
+      .ds3-selinfo { font-size: 0.82rem; color: #666; margin-left: auto; min-height: 1em; }
+      .ds3-hint { font-size: 0.78rem; color: #888; margin-top: 10px; }
+      .ds3-template-row { display: flex; align-items: center; gap: 10px; margin-bottom: 14px; flex-wrap: wrap; }
+      .ds3-template-row select { max-width: 240px; }
+    </style>
+  </head>
+
+  <body>
+    <!-- Topbar -->
+    <div class="container-fluid bg-light p-0">
+      <div class="row gx-0 d-none d-lg-flex">
+        <div class="col-lg-7 px-5 text-start">
+          <div class="h-100 d-inline-flex align-items-center border-start border-end px-3">
+            <small class="fa fa-phone-alt me-2"></small><small>+1 (646) 444-2434</small>
+          </div>
+          <div class="h-100 d-inline-flex align-items-center border-end px-3">
+            <small class="far fa-envelope-open me-2"></small><small>info@nycrenovationexperts.com</small>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Navbar -->
+    <nav class="navbar navbar-expand-lg bg-white navbar-light sticky-top px-4 px-lg-5 py-lg-0">
+      <a href="index.html" class="navbar-brand d-flex align-items-center">
+        <h1 class="m-0"><i class="fa fa-building text-primary me-3"></i>NYC Renovation Experts</h1>
+      </a>
+      <button type="button" class="navbar-toggler" data-bs-toggle="collapse" data-bs-target="#navbarCollapse">
+        <span class="navbar-toggler-icon"></span>
+      </button>
+      <div class="collapse navbar-collapse" id="navbarCollapse">
+        <div class="navbar-nav ms-auto py-3 py-lg-0">
+          <a href="index.html" class="nav-item nav-link">Home</a>
+          <a href="about.html" class="nav-item nav-link">About Us</a>
+          <a href="service.html" class="nav-item nav-link">Our Services</a>
+          <a href="designstudio.html" class="nav-item nav-link">Design Studio</a>
+          <a href="designstudio3d.html" class="nav-item nav-link active">Design Studio 3D</a>
+          <a href="contact.html" class="nav-item nav-link">Contact Us</a>
+          <a href="quote.html" class="nav-item nav-link">Get Free Quote</a>
+        </div>
+      </div>
+    </nav>
+
+    <!-- Page Header -->
+    <div class="container-fluid page-header py-5 mb-4 wow fadeIn" data-wow-delay="0.1s">
+      <div class="container text-center py-5">
+        <h1 class="display-4 text-white animated slideInDown mb-4">Design Studio 3D</h1>
+        <nav aria-label="breadcrumb">
+          <ol class="breadcrumb justify-content-center mb-0">
+            <li class="breadcrumb-item"><a class="text-white" href="index.html">Home</a></li>
+            <li class="breadcrumb-item text-primary active">Design Studio 3D</li>
+          </ol>
+        </nav>
+      </div>
+    </div>
+
+    <!-- Main -->
+    <div class="container py-3">
+      <p class="text-muted mb-4">
+        Pick an apartment layout, then click furniture and fixtures to drop them into the room.
+        <strong>Drag</strong> to move, press <strong>R</strong> (or the Rotate button) to spin a piece, <strong>Delete</strong> to remove it.
+        Switch between a <strong>2D plan</strong> and a <strong>3D view</strong>, then turn your design into a free renovation quote.
+        <span class="d-block mt-2" style="font-size:0.85rem;">Furniture shown as styled placeholders — swap in real 3D models any time (see DESIGN-STUDIO-3D-PLAN.md).</span>
+      </p>
+
+      <div class="ds3-template-row">
+        <label class="fw-bold mb-0"><i class="fas fa-vector-square text-primary me-2"></i>Template:</label>
+        <select id="ds3-template-select" class="form-select form-select-sm"></select>
+        <span class="text-muted" style="font-size:0.85rem;">Now editing: <strong id="ds3-current-template">—</strong></span>
+      </div>
+
+      <div class="ds3-shell">
+        <!-- Catalog sidebar -->
+        <div class="ds3-panel">
+          <div class="fw-bold mb-2"><i class="fas fa-couch text-primary me-2"></i>Furniture &amp; Fixtures</div>
+          <div class="ds3-catalog-wrap"><div id="ds3-catalog"></div></div>
+        </div>
+
+        <!-- Stage -->
+        <div class="ds3-panel">
+          <div class="ds3-toolbar">
+            <div class="ds3-mode-toggle">
+              <button type="button" id="ds3-mode-3d" class="ds3-mode-btn active"><i class="fas fa-cube me-1"></i>3D view</button>
+              <button type="button" id="ds3-mode-2d" class="ds3-mode-btn"><i class="fas fa-border-all me-1"></i>2D plan</button>
+            </div>
+            <button type="button" id="ds3-tool-rotate" class="btn btn-outline-secondary btn-sm" disabled><i class="fas fa-sync-alt me-1"></i>Rotate</button>
+            <button type="button" id="ds3-tool-delete" class="btn btn-outline-danger btn-sm" disabled><i class="fas fa-trash me-1"></i>Delete</button>
+            <button type="button" id="ds3-tool-clear" class="btn btn-outline-secondary btn-sm"><i class="fas fa-broom me-1"></i>Clear</button>
+            <span id="ds3-selinfo" class="ds3-selinfo"></span>
+          </div>
+
+          <div class="ds3-stage" id="ds3-stage">
+            <canvas id="ds3-canvas"></canvas>
+          </div>
+
+          <div class="d-flex flex-wrap gap-2 mt-3">
+            <button type="button" id="ds3-quote" class="btn btn-primary"><i class="fas fa-file-invoice-dollar me-2"></i>Get a free quote for this design</button>
+            <button type="button" id="ds3-export" class="btn btn-outline-secondary"><i class="fas fa-camera me-2"></i>Download image</button>
+          </div>
+          <div class="ds3-hint">Your design saves automatically in this browser. Tip: use <strong>2D plan</strong> to lay things out, then <strong>3D view</strong> to walk around.</div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Footer -->
+    <div class="container-fluid bg-dark footer mt-5 pt-5 wow fadeIn">
+      <div class="container py-5">
+        <div class="row g-5">
+          <div class="col-lg-6 col-md-6">
+            <h1 class="text-white mb-4"><i class="fa fa-building text-primary me-3"></i>NYC Renovation Experts</h1>
+            <p>Your trusted partner for high-quality home and commercial renovations across New York City.</p>
+          </div>
+          <div class="col-lg-3 col-md-6">
+            <h4 class="text-light mb-4">Quick Links</h4>
+            <a class="btn btn-link" href="about.html">About Us</a>
+            <a class="btn btn-link" href="service.html">Our Services</a>
+            <a class="btn btn-link" href="designstudio.html">Design Studio</a>
+            <a class="btn btn-link" href="quote.html">Get Free Quote</a>
+          </div>
+          <div class="col-lg-3 col-md-6">
+            <h4 class="text-light mb-4">Address</h4>
+            <p><i class="fa fa-map-marker-alt me-3"></i>80 5th Ave, B1, New York, NY 10011</p>
+            <p><i class="fa fa-phone-alt me-3"></i>+1 (646) 444-2434</p>
+            <p><i class="fa fa-envelope me-3"></i>info@nycrenovationexperts.com</p>
+          </div>
+        </div>
+      </div>
+      <div class="container-fluid copyright">
+        <div class="container">
+          <div class="row">
+            <div class="col-md-12 text-center mb-3 mb-md-0">
+              &copy; <a href="index.html">NYC Renovation Experts</a>, All Rights Reserved.
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <a href="#" class="btn btn-lg btn-primary btn-lg-square back-to-top"><i class="bi bi-arrow-up"></i></a>
+
+    <!-- JS Libraries -->
+    <script src="https://code.jquery.com/jquery-3.4.1.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.0.0/dist/js/bootstrap.bundle.min.js"></script>
+    <script src="lib/wow/wow.min.js"></script>
+    <script src="lib/easing/easing.min.js"></script>
+    <script src="lib/waypoints/waypoints.min.js"></script>
+    <script src="lib/owlcarousel/owl.carousel.min.js"></script>
+    <script src="js/main.js"></script>
+
+    <!-- three.js as ES module from CDN (same setup as designstudio.html) -->
+    <script type="importmap">
+      {
+        "imports": {
+          "three": "https://cdn.jsdelivr.net/npm/three@0.160.0/build/three.module.js",
+          "three/addons/": "https://cdn.jsdelivr.net/npm/three@0.160.0/examples/jsm/"
+        }
+      }
+    </script>
+    <script type="module" src="js/designstudio3d.js"></script>
+  </body>
+</html>
