@@ -90,7 +90,8 @@ async function writeEditPrompt({ segmentLabel, product, positionWords, masked })
     ? `Paint only within the masked (transparent) area; the rest of the photo will be preserved automatically by the mask.`
     : `Keep all other elements (walls, floor, lighting, other appliances, cabinets) unchanged.`;
 
-  const canned = `Replace the ${segmentLabel} ${positionWords} with: ${product.title}. ` +
+  const canned = `Replace ONLY the ${segmentLabel} ${positionWords} with: ${product.title}. ` +
+                 `Render just the new ${segmentLabel} in that spot; do not add, move, or alter any other fixtures, surfaces, or objects. ` +
                  `${maskClause} ` +
                  `Match the photo's lighting and perspective. Photorealistic. No text, no watermarks, no labels.`;
   if (!dsKey) return canned;
@@ -99,6 +100,7 @@ async function writeEditPrompt({ segmentLabel, product, positionWords, masked })
 Hard rules:
 - Output ONLY the prompt text. No preface, no quotes, no JSON, no markdown.
 - Be specific about WHAT product to render.
+- Instruct it to replace ONLY the named fixture and to leave every other object, surface, fixture and the layout unchanged.
 - ${masked
     ? 'A binary mask is also provided; the model will only paint inside the transparent region. Tell it to render the product naturally within that masked area.'
     : 'ALWAYS include: "Keep all other elements unchanged. Match the original photo\'s lighting and perspective."'}
@@ -134,7 +136,7 @@ Write the edit prompt.`;
 // dataUrlToBlob (declared above) is re-used by both photo and mask.
 
 
-async function callOpenAIEdit({ photoBlob, filename, maskBlob, prompt, size = '1024x1024', quality = 'medium' }) {
+async function callOpenAIEdit({ photoBlob, filename, maskBlob, prompt, size = 'auto', quality = 'medium' }) {
   const apiKey = process.env.OPENAI_API_KEY;
   if (!apiKey) {
     const err = new Error('OPENAI_API_KEY not configured');
@@ -156,8 +158,15 @@ async function callOpenAIEdit({ photoBlob, filename, maskBlob, prompt, size = '1
   }
   form.append('prompt', prompt);
   form.append('n', '1');
+  // 'auto' matches the photo's aspect ratio. Hardcoding a square (1024x1024)
+  // forced non-square room photos to be re-fit into a square, distorting the
+  // scene and worsening drift. The browser composites the result back over the
+  // original anyway, so exact output dims don't need to equal the source.
   form.append('size', size);
   form.append('quality', quality);
+  // High input fidelity keeps the surrounding context (textures, lighting) the
+  // model sees crisp, so the product it paints inside the box matches better.
+  form.append('input_fidelity', 'high');
 
   const abort = new AbortController();
   const timer = setTimeout(() => abort.abort(), 55_000);

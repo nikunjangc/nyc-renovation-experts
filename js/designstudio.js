@@ -610,9 +610,20 @@ async function runComposite(product) {
       return;
     }
     if (data.imageDataUrl) {
-      state.compositeByThumb.set(product.thumbnail, data.imageDataUrl);
+      // gpt-image-1 repaints the WHOLE frame — its mask is only a soft guide,
+      // NOT a hard pixel boundary — so on its own it drifts other fixtures
+      // (e.g. editing the oven also changes the sink). We defeat that by
+      // compositing its output back over the original photo, clipped to the
+      // selected box: everything OUTSIDE the box stays bit-identical.
+      let finalUrl = data.imageDataUrl;
+      try {
+        finalUrl = await compositeMaskedRegion(state.imageDataUrl, data.imageDataUrl, bbox);
+      } catch (e) {
+        console.warn('client composite failed; showing raw GPT result', e);
+      }
+      state.compositeByThumb.set(product.thumbnail, finalUrl);
       // Keep the spinner up until the new image has actually painted.
-      await showCompositeBackdrop(data.imageDataUrl);
+      await showCompositeBackdrop(finalUrl);
       hideSpinner();
       setRenderBtnBusy(false);
     } else {
@@ -627,6 +638,41 @@ async function runComposite(product) {
     showCompositeError(err.message || 'Composite failed');
     setRenderBtnBusy(false);
   }
+}
+
+// Guarantees "only the selected box changes". Draws the ORIGINAL photo at its
+// native resolution, then paints gpt-image-1's result on top but clipped to
+// the selected rectangle (`bbox`, in natural photo pixels). Pixels outside the
+// box are therefore identical to the original — independent of how much GPT
+// repainted. (When we add a lasso later, clip to its polygon instead of rect.)
+function compositeMaskedRegion(originalUrl, resultUrl, bbox) {
+  return new Promise((resolve, reject) => {
+    const orig = new Image();
+    const result = new Image();
+    let loaded = 0;
+    const onErr = () => reject(new Error('composite image load failed'));
+    const onLoad = () => {
+      if (++loaded < 2) return;
+      const W = orig.naturalWidth, H = orig.naturalHeight;
+      const c = document.createElement('canvas');
+      c.width = W; c.height = H;
+      const ctx = c.getContext('2d');
+      ctx.drawImage(orig, 0, 0, W, H);
+      ctx.save();
+      ctx.beginPath();
+      ctx.rect(bbox.x, bbox.y, bbox.w, bbox.h);
+      ctx.clip();
+      // Scale GPT's (size:auto, aspect-matched) result over the full frame so
+      // its geometry lines up, then the clip keeps only the box region.
+      ctx.drawImage(result, 0, 0, W, H);
+      ctx.restore();
+      resolve(c.toDataURL('image/jpeg', 0.92));
+    };
+    orig.onload = onLoad; orig.onerror = onErr;
+    result.onload = onLoad; result.onerror = onErr;
+    orig.src = originalUrl;
+    result.src = resultUrl;
+  });
 }
 
 // Read the floater's current position+size and convert from displayed CSS px
