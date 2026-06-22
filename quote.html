@@ -947,6 +947,20 @@
       window.BACKEND_API_URL = window.BACKEND_API_URL || 'https://nyc-renovation-experts.vercel.app';
     </script>
     <script src="js/ai-quote.js"></script>
+
+    <!-- Prefill the project description when arriving from Design Studio 3D. -->
+    <script>
+      (function () {
+        try {
+          var note = new URLSearchParams(window.location.search).get('note');
+          var field = document.getElementById('projectDescription');
+          if (note && field && !field.value) {
+            field.value = note + '\n\n';
+            field.focus();
+          }
+        } catch (e) {}
+      })();
+    </script>
   </body>
 </html>
 

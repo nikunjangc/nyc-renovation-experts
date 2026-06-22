@@ -1,0 +1,40 @@
+{
+  "_comment": "Furniture catalog for Design Studio 3D. Each item loads a real low-poly GLB from /models/ (Kenney Furniture Kit, CC0 — see models/CREDITS.md). The 'shape' field is a built-in primitive fallback used automatically if a GLB fails to load. Sizes are in feet (w = width/X, d = depth/Z, h = height/Y); models are auto-scaled to fit.",
+  "categories": ["Kitchen", "Bathroom", "Living", "Bedroom", "Lighting"],
+  "items": [
+    { "id": "fridge",     "name": "Refrigerator", "category": "Kitchen",  "glb": "models/kitchenFridge.glb",        "shape": "fridge",   "w": 3,   "d": 2.5, "h": 6 },
+    { "id": "range",      "name": "Oven / Range",  "category": "Kitchen",  "glb": "models/kitchenStove.glb",         "shape": "range",    "w": 2.5, "d": 2.5, "h": 3 },
+    { "id": "sinkcounter","name": "Sink Counter",  "category": "Kitchen",  "glb": "models/kitchenSink.glb",          "shape": "counter",  "w": 3,   "d": 2,   "h": 3 },
+    { "id": "cabinet",    "name": "Base Cabinet",  "category": "Kitchen",  "glb": "models/kitchenCabinet.glb",       "shape": "cabinet",  "w": 3,   "d": 2,   "h": 3 },
+    { "id": "island",     "name": "Island",        "category": "Kitchen",  "glb": "models/kitchenCabinetDrawer.glb", "shape": "counter",  "w": 5,   "d": 3,   "h": 3 },
+    { "id": "microwave",  "name": "Microwave",     "category": "Kitchen",  "glb": "models/kitchenMicrowave.glb",     "shape": "box",      "w": 1.7, "d": 1.3, "h": 1.1 },
+    { "id": "hood",       "name": "Range Hood",    "category": "Kitchen",  "glb": "models/hoodModern.glb",           "shape": "box",      "w": 2.5, "d": 1.8, "h": 1.2 },
+
+    { "id": "toilet",     "name": "Toilet",        "category": "Bathroom", "glb": "models/toilet.glb",               "shape": "toilet",   "w": 1.7, "d": 2.5, "h": 2.5 },
+    { "id": "vanity",     "name": "Vanity + Sink", "category": "Bathroom", "glb": "models/bathroomSink.glb",         "shape": "vanity",   "w": 2.5, "d": 1.8, "h": 3 },
+    { "id": "bathtub",    "name": "Bathtub",       "category": "Bathroom", "glb": "models/bathtub.glb",              "shape": "bathtub",  "w": 5,   "d": 2.5, "h": 2 },
+    { "id": "mirror",     "name": "Mirror",        "category": "Bathroom", "glb": "models/bathroomMirror.glb",       "shape": "box",      "w": 2.5, "d": 0.3, "h": 3 },
+    { "id": "bathcab",    "name": "Bath Cabinet",  "category": "Bathroom", "glb": "models/bathroomCabinet.glb",      "shape": "cabinet",  "w": 2,   "d": 1.2, "h": 3 },
+
+    { "id": "sofa",       "name": "Sofa",          "category": "Living",   "glb": "models/loungeSofa.glb",           "shape": "sofa",     "w": 6.5, "d": 3,   "h": 2.8 },
+    { "id": "armchair",   "name": "Armchair",      "category": "Living",   "glb": "models/loungeChair.glb",          "shape": "armchair", "w": 3,   "d": 3,   "h": 2.8 },
+    { "id": "coffee",     "name": "Coffee Table",  "category": "Living",   "glb": "models/tableCoffee.glb",          "shape": "table",    "w": 3.5, "d": 1.8, "h": 1.4 },
+    { "id": "tvstand",    "name": "TV Stand",      "category": "Living",   "glb": "models/cabinetTelevision.glb",    "shape": "tvstand",  "w": 5,   "d": 1.4, "h": 1.6 },
+    { "id": "tv",         "name": "Television",    "category": "Living",   "glb": "models/televisionModern.glb",     "shape": "box",      "w": 4,   "d": 0.5, "h": 2.4 },
+    { "id": "dining",     "name": "Dining Table",  "category": "Living",   "glb": "models/table.glb",                "shape": "table",    "w": 5,   "d": 3,   "h": 2.5 },
+    { "id": "chair",      "name": "Dining Chair",  "category": "Living",   "glb": "models/chair.glb",                "shape": "box",      "w": 1.6, "d": 1.6, "h": 3 },
+    { "id": "desk",       "name": "Desk",          "category": "Living",   "glb": "models/desk.glb",                 "shape": "table",    "w": 4,   "d": 2,   "h": 2.5 },
+    { "id": "rug",        "name": "Rug",           "category": "Living",   "glb": "models/rugRectangle.glb",         "shape": "box",      "w": 8,   "d": 5,   "h": 0.1 },
+
+    { "id": "bed",        "name": "Bed (Double)",  "category": "Bedroom",  "glb": "models/bedDouble.glb",            "shape": "bed",      "w": 5,   "d": 6.7, "h": 2.5 },
+    { "id": "nightstand", "name": "Nightstand",    "category": "Bedroom",  "glb": "models/sideTableDrawers.glb",     "shape": "cabinet",  "w": 1.6, "d": 1.4, "h": 2 },
+    { "id": "dresser",    "name": "Dresser",       "category": "Bedroom",  "glb": "models/cabinetBedDrawer.glb",     "shape": "tvstand",  "w": 4,   "d": 1.6, "h": 3 },
+    { "id": "wardrobe",   "name": "Wardrobe",      "category": "Bedroom",  "glb": "models/bookcaseClosedDoors.glb",  "shape": "cabinet",  "w": 3.5, "d": 1.5, "h": 6 },
+
+    { "id": "floorlamp",  "name": "Floor Lamp",    "category": "Lighting", "glb": "models/lampSquareFloor.glb",      "shape": "lamp",     "w": 1.2, "d": 1.2, "h": 5 },
+    { "id": "tablelamp",  "name": "Table Lamp",    "category": "Lighting", "glb": "models/lampSquareTable.glb",      "shape": "lamp",     "w": 1,   "d": 1,   "h": 1.8 },
+    { "id": "ceilinglamp","name": "Ceiling Lamp",  "category": "Lighting", "glb": "models/lampSquareCeiling.glb",    "shape": "lamp",     "w": 1.5, "d": 1.5, "h": 1 },
+    { "id": "plant",      "name": "Potted Plant",  "category": "Lighting", "glb": "models/pottedPlant.glb",          "shape": "plant",    "w": 1.8, "d": 1.8, "h": 4 },
+    { "id": "plantsmall", "name": "Small Plant",   "category": "Lighting", "glb": "models/plantSmall1.glb",          "shape": "plant",    "w": 1.2, "d": 1.2, "h": 1.5 }
+  ]
+}
