@@ -25,14 +25,17 @@ const API = window.BACKEND_API_URL || 'http://localhost:3001';
 function showSpinner(message = 'Processing…') {
   const spinner = el('spinner');
   if (spinner) {
-    spinner.style.display = 'flex';
+    // Use !important: the element carries Bootstrap's `d-flex`
+    // (display:flex !important), so a plain inline style would be overridden.
+    spinner.style.setProperty('display', 'flex', 'important');
     const text = spinner.querySelector('p');
     if (text) text.textContent = message;
   }
 }
 function hideSpinner() {
   const spinner = el('spinner');
-  if (spinner) spinner.style.display = 'none';
+  // Same reason — must beat `d-flex !important` to actually hide.
+  if (spinner) spinner.style.setProperty('display', 'none', 'important');
 }
 
 // ===== State =====
@@ -532,6 +535,20 @@ function setOverlayImage(src) {
 // mask tells OpenAI's gpt-image-1 to ONLY modify pixels inside the floater's
 // rectangle. Everything outside the mask is preserved pixel-identical.
 
+// Locks/unlocks the "Render in my room" button so it can't be clicked again
+// while a render is in flight.
+function setRenderBtnBusy(busy) {
+  const btn = el('ds-render-room');
+  if (!btn) return;
+  btn.disabled = busy;
+  if (busy) {
+    if (!btn.dataset.label) btn.dataset.label = btn.textContent;
+    btn.textContent = 'Rendering…';
+  } else if (btn.dataset.label) {
+    btn.textContent = btn.dataset.label;
+  }
+}
+
 async function runComposite(product) {
   if (!product || !state.imageDataUrl) return;
 
@@ -552,6 +569,8 @@ async function runComposite(product) {
   }
   const maskDataUrl = buildMaskDataUrl(bbox);
 
+  // Lock the button + show the full-screen spinner for the WHOLE render.
+  setRenderBtnBusy(true);
   showSpinner('Rendering in your room… (~15–30s)');
   showCompositeStatus('Generating photoreal preview… (~15-30s)');
 
@@ -578,6 +597,8 @@ async function runComposite(product) {
       }),
     });
     const data = await res.json().catch(() => ({}));
+    // A newer render started — let that one own the spinner/button. Don't
+    // tear down the UI it set up.
     if (state._activeCompositeToken !== token) return;
 
     if (!res.ok) {
@@ -585,21 +606,26 @@ async function runComposite(product) {
       hideSpinner();
       hideCompositeStatus();
       showCompositeError(msg);
+      setRenderBtnBusy(false);
       return;
     }
     if (data.imageDataUrl) {
       state.compositeByThumb.set(product.thumbnail, data.imageDataUrl);
+      // Keep the spinner up until the new image has actually painted.
+      await showCompositeBackdrop(data.imageDataUrl);
       hideSpinner();
-      showCompositeBackdrop(data.imageDataUrl);
+      setRenderBtnBusy(false);
     } else {
       hideSpinner();
       showCompositeError("AI returned no image.");
+      setRenderBtnBusy(false);
     }
   } catch (err) {
     if (state._activeCompositeToken !== token) return;
     console.error('composite failed', err);
     hideSpinner();
     showCompositeError(err.message || 'Composite failed');
+    setRenderBtnBusy(false);
   }
 }
 
@@ -662,14 +688,22 @@ function hideCompositeStatus() {
   if (status) status.style.display = 'none';
 }
 
+// Returns a Promise that resolves once the new image has actually painted, so
+// callers can keep the spinner up until the result is on screen (not just
+// fetched).
 function showCompositeBackdrop(dataUrl) {
   const photo = el('ds-composite-photo');
   const floater = el('ds-floater');
-  if (photo) photo.src = dataUrl;
   // Hide the CSS overlay floater — the composite already has the product
   // baked into the image.
   if (floater) floater.style.display = 'none';
   hideCompositeStatus();
+  return new Promise((resolve) => {
+    if (!photo) { resolve(); return; }
+    photo.onload = () => { photo.onload = null; photo.onerror = null; resolve(); };
+    photo.onerror = () => { photo.onload = null; photo.onerror = null; resolve(); };
+    photo.src = dataUrl;
+  });
 }
 
 function showCompositeError(message) {
