@@ -437,6 +437,28 @@ const FINISHES = {
   Gloss: { roughness: 0.14, metalness: 0.05 },
   Metal: { roughness: 0.3,  metalness: 0.9 },
 };
+// CC0 material textures (ambientCG via the open3dFloorplan project — see
+// textures/CREDITS.md). Applied as a tiling color map on the object.
+const MATERIALS = [
+  { key: 'wood',     name: 'Wood',     file: 'wood.jpg' },
+  { key: 'walnut',   name: 'Walnut',   file: 'walnut.jpg' },
+  { key: 'oak',      name: 'Oak',      file: 'oak.jpg' },
+  { key: 'marble',   name: 'Marble',   file: 'marble.jpg' },
+  { key: 'tile',     name: 'Tile',     file: 'tile.jpg' },
+  { key: 'concrete', name: 'Concrete', file: 'concrete.jpg' },
+  { key: 'brick',    name: 'Brick',    file: 'brick.jpg' },
+  { key: 'stone',    name: 'Stone',    file: 'stone.jpg' },
+];
+const _texCache = new Map();
+function loadTexture(file) {
+  if (_texCache.has(file)) return _texCache.get(file);
+  const t = new THREE.TextureLoader().load('textures/' + file);
+  t.wrapS = t.wrapT = THREE.RepeatWrapping;
+  t.repeat.set(2, 2);
+  t.colorSpace = THREE.SRGBColorSpace;
+  _texCache.set(file, t);
+  return t;
+}
 
 // Capture each material's original look once, so "Reset look" can restore it.
 function snapshotMaterials(obj) {
@@ -445,7 +467,7 @@ function snapshotMaterials(obj) {
   obj.traverse((c) => {
     if (c.isMesh && c.material) {
       (Array.isArray(c.material) ? c.material : [c.material]).forEach((m) => {
-        snap.push({ m, color: m.color ? m.color.clone() : null, roughness: m.roughness, metalness: m.metalness });
+        snap.push({ m, color: m.color ? m.color.clone() : null, map: m.map || null, roughness: m.roughness, metalness: m.metalness });
       });
     }
   });
@@ -455,8 +477,11 @@ function snapshotMaterials(obj) {
 function applyStyle(obj, style) {
   snapshotMaterials(obj);
   const f = style.finish && FINISHES[style.finish];
-  obj.userData._snap.forEach(({ m }) => {
-    if (style.color && m.color) m.color.set(style.color);
+  const mat = style.texture && MATERIALS.find((m) => m.key === style.texture);
+  const tex = mat ? loadTexture(mat.file) : null;
+  obj.userData._snap.forEach(({ m, map }) => {
+    if (tex) { m.map = tex; if (m.color) m.color.set('#ffffff'); }
+    else { m.map = map; if (style.color && m.color) m.color.set(style.color); }
     if (f) { if ('roughness' in m) m.roughness = f.roughness; if ('metalness' in m) m.metalness = f.metalness; }
     m.needsUpdate = true;
   });
@@ -466,6 +491,8 @@ function restyleSelected(patch) {
   const obj = state.selected;
   if (!obj) return;
   const style = Object.assign({}, obj.userData.style, patch);
+  if (patch.texture) style.color = null;   // texture & flat color are exclusive
+  if (patch.color) style.texture = null;
   obj.userData.style = style;
   applyStyle(obj, style);
   save();
@@ -476,7 +503,7 @@ function resetStyleSelected() {
   if (!obj || !obj.userData._snap) return;
   obj.userData._snap.forEach((s) => {
     if (s.color && s.m.color) s.m.color.copy(s.color);
-    s.m.roughness = s.roughness; s.m.metalness = s.metalness; s.m.needsUpdate = true;
+    s.m.map = s.map; s.m.roughness = s.roughness; s.m.metalness = s.metalness; s.m.needsUpdate = true;
   });
   obj.userData.style = null;
   save();
@@ -489,6 +516,13 @@ function renderRestyleControls() {
     b.type = 'button'; b.className = 'ds3-swatch'; b.style.background = hex; b.title = hex;
     b.addEventListener('click', () => restyleSelected({ color: hex }));
     sw.appendChild(b);
+  });
+  const mats = document.getElementById('ds3-materials');
+  MATERIALS.forEach((mt) => {
+    const b = document.createElement('button');
+    b.type = 'button'; b.className = 'ds3-finish'; b.textContent = mt.name;
+    b.addEventListener('click', () => restyleSelected({ texture: mt.key }));
+    mats.appendChild(b);
   });
   const fin = document.getElementById('ds3-finishes');
   Object.keys(FINISHES).forEach((name) => {
