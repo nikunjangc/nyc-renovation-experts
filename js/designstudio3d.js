@@ -100,6 +100,7 @@ async function init() {
   renderer.domElement.addEventListener('pointerdown', onPointerDown);
   window.addEventListener('keydown', onKey);
   bindUI();
+  renderRestyleControls();
 
   // Load data, then render
   await loadData();
@@ -323,7 +324,7 @@ function sphere(color, r) { const m = new THREE.Mesh(new THREE.SphereGeometry(r,
 function part(mesh, x, y, z) { mesh.position.set(x, y, z); return mesh; }
 
 /* ---------- placing items ---------------------------------------------- */
-function addItem(entry, atX, atZ, rotY = 0, scaleMul = 1) {
+function addItem(entry, atX, atZ, rotY = 0, scaleMul = 1, style = null) {
   const place = (obj) => {
     // obj already carries its real feet size (primitive: set in buildPrimitive;
     // GLB: set by fitToFeet). scaleMul is the user/saved resize factor.
@@ -335,6 +336,8 @@ function addItem(entry, atX, atZ, rotY = 0, scaleMul = 1) {
     obj.rotation.y = rotY;
     obj.userData.entry = entry;
     obj.traverse((c) => { if (c.isMesh) c.userData.selectableRoot = obj; });
+    if (style) applyStyle(obj, style);   // restored/recolored look
+    obj.userData.style = style;
     state.scene.add(obj);
     state.items.push(obj);
     select(obj);
@@ -406,10 +409,95 @@ function onPointerDown(e) {
 
 function select(obj) {
   state.selected = obj;
-  if (obj) { state.gizmo.attach(obj); document.getElementById('ds3-selinfo').textContent = obj.userData.entry?.name || ''; }
-  else { state.gizmo.detach(); document.getElementById('ds3-selinfo').textContent = ''; }
+  const panel = document.getElementById('ds3-restyle');
+  if (obj) {
+    state.gizmo.attach(obj);
+    document.getElementById('ds3-selinfo').textContent = obj.userData.entry?.name || '';
+    document.getElementById('ds3-restyle-name').textContent = obj.userData.entry?.name || 'object';
+    panel.classList.remove('ds3-hidden');
+  } else {
+    state.gizmo.detach();
+    document.getElementById('ds3-selinfo').textContent = '';
+    panel.classList.add('ds3-hidden');
+  }
   document.getElementById('ds3-tool-rotate').disabled = !obj;
   document.getElementById('ds3-tool-delete').disabled = !obj;
+}
+
+/* ---------- restyle: recolor / refinish the selected object ------------- */
+// Click-to-restyle in 3D — instant and free (just edits three.js materials),
+// no AI render. Color + finish are saved with the design.
+const SWATCHES = [
+  '#ffffff', '#d9d2c5', '#b08d57', '#7c5c3e', '#3a3f47', '#1f2937',
+  '#FDA12B', '#c0392b', '#2e7d63', '#1f6f8b', '#34495e', '#b5838d',
+];
+const FINISHES = {
+  Matte: { roughness: 0.92, metalness: 0.0 },
+  Satin: { roughness: 0.5,  metalness: 0.0 },
+  Gloss: { roughness: 0.14, metalness: 0.05 },
+  Metal: { roughness: 0.3,  metalness: 0.9 },
+};
+
+// Capture each material's original look once, so "Reset look" can restore it.
+function snapshotMaterials(obj) {
+  if (obj.userData._snap) return;
+  const snap = [];
+  obj.traverse((c) => {
+    if (c.isMesh && c.material) {
+      (Array.isArray(c.material) ? c.material : [c.material]).forEach((m) => {
+        snap.push({ m, color: m.color ? m.color.clone() : null, roughness: m.roughness, metalness: m.metalness });
+      });
+    }
+  });
+  obj.userData._snap = snap;
+}
+
+function applyStyle(obj, style) {
+  snapshotMaterials(obj);
+  const f = style.finish && FINISHES[style.finish];
+  obj.userData._snap.forEach(({ m }) => {
+    if (style.color && m.color) m.color.set(style.color);
+    if (f) { if ('roughness' in m) m.roughness = f.roughness; if ('metalness' in m) m.metalness = f.metalness; }
+    m.needsUpdate = true;
+  });
+}
+
+function restyleSelected(patch) {
+  const obj = state.selected;
+  if (!obj) return;
+  const style = Object.assign({}, obj.userData.style, patch);
+  obj.userData.style = style;
+  applyStyle(obj, style);
+  save();
+}
+
+function resetStyleSelected() {
+  const obj = state.selected;
+  if (!obj || !obj.userData._snap) return;
+  obj.userData._snap.forEach((s) => {
+    if (s.color && s.m.color) s.m.color.copy(s.color);
+    s.m.roughness = s.roughness; s.m.metalness = s.metalness; s.m.needsUpdate = true;
+  });
+  obj.userData.style = null;
+  save();
+}
+
+function renderRestyleControls() {
+  const sw = document.getElementById('ds3-swatches');
+  SWATCHES.forEach((hex) => {
+    const b = document.createElement('button');
+    b.type = 'button'; b.className = 'ds3-swatch'; b.style.background = hex; b.title = hex;
+    b.addEventListener('click', () => restyleSelected({ color: hex }));
+    sw.appendChild(b);
+  });
+  const fin = document.getElementById('ds3-finishes');
+  Object.keys(FINISHES).forEach((name) => {
+    const b = document.createElement('button');
+    b.type = 'button'; b.className = 'ds3-finish'; b.textContent = name;
+    b.addEventListener('click', () => restyleSelected({ finish: name }));
+    fin.appendChild(b);
+  });
+  document.getElementById('ds3-restyle-reset').addEventListener('click', resetStyleSelected);
 }
 
 function deleteSelected() {
@@ -451,6 +539,7 @@ function serialize() {
       id: o.userData.entry.id,
       x: round(o.position.x), z: round(o.position.z),
       rot: round(o.rotation.y), scale: round(o.userData.mul ?? 1),
+      ...(o.userData.style ? { style: o.userData.style } : {}),
     })),
   };
 }
@@ -466,7 +555,7 @@ function restore() {
   loadTemplate(tpl);
   (data.items || []).forEach((it) => {
     const entry = state.catalog.items.find((e) => e.id === it.id);
-    if (entry) addItem(entry, it.x, it.z, it.rot, it.scale || 1);
+    if (entry) addItem(entry, it.x, it.z, it.rot, it.scale || 1, it.style || null);
   });
   select(null);
   return true;
