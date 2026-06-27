@@ -100,14 +100,15 @@ async function init() {
   renderer.domElement.addEventListener('pointerdown', onPointerDown);
   window.addEventListener('keydown', onKey);
   bindUI();
+  renderRestyleControls();
 
   // Load data, then render
   await loadData();
   onResize();
   animate();
 
-  // Restore a saved design if present, else load the first template.
-  if (!restore()) loadTemplate(state.templates[0]);
+  // Restore a saved design if present, else open the first template furnished.
+  if (!restore()) loadTemplate(state.templates[0], true);
 }
 
 /* ---------- data ------------------------------------------------------- */
@@ -124,7 +125,9 @@ async function loadData() {
 }
 
 /* ---------- template (walls + floor) ----------------------------------- */
-function loadTemplate(tpl) {
+// furnish=true drops the template's pre-placed furniture in (a "ready-to-go"
+// furnished room). restore() passes false so saved items aren't doubled up.
+function loadTemplate(tpl, furnish = false) {
   if (!tpl) return;
   state.template = tpl;
   if (state.templateGroup) state.scene.remove(state.templateGroup);
@@ -176,6 +179,19 @@ function loadTemplate(tpl) {
   state.orbit.update();
 
   document.getElementById('ds3-current-template').textContent = tpl.name;
+
+  // Ready-to-go playground: drop in the template's pre-placed furniture.
+  if (furnish) furnishFromTemplate(tpl);
+}
+
+// Place every item listed in a template's "furniture" array.
+function furnishFromTemplate(tpl) {
+  (tpl.furniture || []).forEach((f) => {
+    const entry = state.catalog?.items.find((e) => e.id === f.id);
+    if (entry) addItem(entry, f.x, f.z, f.rot || 0, f.scale || 1);
+  });
+  select(null);
+  save();
 }
 
 function fit2dCamera(w, d) {
@@ -308,7 +324,7 @@ function sphere(color, r) { const m = new THREE.Mesh(new THREE.SphereGeometry(r,
 function part(mesh, x, y, z) { mesh.position.set(x, y, z); return mesh; }
 
 /* ---------- placing items ---------------------------------------------- */
-function addItem(entry, atX, atZ, rotY = 0, scaleMul = 1) {
+function addItem(entry, atX, atZ, rotY = 0, scaleMul = 1, style = null) {
   const place = (obj) => {
     // obj already carries its real feet size (primitive: set in buildPrimitive;
     // GLB: set by fitToFeet). scaleMul is the user/saved resize factor.
@@ -320,6 +336,8 @@ function addItem(entry, atX, atZ, rotY = 0, scaleMul = 1) {
     obj.rotation.y = rotY;
     obj.userData.entry = entry;
     obj.traverse((c) => { if (c.isMesh) c.userData.selectableRoot = obj; });
+    if (style) applyStyle(obj, style);   // restored/recolored look
+    obj.userData.style = style;
     state.scene.add(obj);
     state.items.push(obj);
     select(obj);
@@ -391,10 +409,129 @@ function onPointerDown(e) {
 
 function select(obj) {
   state.selected = obj;
-  if (obj) { state.gizmo.attach(obj); document.getElementById('ds3-selinfo').textContent = obj.userData.entry?.name || ''; }
-  else { state.gizmo.detach(); document.getElementById('ds3-selinfo').textContent = ''; }
+  const panel = document.getElementById('ds3-restyle');
+  if (obj) {
+    state.gizmo.attach(obj);
+    document.getElementById('ds3-selinfo').textContent = obj.userData.entry?.name || '';
+    document.getElementById('ds3-restyle-name').textContent = obj.userData.entry?.name || 'object';
+    panel.classList.remove('ds3-hidden');
+  } else {
+    state.gizmo.detach();
+    document.getElementById('ds3-selinfo').textContent = '';
+    panel.classList.add('ds3-hidden');
+  }
   document.getElementById('ds3-tool-rotate').disabled = !obj;
   document.getElementById('ds3-tool-delete').disabled = !obj;
+}
+
+/* ---------- restyle: recolor / refinish the selected object ------------- */
+// Click-to-restyle in 3D — instant and free (just edits three.js materials),
+// no AI render. Color + finish are saved with the design.
+const SWATCHES = [
+  '#ffffff', '#d9d2c5', '#b08d57', '#7c5c3e', '#3a3f47', '#1f2937',
+  '#FDA12B', '#c0392b', '#2e7d63', '#1f6f8b', '#34495e', '#b5838d',
+];
+const FINISHES = {
+  Matte: { roughness: 0.92, metalness: 0.0 },
+  Satin: { roughness: 0.5,  metalness: 0.0 },
+  Gloss: { roughness: 0.14, metalness: 0.05 },
+  Metal: { roughness: 0.3,  metalness: 0.9 },
+};
+// CC0 material textures (ambientCG via the open3dFloorplan project — see
+// textures/CREDITS.md). Applied as a tiling color map on the object.
+const MATERIALS = [
+  { key: 'wood',     name: 'Wood',     file: 'wood.jpg' },
+  { key: 'walnut',   name: 'Walnut',   file: 'walnut.jpg' },
+  { key: 'oak',      name: 'Oak',      file: 'oak.jpg' },
+  { key: 'marble',   name: 'Marble',   file: 'marble.jpg' },
+  { key: 'tile',     name: 'Tile',     file: 'tile.jpg' },
+  { key: 'concrete', name: 'Concrete', file: 'concrete.jpg' },
+  { key: 'brick',    name: 'Brick',    file: 'brick.jpg' },
+  { key: 'stone',    name: 'Stone',    file: 'stone.jpg' },
+];
+const _texCache = new Map();
+function loadTexture(file) {
+  if (_texCache.has(file)) return _texCache.get(file);
+  const t = new THREE.TextureLoader().load('textures/' + file);
+  t.wrapS = t.wrapT = THREE.RepeatWrapping;
+  t.repeat.set(2, 2);
+  t.colorSpace = THREE.SRGBColorSpace;
+  _texCache.set(file, t);
+  return t;
+}
+
+// Capture each material's original look once, so "Reset look" can restore it.
+function snapshotMaterials(obj) {
+  if (obj.userData._snap) return;
+  const snap = [];
+  obj.traverse((c) => {
+    if (c.isMesh && c.material) {
+      (Array.isArray(c.material) ? c.material : [c.material]).forEach((m) => {
+        snap.push({ m, color: m.color ? m.color.clone() : null, map: m.map || null, roughness: m.roughness, metalness: m.metalness });
+      });
+    }
+  });
+  obj.userData._snap = snap;
+}
+
+function applyStyle(obj, style) {
+  snapshotMaterials(obj);
+  const f = style.finish && FINISHES[style.finish];
+  const mat = style.texture && MATERIALS.find((m) => m.key === style.texture);
+  const tex = mat ? loadTexture(mat.file) : null;
+  obj.userData._snap.forEach(({ m, map }) => {
+    if (tex) { m.map = tex; if (m.color) m.color.set('#ffffff'); }
+    else { m.map = map; if (style.color && m.color) m.color.set(style.color); }
+    if (f) { if ('roughness' in m) m.roughness = f.roughness; if ('metalness' in m) m.metalness = f.metalness; }
+    m.needsUpdate = true;
+  });
+}
+
+function restyleSelected(patch) {
+  const obj = state.selected;
+  if (!obj) return;
+  const style = Object.assign({}, obj.userData.style, patch);
+  if (patch.texture) style.color = null;   // texture & flat color are exclusive
+  if (patch.color) style.texture = null;
+  obj.userData.style = style;
+  applyStyle(obj, style);
+  save();
+}
+
+function resetStyleSelected() {
+  const obj = state.selected;
+  if (!obj || !obj.userData._snap) return;
+  obj.userData._snap.forEach((s) => {
+    if (s.color && s.m.color) s.m.color.copy(s.color);
+    s.m.map = s.map; s.m.roughness = s.roughness; s.m.metalness = s.metalness; s.m.needsUpdate = true;
+  });
+  obj.userData.style = null;
+  save();
+}
+
+function renderRestyleControls() {
+  const sw = document.getElementById('ds3-swatches');
+  SWATCHES.forEach((hex) => {
+    const b = document.createElement('button');
+    b.type = 'button'; b.className = 'ds3-swatch'; b.style.background = hex; b.title = hex;
+    b.addEventListener('click', () => restyleSelected({ color: hex }));
+    sw.appendChild(b);
+  });
+  const mats = document.getElementById('ds3-materials');
+  MATERIALS.forEach((mt) => {
+    const b = document.createElement('button');
+    b.type = 'button'; b.className = 'ds3-finish'; b.textContent = mt.name;
+    b.addEventListener('click', () => restyleSelected({ texture: mt.key }));
+    mats.appendChild(b);
+  });
+  const fin = document.getElementById('ds3-finishes');
+  Object.keys(FINISHES).forEach((name) => {
+    const b = document.createElement('button');
+    b.type = 'button'; b.className = 'ds3-finish'; b.textContent = name;
+    b.addEventListener('click', () => restyleSelected({ finish: name }));
+    fin.appendChild(b);
+  });
+  document.getElementById('ds3-restyle-reset').addEventListener('click', resetStyleSelected);
 }
 
 function deleteSelected() {
@@ -436,6 +573,7 @@ function serialize() {
       id: o.userData.entry.id,
       x: round(o.position.x), z: round(o.position.z),
       rot: round(o.rotation.y), scale: round(o.userData.mul ?? 1),
+      ...(o.userData.style ? { style: o.userData.style } : {}),
     })),
   };
 }
@@ -451,7 +589,7 @@ function restore() {
   loadTemplate(tpl);
   (data.items || []).forEach((it) => {
     const entry = state.catalog.items.find((e) => e.id === it.id);
-    if (entry) addItem(entry, it.x, it.z, it.rot, it.scale || 1);
+    if (entry) addItem(entry, it.x, it.z, it.rot, it.scale || 1, it.style || null);
   });
   select(null);
   return true;
@@ -488,8 +626,7 @@ function renderTemplatePicker() {
   sel.addEventListener('change', () => {
     const tpl = state.templates.find((t) => t.id === sel.value);
     clearItems();
-    loadTemplate(tpl);
-    save();
+    loadTemplate(tpl, true);   // switch templates -> open furnished
   });
 }
 
@@ -528,6 +665,7 @@ function bindUI() {
   document.getElementById('ds3-tool-rotate').addEventListener('click', () => state.gizmo.setMode(state.gizmo.mode === 'rotate' ? 'translate' : 'rotate'));
   document.getElementById('ds3-tool-delete').addEventListener('click', deleteSelected);
   document.getElementById('ds3-tool-clear').addEventListener('click', () => { clearItems(); save(); });
+  document.getElementById('ds3-furnish').addEventListener('click', () => { clearItems(); loadTemplate(state.template, true); });
   document.getElementById('ds3-export').addEventListener('click', exportImage);
   document.getElementById('ds3-quote').addEventListener('click', sendToQuote);
 }

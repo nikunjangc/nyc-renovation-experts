@@ -39,6 +39,14 @@
       .ds3-mode-btn.active { background: #FDA12B; color: #fff; box-shadow: 0 2px 6px rgba(253,161,43,0.4); }
       .ds3-selinfo { font-size: 0.82rem; color: #666; margin-left: auto; min-height: 1em; }
       .ds3-hint { font-size: 0.78rem; color: #888; margin-top: 10px; }
+      .ds3-hidden { display: none !important; }
+      .ds3-restyle { display: flex; align-items: center; flex-wrap: wrap; gap: 8px; margin-bottom: 12px; padding: 10px 12px; background: #fff8ef; border: 1px solid #ffe2bb; border-radius: 10px; }
+      .ds3-restyle-label { font-size: 0.82rem; color: #555; }
+      .ds3-swatches { display: inline-flex; gap: 6px; flex-wrap: wrap; }
+      .ds3-swatch { width: 22px; height: 22px; border-radius: 50%; border: 2px solid #fff; box-shadow: 0 0 0 1px #ccc; cursor: pointer; padding: 0; }
+      .ds3-swatch:hover { transform: scale(1.12); }
+      .ds3-finish { border: 1px solid #ddd; background: #fff; border-radius: 14px; font-size: 0.72rem; font-weight: 600; color: #555; padding: 4px 10px; cursor: pointer; }
+      .ds3-finish:hover { border-color: #FDA12B; color: #FDA12B; }
       .ds3-template-row { display: flex; align-items: center; gap: 10px; margin-bottom: 14px; flex-wrap: wrap; }
       .ds3-template-row select { max-width: 240px; }
     </style>
@@ -96,9 +104,9 @@
     <!-- Main -->
     <div class="container py-3">
       <p class="text-muted mb-4">
-        Pick an apartment layout, then click furniture and fixtures to drop them into the room.
+        Each layout opens as a <strong>ready-to-go furnished room</strong> — start playing right away, or click furniture and fixtures to add your own.
         <strong>Drag</strong> to move, press <strong>R</strong> (or the Rotate button) to spin a piece, <strong>Delete</strong> to remove it.
-        Switch between a <strong>2D plan</strong> and a <strong>3D view</strong>, then turn your design into a free renovation quote.
+        Select any piece to <strong>recolor, re-texture (wood, marble, tile…) or refinish</strong> it. Switch between a <strong>2D plan</strong> and a <strong>3D view</strong>, then turn your design into a free renovation quote.
         <span class="d-block mt-2" style="font-size:0.85rem;">Furniture uses real low-poly 3D models (Kenney Furniture Kit, CC0). Add your own by dropping a .glb in /models/ — see DESIGN-STUDIO-3D-PLAN.md.</span>
       </p>
 
@@ -124,8 +132,20 @@
             </div>
             <button type="button" id="ds3-tool-rotate" class="btn btn-outline-secondary btn-sm" disabled><i class="fas fa-sync-alt me-1"></i>Rotate</button>
             <button type="button" id="ds3-tool-delete" class="btn btn-outline-danger btn-sm" disabled><i class="fas fa-trash me-1"></i>Delete</button>
+            <button type="button" id="ds3-furnish" class="btn btn-outline-primary btn-sm" title="Reset to the ready-made furnished layout"><i class="fas fa-magic me-1"></i>Furnish</button>
             <button type="button" id="ds3-tool-clear" class="btn btn-outline-secondary btn-sm"><i class="fas fa-broom me-1"></i>Clear</button>
             <span id="ds3-selinfo" class="ds3-selinfo"></span>
+          </div>
+
+          <!-- Restyle panel: appears when an object is selected -->
+          <div class="ds3-restyle ds3-hidden" id="ds3-restyle">
+            <span class="ds3-restyle-label">Restyle <strong id="ds3-restyle-name">object</strong>:</span>
+            <span class="ds3-swatches" id="ds3-swatches"></span>
+            <span class="ds3-restyle-label">Material</span>
+            <span class="ds3-finishes" id="ds3-materials"></span>
+            <span class="ds3-restyle-label">Finish</span>
+            <span class="ds3-finishes" id="ds3-finishes"></span>
+            <button type="button" id="ds3-restyle-reset" class="btn btn-link btn-sm p-0" style="font-size:0.78rem;">Reset look</button>
           </div>
 
           <div class="ds3-stage" id="ds3-stage">
@@ -136,7 +156,7 @@
             <button type="button" id="ds3-quote" class="btn btn-primary"><i class="fas fa-file-invoice-dollar me-2"></i>Get a free quote for this design</button>
             <button type="button" id="ds3-export" class="btn btn-outline-secondary"><i class="fas fa-camera me-2"></i>Download image</button>
           </div>
-          <div class="ds3-hint">Your design saves automatically in this browser. Tip: use <strong>2D plan</strong> to lay things out, then <strong>3D view</strong> to walk around.</div>
+          <div class="ds3-hint">Opens as a furnished room — drag things around, or hit <strong>Furnish</strong> to reset the layout / <strong>Clear</strong> to empty it. Your design saves automatically in this browser.</div>
         </div>
       </div>
     </div>
