@@ -9,6 +9,7 @@ const { searchProducts } = require('../backend/product-search');
 const { clarifyProject } = require('../backend/project-clarifier');
 const { saveQuoteSubmission, listQuoteSubmissions, updateQuoteStatus } = require('./quote-store');
 const { segmentImage } = require('../backend/ds-segment');
+const { getObjectMask } = require('../backend/ds-mask');
 const { submitProductRender, getRenderStatus } = require('../backend/ds-render3d');
 const { compositeProduct } = require('../backend/ds-composite');
 require('dotenv').config();
@@ -759,6 +760,26 @@ app.post('/api/ds-segment', rateLimiter, async (req, res) => {
     if (error.code === 'NOT_CONFIGURED') return res.status(503).json({ error: 'fal.ai not configured', hint: 'Set FAL_API_KEY in Vercel env vars' });
     res.status(error.status || 500).json({
       error: 'Segmentation failed',
+      upstream_message: (error.detail || error.message || '').toString().slice(0, 400),
+    });
+  }
+});
+
+app.options('/api/ds-mask', (req, res) => { dsCors(req, res); res.status(200).send(); });
+app.post('/api/ds-mask', rateLimiter, async (req, res) => {
+  dsCors(req, res);
+  try {
+    const { imageUrl, point } = req.body || {};
+    if (!imageUrl) return res.status(400).json({ error: 'imageUrl is required' });
+    if (!point) return res.status(400).json({ error: 'point {x,y} is required' });
+    const data = await getObjectMask({ imageUrl, point });
+    res.json(data);
+  } catch (error) {
+    console.error('ds-mask error:', error);
+    dsCors(req, res);
+    if (error.code === 'NOT_CONFIGURED') return res.status(503).json({ error: 'fal.ai not configured', hint: 'Set FAL_API_KEY in Vercel env vars' });
+    res.status(error.status || 500).json({
+      error: 'Mask failed',
       upstream_message: (error.detail || error.message || '').toString().slice(0, 400),
     });
   }

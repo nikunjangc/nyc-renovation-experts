@@ -184,6 +184,10 @@ function drawSegmentationOverlay() {
     const x = (e.clientX - rect.left) * (canvas.width / rect.width);
     const y = (e.clientY - rect.top)  * (canvas.height / rect.height);
 
+    if (state.preciseMode) {
+      fetchPreciseMaskAt(x, y);
+      return;
+    }
     if (state.tagMode) {
       addCustomSegmentAt(x, y);
       return;
@@ -205,6 +209,11 @@ function drawSegmentationOverlay() {
     cancelBtn.dataset.bound = '1';
     cancelBtn.addEventListener('click', () => enterTagMode(false));
   }
+  const preciseBtn = el('ds-precise');
+  if (preciseBtn && !preciseBtn.dataset.bound) {
+    preciseBtn.dataset.bound = '1';
+    preciseBtn.addEventListener('click', () => enterPreciseMode(!state.preciseMode));
+  }
 }
 
 // Re-renders the photo + every segment box. Called whenever segments change
@@ -216,6 +225,15 @@ function redrawSegments(highlight) {
   const img = new Image();
   img.onload = () => {
     ctx.drawImage(img, 0, 0);
+    // Tint the precise mask of the highlighted item so its exact outline shows.
+    state.segments.forEach((seg) => {
+      if (seg.maskCanvas && seg === highlight) {
+        ctx.save();
+        ctx.globalAlpha = 0.4;
+        ctx.drawImage(seg.maskCanvas, 0, 0, canvas.width, canvas.height);
+        ctx.restore();
+      }
+    });
     state.segments.forEach((seg) => drawSegmentBox(ctx, seg, seg === highlight));
   };
   img.src = state.imageDataUrl;
@@ -579,7 +597,10 @@ async function runComposite(product) {
     showCompositeError('Position the product on the photo first, then try again.');
     return;
   }
-  const maskDataUrl = buildMaskDataUrl(bbox);
+  // Precise path: if the selected item has an exact SAM mask, constrain the edit
+  // to its outline instead of the rectangle. Falls back to the rect otherwise.
+  const preciseMask = state.selectedSegment?.maskCanvas || null;
+  const maskDataUrl = preciseMask ? buildMaskDataUrlFromCanvas(preciseMask) : buildMaskDataUrl(bbox);
 
   // Lock the button + show the full-screen spinner for the WHOLE render.
   setRenderBtnBusy(true);
@@ -629,7 +650,9 @@ async function runComposite(product) {
       // selected box: everything OUTSIDE the box stays bit-identical.
       let finalUrl = data.imageDataUrl;
       try {
-        finalUrl = await compositeMaskedRegion(base, data.imageDataUrl, bbox);
+        finalUrl = preciseMask
+          ? await compositeMaskedRegionWithMask(base, data.imageDataUrl, preciseMask)
+          : await compositeMaskedRegion(base, data.imageDataUrl, bbox);
       } catch (e) {
         console.warn('client composite failed; showing raw GPT result', e);
       }
@@ -736,6 +759,139 @@ function buildMaskDataUrl(bbox) {
   // Punch a transparent hole where the AI is allowed to paint.
   ctx.clearRect(bbox.x, bbox.y, bbox.w, bbox.h);
   return canvas.toDataURL('image/png');
+}
+
+/* ===== Precise per-object masks (SAM 2 via /api/ds-mask) =================
+ * Coarse rectangles let edits leak onto neighbours ("change the TV" nudges the
+ * sofa). Here the user taps one object; SAM 2 returns its exact outline; we
+ * clip the edit to that outline. Strictly additive: if a segment has no
+ * maskCanvas, the original rectangle path runs unchanged.
+ * ====================================================================== */
+
+function enterPreciseMode(on) {
+  state.preciseMode = !!on;
+  if (state.preciseMode) enterTagMode(false);   // the two tap-modes are exclusive
+  const wrap = el('ds-canvas-wrap');
+  if (wrap) wrap.classList.toggle('tagmode', state.preciseMode);
+  const btn = el('ds-precise');
+  if (btn) btn.innerHTML = state.preciseMode
+    ? '<i class="fas fa-crosshairs me-1"></i>Tap the object in the photo…'
+    : '<i class="fas fa-bullseye me-1"></i>Precise select (tap one item)';
+}
+
+// Load the SAM mask image, rasterize to a natural-size canvas where the object
+// is opaque white and everything else transparent, and compute its tight bbox.
+function rasterizeMask(maskUrl) {
+  return new Promise((resolve, reject) => {
+    const W = state.imageNaturalSize.width, H = state.imageNaturalSize.height;
+    const img = new Image();
+    img.crossOrigin = 'anonymous';
+    img.onload = () => {
+      const c = document.createElement('canvas'); c.width = W; c.height = H;
+      const ctx = c.getContext('2d');
+      ctx.drawImage(img, 0, 0, W, H);
+      let data;
+      try { data = ctx.getImageData(0, 0, W, H); }
+      catch (e) { reject(new Error('mask blocked by CORS')); return; }
+      const d = data.data;
+      let minX = W, minY = H, maxX = 0, maxY = 0, any = false;
+      for (let py = 0; py < H; py++) {
+        for (let px = 0; px < W; px++) {
+          const i = (py * W + px) * 4;
+          // SAM masks come either white-on-black or as an alpha cutout — treat a
+          // pixel as "object" if it's both visible and bright.
+          const on = d[i + 3] > 16 && (d[i] > 64 || d[i + 1] > 64 || d[i + 2] > 64);
+          if (on) {
+            d[i] = 255; d[i + 1] = 255; d[i + 2] = 255; d[i + 3] = 255; any = true;
+            if (px < minX) minX = px; if (px > maxX) maxX = px;
+            if (py < minY) minY = py; if (py > maxY) maxY = py;
+          } else { d[i + 3] = 0; }
+        }
+      }
+      ctx.putImageData(data, 0, 0);
+      resolve({ maskCanvas: c, bbox: any ? { x: minX, y: minY, w: maxX - minX + 1, h: maxY - minY + 1 } : null });
+    };
+    img.onerror = () => reject(new Error('mask image load failed'));
+    img.src = maskUrl;
+  });
+}
+
+async function fetchPreciseMaskAt(x, y) {
+  enterPreciseMode(false);
+  showSpinner('Finding the exact object…');
+  try {
+    const res = await fetch(`${API}/api/ds-mask`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ imageUrl: state.imageDataUrl, point: { x: Math.round(x), y: Math.round(y) } }),
+    });
+    const data = await res.json().catch(() => ({}));
+    if (!res.ok || !data.maskUrl) throw new Error(data.upstream_message || data.error || `HTTP ${res.status}`);
+    const { maskCanvas, bbox } = await rasterizeMask(data.maskUrl);
+    if (!bbox) throw new Error('empty mask — try tapping the center of the object');
+
+    // Attach to the segment under the tap, or create a new precise one.
+    let seg = state.segments.find((s) =>
+      s.bbox && x >= s.bbox[0] && x <= s.bbox[0] + s.bbox[2] &&
+                y >= s.bbox[1] && y <= s.bbox[1] + s.bbox[3]);
+    if (!seg) {
+      const labelRaw = (window.prompt('What is this? (e.g. sofa, tv, rug)') || '').trim();
+      if (!labelRaw) { hideSpinner(); return; }
+      seg = { id: `precise-${Date.now()}`, label: labelRaw.toLowerCase(), confidence: null, polygon: null, custom: true };
+      state.segments.push(seg);
+    }
+    seg.maskCanvas = maskCanvas;
+    seg.bbox = [bbox.x, bbox.y, bbox.w, bbox.h];
+    hideSpinner();
+    redrawSegments(seg);
+    renderSegmentChips();
+    selectSegment(seg);
+  } catch (err) {
+    hideSpinner();
+    console.error('precise mask failed', err);
+    alert(`Couldn't isolate that object: ${err.message}. You can still select it as a box.`);
+  }
+}
+
+// gpt-image-1 mask from an object canvas: opaque white = preserve, transparent
+// = edit. We punch the object's shape out of a white field.
+function buildMaskDataUrlFromCanvas(maskCanvas) {
+  const W = state.imageNaturalSize.width, H = state.imageNaturalSize.height;
+  const c = document.createElement('canvas'); c.width = W; c.height = H;
+  const ctx = c.getContext('2d');
+  ctx.fillStyle = '#ffffff';
+  ctx.fillRect(0, 0, W, H);
+  ctx.globalCompositeOperation = 'destination-out';
+  ctx.drawImage(maskCanvas, 0, 0, W, H);
+  ctx.globalCompositeOperation = 'source-over';
+  return c.toDataURL('image/png');
+}
+
+// Like compositeMaskedRegion, but clips the AI result to the object's mask
+// shape instead of a rectangle — so only the object changes, not its bounding box.
+function compositeMaskedRegionWithMask(originalUrl, resultUrl, maskCanvas) {
+  return new Promise((resolve, reject) => {
+    const orig = new Image(); const result = new Image(); let loaded = 0;
+    const onErr = () => reject(new Error('composite image load failed'));
+    const onLoad = () => {
+      if (++loaded < 2) return;
+      const W = orig.naturalWidth, H = orig.naturalHeight;
+      const c = document.createElement('canvas'); c.width = W; c.height = H;
+      const ctx = c.getContext('2d');
+      ctx.drawImage(orig, 0, 0, W, H);
+      const tmp = document.createElement('canvas'); tmp.width = W; tmp.height = H;
+      const tctx = tmp.getContext('2d');
+      tctx.drawImage(result, 0, 0, W, H);
+      tctx.globalCompositeOperation = 'destination-in';
+      tctx.drawImage(maskCanvas, 0, 0, W, H);
+      ctx.drawImage(tmp, 0, 0);
+      resolve(c.toDataURL('image/jpeg', 0.92));
+    };
+    orig.onload = onLoad; orig.onerror = onErr;
+    result.onload = onLoad; result.onerror = onErr;
+    orig.src = originalUrl;
+    result.src = resultUrl;
+  });
 }
 
 function showCompositeStatus(text) {
