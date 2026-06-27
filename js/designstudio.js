@@ -101,13 +101,21 @@ async function fileToResizedDataUrl(file, maxEdge = 1920) {
 
 // ===== 1. Upload =====
 function setupUpload() {
-  const fileInput = el('ds-file-input');
-  const dropZone  = el('ds-upload-area');
+  const fileInput   = el('ds-file-input');
+  const cameraInput = el('ds-camera-input');
+  const dropZone    = el('ds-upload-area');
 
-  fileInput.addEventListener('change', (e) => {
+  // Explicit choices: "Take a photo" opens the rear camera (capture attr),
+  // "Upload a photo" opens the library/file picker. Works on iPhone + Android.
+  el('ds-take-photo')?.addEventListener('click', () => cameraInput?.click());
+  el('ds-upload-photo')?.addEventListener('click', () => fileInput.click());
+
+  const onPick = (e) => {
     const f = e.target.files?.[0];
     if (f) handleFile(f);
-  });
+  };
+  fileInput.addEventListener('change', onPick);
+  cameraInput?.addEventListener('change', onPick);
 
   ['dragenter', 'dragover'].forEach((ev) =>
     dropZone.addEventListener(ev, (e) => { e.preventDefault(); dropZone.classList.add('drag'); }));
