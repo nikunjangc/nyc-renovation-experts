@@ -215,6 +215,7 @@ const RENOVATION_LABELS = [
   'dresser', 'wardrobe', 'refrigerator', 'oven', 'stove', 'range hood', 'microwave',
   'dishwasher', 'kitchen sink', 'faucet', 'kitchen cabinet', 'countertop', 'backsplash',
   'kitchen island', 'toilet', 'bathroom vanity', 'bathtub', 'shower', 'mirror', 'ceiling light',
+  'game console', 'sectional sofa', 'curtains', 'side table', 'ottoman', 'fireplace', 'tile floor',
 ];
 
 let _owlPromise = null;
@@ -262,6 +263,70 @@ async function detectOpenVocab() {
   const finalSegs = kept.slice(0, 25).map((s, i) => ({ id: `seg-${i}`, ...s }));
   if (!finalSegs.length) throw new Error('no open-vocab detections');
   return finalSegs;
+}
+
+// ---- FREE on-device precise masks: SAM via transformers.js -----------------
+// Point-prompted Segment Anything in the browser ($0, no key). Returns the same
+// { maskCanvas, bbox } shape as the server path, so the composite step is
+// unchanged. Falls back to /api/ds-mask if this can't load.
+let _samPromise = null;
+async function getSam() {
+  if (!_samPromise) {
+    _samPromise = (async () => {
+      const t = await import('@huggingface/transformers');
+      if (t?.env) t.env.allowLocalModels = false;
+      const model = await t.SamModel.from_pretrained('Xenova/slimsam-77-uniform');
+      const processor = await t.AutoProcessor.from_pretrained('Xenova/slimsam-77-uniform');
+      return { t, model, processor };
+    })();
+  }
+  return _samPromise;
+}
+
+async function segmentOnDeviceAt(x, y) {
+  const { t, model, processor } = await getSam();
+  const image = await t.RawImage.read(state.imageDataUrl);
+  const inputs = await processor(image, { input_points: [[[x, y]]], input_labels: [[1]] });
+  const outputs = await model(inputs);
+  const masks = await processor.post_process_masks(outputs.pred_masks, inputs.original_sizes, inputs.reshaped_input_sizes);
+  const maskTensor = masks[0];                    // [1, nMasks, H, W]
+  const dims = maskTensor.dims;
+  const H = dims[dims.length - 2], W = dims[dims.length - 1];
+  const nMasks = dims[dims.length - 3] || 1;
+  const md = maskTensor.data;
+  // Pick the highest-IoU mask among the candidates.
+  const scores = outputs.iou_scores?.data || [0];
+  let best = 0;
+  for (let i = 1; i < nMasks && i < scores.length; i++) if (scores[i] > scores[best]) best = i;
+
+  const c = document.createElement('canvas'); c.width = W; c.height = H;
+  const ctx = c.getContext('2d');
+  const out = ctx.createImageData(W, H);
+  const off = best * H * W;
+  let minX = W, minY = H, maxX = 0, maxY = 0, any = false;
+  for (let py = 0; py < H; py++) {
+    for (let px = 0; px < W; px++) {
+      const v = md[off + py * W + px];
+      const i = (py * W + px) * 4;
+      if (v) {
+        out.data[i] = 255; out.data[i + 1] = 255; out.data[i + 2] = 255; out.data[i + 3] = 255; any = true;
+        if (px < minX) minX = px; if (px > maxX) maxX = px;
+        if (py < minY) minY = py; if (py > maxY) maxY = py;
+      } else { out.data[i + 3] = 0; }
+    }
+  }
+  ctx.putImageData(out, 0, 0);
+  if (!any) return null;
+
+  // Scale to the photo's natural size if SAM returned a different resolution.
+  const W0 = state.imageNaturalSize.width, H0 = state.imageNaturalSize.height;
+  if (W !== W0 || H !== H0) {
+    const c2 = document.createElement('canvas'); c2.width = W0; c2.height = H0;
+    c2.getContext('2d').drawImage(c, 0, 0, W0, H0);
+    const sx = W0 / W, sy = H0 / H;
+    return { maskCanvas: c2, bbox: { x: Math.round(minX * sx), y: Math.round(minY * sy), w: Math.round((maxX - minX + 1) * sx), h: Math.round((maxY - minY + 1) * sy) } };
+  }
+  return { maskCanvas: c, bbox: { x: minX, y: minY, w: maxX - minX + 1, h: maxY - minY + 1 } };
 }
 
 // Paid fallback: server-side Florence-2 object detection via /api/ds-segment.
@@ -928,14 +993,21 @@ async function fetchPreciseMaskAt(x, y) {
   enterPreciseMode(false);
   showSpinner('Finding the exact object…');
   try {
-    const res = await fetch(`${API}/api/ds-mask`, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ imageUrl: state.imageDataUrl, point: { x: Math.round(x), y: Math.round(y) } }),
-    });
-    const data = await res.json().catch(() => ({}));
-    if (!res.ok || !data.maskUrl) throw new Error(data.upstream_message || data.error || `HTTP ${res.status}`);
-    const { maskCanvas, bbox } = await rasterizeMask(data.maskUrl);
+    // Free on-device SAM first; fall back to the server mask endpoint (paid).
+    let result = null;
+    try { result = await segmentOnDeviceAt(Math.round(x), Math.round(y)); }
+    catch (e) { console.warn('on-device SAM failed; trying server', e); }
+    if (!result) {
+      const res = await fetch(`${API}/api/ds-mask`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ imageUrl: state.imageDataUrl, point: { x: Math.round(x), y: Math.round(y) } }),
+      });
+      const data = await res.json().catch(() => ({}));
+      if (!res.ok || !data.maskUrl) throw new Error(data.upstream_message || data.error || `HTTP ${res.status}`);
+      result = await rasterizeMask(data.maskUrl);
+    }
+    const { maskCanvas, bbox } = result;
     if (!bbox) throw new Error('empty mask — try tapping the center of the object');
 
     // Attach to the segment under the tap, or create a new precise one.
