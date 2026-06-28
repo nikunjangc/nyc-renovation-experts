@@ -19,7 +19,15 @@
 
 const crypto = require('crypto');
 
-const FAL_ENDPOINT = 'https://fal.run/fal-ai/florence-2-large/caption-to-phrase-grounding';
+// Two Florence-2 tasks:
+//  - object-detection: returns what's ACTUALLY in the photo (any room). DEFAULT.
+//  - caption-to-phrase-grounding: force-grounds a caller-supplied phrase list —
+//    only used when explicit `prompts` are passed (targeted fixture search).
+// The fixed kitchen/bath caption used to be the default, which is why a living
+// room got tagged "refrigerator / microwave / bathtub" — grounding fits every
+// requested phrase to *some* box whether the object is present or not.
+const FAL_OBJECT_DETECTION = 'https://fal.run/fal-ai/florence-2-large/object-detection';
+const FAL_GROUNDING = 'https://fal.run/fal-ai/florence-2-large/caption-to-phrase-grounding';
 
 // "A " prefix on each noun phrase helps caption-to-phrase-grounding parse
 // distinct phrases reliably (it expects natural-language captions).
@@ -57,23 +65,26 @@ async function segmentImage({ imageUrl, prompts }) {
     err.code = 'NOT_CONFIGURED';
     throw err;
   }
-  const text = (prompts && String(prompts).trim()) || DEFAULT_PROMPTS;
+  // Default to general object detection (tags what's actually present in any
+  // room). Only fall back to phrase-grounding when the caller passes explicit
+  // phrases to look for.
+  const grounding = !!(prompts && String(prompts).trim());
+  const text = grounding ? String(prompts).trim() : '';
+  const endpoint = grounding ? FAL_GROUNDING : FAL_OBJECT_DETECTION;
 
-  // Cache by (image-content-fingerprint + prompts). For data URLs we only hash
+  // Cache by (image-content-fingerprint + task). For data URLs we only hash
   // the first 200KB to keep the key derivation fast.
   const fingerprint = imageUrl.length > 200_000 ? imageUrl.slice(0, 200_000) : imageUrl;
-  const cacheKey = hashKey(fingerprint + '|' + text);
+  const cacheKey = hashKey(fingerprint + '|' + (grounding ? text : '<OD>'));
   const hit = cacheGet(cacheKey);
   if (hit) return { ...hit, cached: true };
 
-  // caption-to-phrase-grounding takes the caption as `text_input` and
-  // grounds each noun phrase to a region.
-  const body = {
-    image_url: imageUrl,
-    text_input: text,
-  };
+  // object-detection needs only the image; grounding also takes the caption.
+  const body = grounding
+    ? { image_url: imageUrl, text_input: text }
+    : { image_url: imageUrl };
 
-  const res = await fetch(FAL_ENDPOINT, {
+  const res = await fetch(endpoint, {
     method: 'POST',
     headers: {
       'Authorization': `Key ${apiKey}`,
@@ -166,9 +177,17 @@ async function segmentImage({ imageUrl, prompts }) {
     };
   }).filter(Boolean);
 
+  // Drop low-confidence guesses (when scores exist), de-dupe identical
+  // label+box, and cap the count so the UI isn't swamped.
+  const seen = new Set();
+  const cleaned = segments
+    .filter((s) => s.confidence == null || s.confidence >= 0.3)
+    .filter((s) => { const k = `${s.label}|${s.bbox.join(',')}`; if (seen.has(k)) return false; seen.add(k); return true; })
+    .slice(0, 30);
+
   const data = {
-    segments,
-    inferred_categories: [...new Set(segments.map((s) => s.label))],
+    segments: cleaned,
+    inferred_categories: [...new Set(cleaned.map((s) => s.label))],
   };
   cacheSet(cacheKey, data);
   return data;
