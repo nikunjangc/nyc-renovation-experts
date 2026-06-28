@@ -144,28 +144,70 @@ async function runSegmentation() {
   loader.style.display = 'inline-block';
 
   try {
-    const res = await fetch(`${API}/api/ds-segment`, {
-      method:  'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body:    JSON.stringify({ imageUrl: state.imageDataUrl }),
-    });
-    const data = await res.json();
-    if (!res.ok) throw new Error(data.upstream_message || data.error || `HTTP ${res.status}`);
-    state.segments = data.segments || [];
+    // Prefer FREE on-device detection (TensorFlow.js COCO-SSD). No API key, no
+    // per-call cost, works in any room. Fall back to the server only if the
+    // in-browser model isn't available or errors out.
+    let segments = null;
+    if (window.cocoSsd) {
+      try { segments = await detectOnDevice(); }
+      catch (e) { console.warn('on-device detection failed; falling back to server', e); }
+    }
+    if (!segments) segments = await detectOnServer();
+    state.segments = segments;
     drawSegmentationOverlay();
     renderSegmentChips();
   } catch (err) {
     console.error('segmentation failed', err);
     el('ds-segment-list').innerHTML =
       `<div class="alert alert-warning w-100" style="font-size:0.9rem;">
-        Couldn't segment this photo. ${esc(err.message)}.
-        ${err.message?.includes('not configured')
-          ? 'Make sure FAL_API_KEY is set in Vercel env vars and the project has been redeployed.'
-          : 'Try another photo with better lighting.'}
+        Couldn't detect items in this photo. ${esc(err.message)}.
+        Try another photo with better lighting, or use "Add a custom area" / "Precise select" to tag items by hand.
       </div>`;
   } finally {
     loader.style.display = 'none';
   }
+}
+
+// Free, in-browser object detection. COCO-SSD knows ~80 common objects (tv,
+// couch, chair, potted plant, bed, dining table, refrigerator, oven, sink,
+// microwave, toilet, …). Niche renovation items (backsplash, vanity, rug) are
+// handled by the manual "Add custom area" / "Precise select" tools.
+let _cocoModelPromise = null;
+async function detectOnDevice() {
+  if (!_cocoModelPromise) _cocoModelPromise = window.cocoSsd.load();
+  const model = await _cocoModelPromise;
+  const img = await loadImageEl(state.imageDataUrl);
+  const preds = await model.detect(img, 30);
+  return preds
+    .filter((p) => p.score >= 0.4)
+    .map((p, i) => ({
+      id: `seg-${i}`,
+      label: String(p.class || 'object').toLowerCase(),
+      confidence: +p.score.toFixed(3),
+      bbox: [Math.round(p.bbox[0]), Math.round(p.bbox[1]), Math.round(p.bbox[2]), Math.round(p.bbox[3])],
+      polygon: null,
+    }));
+}
+
+function loadImageEl(src) {
+  return new Promise((resolve, reject) => {
+    const im = new Image();
+    im.onload = () => resolve(im);
+    im.onerror = () => reject(new Error('image load failed'));
+    im.src = src;
+  });
+}
+
+// Paid fallback: server-side Florence-2 object detection via /api/ds-segment.
+async function detectOnServer() {
+  const res = await fetch(`${API}/api/ds-segment`, {
+    method:  'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body:    JSON.stringify({ imageUrl: state.imageDataUrl }),
+  });
+  const data = await res.json().catch(() => ({}));
+  if (!res.ok) throw new Error(data.upstream_message || data.error || `HTTP ${res.status}`);
+  return data.segments || [];
 }
 
 function drawSegmentationOverlay() {

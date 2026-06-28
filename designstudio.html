@@ -589,6 +589,13 @@
     <script>
       window.BACKEND_API_URL = window.BACKEND_API_URL || 'https://nyc-renovation-experts.vercel.app';
     </script>
+
+    <!-- Free, on-device object detection (TensorFlow.js COCO-SSD). Runs in the
+         browser — no API key, no per-call cost. Sets window.tf / window.cocoSsd.
+         The paid fal.ai path is kept as a fallback if these fail to load. -->
+    <script src="https://cdn.jsdelivr.net/npm/@tensorflow/tfjs@4.22.0/dist/tf.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/@tensorflow-models/coco-ssd@2.2.3/dist/coco-ssd.min.js"></script>
+
     <script type="module" src="js/designstudio.js"></script>
   </body>
 </html>
