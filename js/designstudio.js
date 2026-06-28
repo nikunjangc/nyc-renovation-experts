@@ -341,6 +341,43 @@ async function detectOnServer() {
   return data.segments || [];
 }
 
+// Crop a tagged segment to a small thumbnail (data URL) for the quote gallery.
+function cropSegmentThumb(seg, maxEdge = 240) {
+  return new Promise((resolve) => {
+    if (!seg?.bbox) { resolve(null); return; }
+    const img = new Image();
+    img.onload = () => {
+      const [x, y, w, h] = seg.bbox;
+      const scale = Math.min(maxEdge / Math.max(w, h), 1);
+      const cw = Math.max(1, Math.round(w * scale)), ch = Math.max(1, Math.round(h * scale));
+      const c = document.createElement('canvas'); c.width = cw; c.height = ch;
+      c.getContext('2d').drawImage(img, x, y, w, h, 0, 0, cw, ch);
+      resolve(c.toDataURL('image/jpeg', 0.8));
+    };
+    img.onerror = () => resolve(null);
+    img.src = state.workingPhoto || state.imageDataUrl;
+  });
+}
+
+// Send every tagged item — each as its own labelled box/crop — to the quote,
+// instead of re-uploading the whole photo. Enables granular, per-item requests.
+async function sendTaggedItemsToQuote() {
+  if (!state.segments?.length) {
+    alert('Tag some items first — upload a photo, then tap items or use Precise select.');
+    return;
+  }
+  showSpinner('Preparing your items…');
+  const items = [];
+  for (const seg of state.segments) {
+    const thumb = await cropSegmentThumb(seg);
+    items.push({ label: seg.label, thumb, bbox: seg.bbox });
+  }
+  hideSpinner();
+  try { localStorage.setItem('ds_quote_items', JSON.stringify({ items, at: Date.now() })); } catch (e) {}
+  const note = 'Items from my photo: ' + state.segments.map((s) => s.label).join(', ') + '.';
+  window.location.href = `quote.html?source=designstudio&note=${encodeURIComponent(note)}`;
+}
+
 function drawSegmentationOverlay() {
   const wrap = el('ds-canvas-wrap');
   const canvas = el('ds-canvas');
@@ -386,6 +423,11 @@ function drawSegmentationOverlay() {
   if (preciseBtn && !preciseBtn.dataset.bound) {
     preciseBtn.dataset.bound = '1';
     preciseBtn.addEventListener('click', () => enterPreciseMode(!state.preciseMode));
+  }
+  const toQuoteBtn = el('ds-to-quote');
+  if (toQuoteBtn && !toQuoteBtn.dataset.bound) {
+    toQuoteBtn.dataset.bound = '1';
+    toQuoteBtn.addEventListener('click', sendTaggedItemsToQuote);
   }
 }
 

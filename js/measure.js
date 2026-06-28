@@ -123,7 +123,7 @@ function onCanvasPoint(e) {
     if (state.mode === 'calibrate') {
       finishCalibrate(a, b, px);
     } else if (state.mode === 'measure') {
-      state.measurements.push({ a, b, inches: px / state.pxPerInch });
+      state.measurements.push({ a, b, inches: px / state.pxPerInch, label: '' });
       state.pts = [];
       renderList();
       redraw();
@@ -208,10 +208,17 @@ function refreshButtons() {
 function renderList() {
   const host = document.getElementById('m-list');
   if (!state.measurements.length) { host.innerHTML = ''; refreshButtons(); return; }
-  host.innerHTML = '<div class="fw-bold mb-2">Measurements</div>' +
+  host.innerHTML = '<div class="fw-bold mb-2">Measurements <span class="text-muted" style="font-weight:400;font-size:0.78rem;">— name each so the quote fills in for you</span></div>' +
     state.measurements.map((m, i) =>
-      `<div class="m-row"><span>#${i + 1}</span><strong>${fmt(m.inches)}</strong>
-       <span class="text-muted">(${m.inches.toFixed(1)} in)</span></div>`).join('');
+      `<div class="m-row">
+         <input type="text" class="form-control form-control-sm m-label" data-i="${i}" style="flex:1;min-width:120px" placeholder="name this (e.g. TV stand width)" />
+         <strong>${fmt(m.inches)}</strong>
+       </div>`).join('');
+  host.querySelectorAll('.m-label').forEach((inp) => {
+    const i = +inp.dataset.i;
+    inp.value = state.measurements[i].label || '';
+    inp.addEventListener('input', (e) => { state.measurements[i].label = e.target.value; });
+  });
   refreshButtons();
 }
 
@@ -229,7 +236,9 @@ function clearAll() {
 
 function sendToQuote() {
   if (!state.measurements.length) return;
-  const lines = state.measurements.map((m, i) => `#${i + 1}: ${fmt(m.inches)}`).join(', ');
-  const note = `Measured dimensions from a photo — ${lines}.`;
+  const lines = state.measurements
+    .map((m, i) => `${(m.label || ('Item ' + (i + 1))).trim()}: ${fmt(m.inches)} (${m.inches.toFixed(1)} in)`)
+    .join('; ');
+  const note = `Measured items from a photo — ${lines}.`;
   window.location.href = `quote.html?source=measure&note=${encodeURIComponent(note)}`;
 }
