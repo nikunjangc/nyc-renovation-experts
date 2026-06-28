@@ -144,13 +144,19 @@ async function runSegmentation() {
   loader.style.display = 'inline-block';
 
   try {
-    // Prefer FREE on-device detection (TensorFlow.js COCO-SSD). No API key, no
-    // per-call cost, works in any room. Fall back to the server only if the
-    // in-browser model isn't available or errors out.
+    // Detection ladder, all preferring FREE on-device:
+    //  1) OWL-ViT open-vocabulary — we pass OUR renovation label list and it
+    //     finds exactly those (incl. rug/backsplash/vanity COCO-SSD can't).
+    //  2) COCO-SSD — fast 80-class fallback if OWL-ViT can't load.
+    //  3) server (paid fal.ai Florence-2) — last resort.
+    el('ds-segment-list').innerHTML =
+      '<div class="text-muted small">Detecting items… (first run downloads a small on-device AI model).</div>';
     let segments = null;
-    if (window.cocoSsd) {
+    try { segments = await detectOpenVocab(); }
+    catch (e) { console.warn('open-vocab detection unavailable; trying COCO-SSD', e); }
+    if (!segments && window.cocoSsd) {
       try { segments = await detectOnDevice(); }
-      catch (e) { console.warn('on-device detection failed; falling back to server', e); }
+      catch (e) { console.warn('COCO-SSD failed; falling back to server', e); }
     }
     if (!segments) segments = await detectOnServer();
     state.segments = segments;
@@ -196,6 +202,66 @@ function loadImageEl(src) {
     im.onerror = () => reject(new Error('image load failed'));
     im.src = src;
   });
+}
+
+// ---- FREE open-vocabulary detection: OWL-ViT (Google) via transformers.js ----
+// We pass OUR own label list; the model finds exactly those, no retraining.
+// Runs in the browser ($0, no key). Heavier than COCO-SSD: a one-time model
+// download + a few seconds per photo.
+const RENOVATION_LABELS = [
+  'television', 'sofa', 'couch', 'armchair', 'coffee table', 'tv stand', 'console table',
+  'rug', 'floor lamp', 'table lamp', 'potted plant', 'bookshelf', 'window', 'door',
+  'radiator', 'game console', 'speaker', 'dining table', 'chair', 'bed', 'nightstand',
+  'dresser', 'wardrobe', 'refrigerator', 'oven', 'stove', 'range hood', 'microwave',
+  'dishwasher', 'kitchen sink', 'faucet', 'kitchen cabinet', 'countertop', 'backsplash',
+  'kitchen island', 'toilet', 'bathroom vanity', 'bathtub', 'shower', 'mirror', 'ceiling light',
+];
+
+let _owlPromise = null;
+async function getOwlDetector() {
+  if (!_owlPromise) {
+    _owlPromise = (async () => {
+      const t = await import('@huggingface/transformers');
+      if (t?.env) t.env.allowLocalModels = false;          // fetch weights from HF CDN
+      return t.pipeline('zero-shot-object-detection', 'Xenova/owlvit-base-patch32');
+    })();
+  }
+  return _owlPromise;
+}
+
+// Intersection-over-union NMS so overlapping duplicate boxes collapse to one.
+function bboxIoU(a, b) {
+  const ax2 = a[0] + a[2], ay2 = a[1] + a[3], bx2 = b[0] + b[2], by2 = b[1] + b[3];
+  const ix = Math.max(0, Math.min(ax2, bx2) - Math.max(a[0], b[0]));
+  const iy = Math.max(0, Math.min(ay2, by2) - Math.max(a[1], b[1]));
+  const inter = ix * iy;
+  const uni = a[2] * a[3] + b[2] * b[3] - inter;
+  return uni > 0 ? inter / uni : 0;
+}
+
+async function detectOpenVocab() {
+  const detector = await getOwlDetector();
+  const out = await detector(state.imageDataUrl, RENOVATION_LABELS, { threshold: 0.1 });
+  const mapped = (out || [])
+    .filter((o) => o.box && o.score >= 0.1)
+    .sort((a, b) => b.score - a.score)
+    .map((o) => ({
+      label: String(o.label || 'object').toLowerCase(),
+      confidence: +o.score.toFixed(3),
+      bbox: [Math.round(o.box.xmin), Math.round(o.box.ymin),
+             Math.round(o.box.xmax - o.box.xmin), Math.round(o.box.ymax - o.box.ymin)],
+      polygon: null,
+    }))
+    .filter((s) => s.bbox[2] > 4 && s.bbox[3] > 4);
+
+  // Greedy NMS (input is already sorted by score desc).
+  const kept = [];
+  for (const s of mapped) {
+    if (kept.every((k) => bboxIoU(k.bbox, s.bbox) < 0.5)) kept.push(s);
+  }
+  const finalSegs = kept.slice(0, 25).map((s, i) => ({ id: `seg-${i}`, ...s }));
+  if (!finalSegs.length) throw new Error('no open-vocab detections');
+  return finalSegs;
 }
 
 // Paid fallback: server-side Florence-2 object detection via /api/ds-segment.
