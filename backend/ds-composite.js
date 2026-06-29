@@ -208,6 +208,61 @@ async function callOpenAIEdit({ photoBlob, filename, maskBlob, prompt, size = 'a
   return { dataUrl: `data:image/png;base64,${b64}` };
 }
 
+// Primary engine: Google Nano Banana 2 (Gemini image edit) via fal.ai. It's an
+// instruction editor that matches the room's lighting/perspective, so the
+// result integrates instead of looking "pasted". Takes the room photo plus,
+// when available, the product photo as a second reference image.
+const FAL_NANOBANANA = 'https://fal.run/fal-ai/nano-banana-2/edit';
+
+// fal returns a hosted image URL; re-fetch it server-side and inline as a data
+// URL so the browser keeps its existing (data-URL) contract — and so the client
+// canvas that clips to the mask isn't tainted by a cross-origin image.
+async function urlToDataUrl(url) {
+  const r = await fetch(url);
+  if (!r.ok) throw new Error(`fetch result image failed: ${r.status}`);
+  const mime = r.headers.get('content-type') || 'image/png';
+  const buf = Buffer.from(await r.arrayBuffer());
+  return `data:${mime};base64,${buf.toString('base64')}`;
+}
+
+async function callNanoBanana({ photoUrl, prompt, product }) {
+  const apiKey = process.env.FAL_API_KEY;
+  if (!apiKey) { const e = new Error('FAL_API_KEY not configured'); e.code = 'NOT_CONFIGURED'; throw e; }
+
+  const image_urls = product?.thumbnail ? [photoUrl, product.thumbnail] : [photoUrl];
+  const finalPrompt = product?.thumbnail
+    ? `${prompt} The exact replacement item is shown in the second reference image — match its design closely.`
+    : prompt;
+
+  const abort = new AbortController();
+  const timer = setTimeout(() => abort.abort(), 55_000);
+  let res;
+  try {
+    res = await fetch(FAL_NANOBANANA, {
+      method: 'POST',
+      headers: { 'Authorization': `Key ${apiKey}`, 'Content-Type': 'application/json' },
+      body: JSON.stringify({ prompt: finalPrompt, image_urls, resolution: '1K' }),
+      signal: abort.signal,
+    });
+  } catch (e) {
+    clearTimeout(timer);
+    if (e.name === 'AbortError') { const er = new Error('Nano Banana timed out after 55s'); er.status = 504; throw er; }
+    throw e;
+  }
+  clearTimeout(timer);
+
+  if (!res.ok) {
+    const detail = await res.text();
+    const err = new Error(`fal nano-banana-2 error: ${res.status}`);
+    err.detail = detail.slice(0, 500); err.status = res.status; throw err;
+  }
+  const json = await res.json();
+  const url = json?.images?.[0]?.url || json?.image?.url
+    || (Array.isArray(json?.output) && json.output[0]?.url) || json?.url || null;
+  if (!url) { const err = new Error('nano-banana returned no image'); err.detail = JSON.stringify(json).slice(0, 500); throw err; }
+  return { dataUrl: await urlToDataUrl(url) };
+}
+
 async function compositeProduct({ photoUrl, maskDataUrl, segmentLabel, segmentPosition, product, photoSize, quality }) {
   if (!photoUrl)       { const e = new Error('photoUrl is required');      e.status = 400; throw e; }
   if (!product?.title) { const e = new Error('product.title is required'); e.status = 400; throw e; }
@@ -228,18 +283,24 @@ async function compositeProduct({ photoUrl, maskDataUrl, segmentLabel, segmentPo
   if (hit) return { ...hit, cached: true };
 
   const positionWords = describePosition(segmentPosition, photoSize);
-  const prompt = await writeEditPrompt({ segmentLabel, product, positionWords, masked: !!maskDataUrl });
-  const { blob, filename } = dataUrlToBlob(photoUrl);
-  const maskBlob = maskDataUrl ? dataUrlToBlob(maskDataUrl).blob : null;
-  const { dataUrl } = await callOpenAIEdit({
-    photoBlob: blob,
-    filename,
-    maskBlob,
-    prompt,
-    quality: quality || 'medium',
-  });
+  const prompt = await writeEditPrompt({ segmentLabel, product, positionWords, masked: false });
 
-  const data = { imageDataUrl: dataUrl, promptUsed: prompt };
+  // Primary: Nano Banana 2 (fal). Fallback: gpt-image-1 (mask-based) if Nano
+  // Banana errors and OpenAI is configured. The browser still clips the result
+  // to the selected mask/box, so only the chosen item changes either way.
+  let dataUrl, engine = 'nano-banana-2';
+  try {
+    dataUrl = (await callNanoBanana({ photoUrl, prompt, product })).dataUrl;
+  } catch (e) {
+    if (!process.env.OPENAI_API_KEY) throw e;
+    console.warn('Nano Banana failed; falling back to gpt-image-1:', e.message);
+    engine = 'gpt-image-1';
+    const { blob, filename } = dataUrlToBlob(photoUrl);
+    const maskBlob = maskDataUrl ? dataUrlToBlob(maskDataUrl).blob : null;
+    dataUrl = (await callOpenAIEdit({ photoBlob: blob, filename, maskBlob, prompt, quality: quality || 'medium' })).dataUrl;
+  }
+
+  const data = { imageDataUrl: dataUrl, promptUsed: prompt, engine };
   cacheSet(cacheKey, data);
   return data;
 }

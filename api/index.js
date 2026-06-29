@@ -817,8 +817,8 @@ app.post('/api/ds-composite', rateLimiter, async (req, res) => {
     console.error('ds-composite error:', error);
     dsCors(req, res);
     if (error.code === 'NOT_CONFIGURED') return res.status(503).json({
-      error: 'OpenAI not configured',
-      hint: 'Set OPENAI_API_KEY in Vercel env vars and redeploy',
+      error: 'Image editor not configured',
+      hint: 'Set FAL_API_KEY (Nano Banana 2) or OPENAI_API_KEY in Vercel env vars and redeploy',
     });
     res.status(error.status || 500).json({
       error: 'Composite failed',
