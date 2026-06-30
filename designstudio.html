@@ -591,7 +591,11 @@
     </script>
 
     <script>
-      window.BACKEND_API_URL = window.BACKEND_API_URL || 'https://nyc-renovation-experts.vercel.app';
+      // On a *.vercel.app deployment (incl. PR previews) call THIS deployment's
+      // own /api so the preview tests its own branch backend (e.g. Nano Banana).
+      // On the custom domain, use the production backend.
+      window.BACKEND_API_URL = window.BACKEND_API_URL ||
+        (location.hostname.endsWith('.vercel.app') ? location.origin : 'https://nyc-renovation-experts.vercel.app');
     </script>
 
     <!-- Free, on-device object detection (TensorFlow.js COCO-SSD). Runs in the
