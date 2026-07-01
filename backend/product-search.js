@@ -129,6 +129,123 @@ function mockResults(query) {
   }));
 }
 
+// fetch with a timeout so one slow source can't stall the whole fan-out.
+function fetchWithTimeout(url, opts = {}, ms = 8000) {
+  const c = new AbortController();
+  const t = setTimeout(() => c.abort(), ms);
+  return fetch(url, { ...opts, signal: c.signal }).finally(() => clearTimeout(t));
+}
+
+// ---- Rate limiter: cap live external searches per hour (cost control) -------
+// Per-instance rolling window. The 24h cache absorbs most repeats; this bounds
+// worst-case spend on the paid source. Configurable via env.
+const _searchWindow = [];
+const MAX_PER_HOUR = +(process.env.PRODUCT_SEARCH_MAX_PER_HOUR || 200);
+function rateOk() {
+  const now = Date.now(), hourAgo = now - 3600_000;
+  while (_searchWindow.length && _searchWindow[0] < hourAgo) _searchWindow.shift();
+  if (_searchWindow.length >= MAX_PER_HOUR) return false;
+  _searchWindow.push(now);
+  return true;
+}
+
+// ---- Source: Best Buy (free) -----------------------------------------------
+async function bestBuySearch(query, limit) {
+  const key = process.env.BESTBUY_API_KEY;
+  if (!key) return [];
+  const terms = query.trim().split(/\s+/).map((w) => `search=${encodeURIComponent(w)}`).join('&');
+  const show = 'sku,name,salePrice,regularPrice,image,url,customerReviewAverage,customerReviewCount,manufacturer';
+  const url = `https://api.bestbuy.com/v1/products((${terms}))?apiKey=${key}&format=json&pageSize=${limit}&show=${show}&sort=customerReviewAverage.dsc`;
+  const r = await fetchWithTimeout(url, {}, 8000);
+  if (!r.ok) return [];
+  const j = await r.json().catch(() => ({}));
+  return (j.products || []).map((p) => {
+    const price = p.salePrice ?? p.regularPrice ?? null;
+    return {
+      title: p.name || '', price, priceDisplay: price != null ? `$${price.toFixed(2)}` : null,
+      retailer: 'best buy', rating: p.customerReviewAverage ?? null, reviews: p.customerReviewCount ?? null,
+      thumbnail: p.image || null, link: applyAffiliate(p.url || '', 'best buy'),
+      googleShoppingLink: '', productId: p.sku ? String(p.sku) : null, delivery: null,
+      snippet: p.manufacturer || '', source: 'bestbuy',
+    };
+  });
+}
+
+// ---- Source: eBay Browse (free; OAuth client-credentials token, cached) -----
+let _ebayToken = null; // { token, exp }
+async function getEbayToken() {
+  if (_ebayToken && Date.now() < _ebayToken.exp) return _ebayToken.token;
+  const id = process.env.EBAY_CLIENT_ID, secret = process.env.EBAY_CLIENT_SECRET;
+  if (!id || !secret) return null;
+  const basic = Buffer.from(`${id}:${secret}`).toString('base64');
+  const r = await fetchWithTimeout('https://api.ebay.com/identity/v1/oauth2/token', {
+    method: 'POST',
+    headers: { 'Authorization': `Basic ${basic}`, 'Content-Type': 'application/x-www-form-urlencoded' },
+    body: 'grant_type=client_credentials&scope=' + encodeURIComponent('https://api.ebay.com/oauth/api_scope'),
+  }, 8000).catch(() => null);
+  if (!r || !r.ok) return null;
+  const j = await r.json().catch(() => ({}));
+  if (!j.access_token) return null;
+  _ebayToken = { token: j.access_token, exp: Date.now() + ((j.expires_in ? j.expires_in - 120 : 3600) * 1000) };
+  return _ebayToken.token;
+}
+async function ebaySearch(query, limit) {
+  const token = await getEbayToken();
+  if (!token) return [];
+  const url = `https://api.ebay.com/buy/browse/v1/item_summary/search?q=${encodeURIComponent(query)}&limit=${limit}`;
+  const r = await fetchWithTimeout(url, {
+    headers: { 'Authorization': `Bearer ${token}`, 'X-EBAY-C-MARKETPLACE-ID': 'EBAY_US' },
+  }, 8000);
+  if (!r.ok) return [];
+  const j = await r.json().catch(() => ({}));
+  return (j.itemSummaries || []).map((it) => {
+    const price = it.price ? parseFloat(it.price.value) : null;
+    return {
+      title: it.title || '', price, priceDisplay: price != null ? `$${price.toFixed(2)}` : null,
+      retailer: 'ebay', rating: null, reviews: null,
+      thumbnail: it.image?.imageUrl || it.thumbnailImages?.[0]?.imageUrl || null,
+      link: it.itemWebUrl || '', googleShoppingLink: '', productId: it.itemId || null,
+      delivery: null, snippet: it.condition || '', source: 'ebay',
+    };
+  });
+}
+
+// ---- Source: SerpAPI Google Shopping (optional, paid) ----------------------
+async function serpApiSearch(query, limit) {
+  const apiKey = process.env.SERPAPI_KEY;
+  if (!apiKey) return [];
+  const params = new URLSearchParams({
+    engine: 'google_shopping', q: query, api_key: apiKey,
+    location: 'New York, New York, United States', gl: 'us', hl: 'en',
+    num: String(Math.min(limit * 3, 30)),
+  });
+  const r = await fetchWithTimeout(`https://serpapi.com/search.json?${params.toString()}`, {}, 8000);
+  if (!r.ok) return [];
+  const json = await r.json().catch(() => ({}));
+  return (json.shopping_results || []).map(normalizeResult).filter((x) => x.price != null);
+}
+
+// Merge across sources: dedupe by retailer+title, then rank (has-image first,
+// then rating desc, then price asc) so the best, previewable items lead.
+function dedupeAndRank(results, limit) {
+  const seen = new Set(), uniq = [];
+  for (const r of results) {
+    const key = `${r.retailer}|${(r.title || '').toLowerCase().slice(0, 60)}`;
+    if (seen.has(key)) continue;
+    seen.add(key); uniq.push(r);
+  }
+  uniq.sort((a, b) => {
+    const ai = a.thumbnail ? 1 : 0, bi = b.thumbnail ? 1 : 0;
+    if (ai !== bi) return bi - ai;
+    const ar = a.rating || 0, br = b.rating || 0;
+    if (br !== ar) return br - ar;
+    return (a.price ?? 1e9) - (b.price ?? 1e9);
+  });
+  return uniq.slice(0, limit);
+}
+
+// The tagged label (e.g. "television", "sofa") is the query — fanned out to all
+// configured sources in parallel.
 async function searchProducts(query, { limit = 6, zip = '10001' } = {}) {
   const trimmed = String(query || '').trim();
   if (!trimmed) return { query: '', results: [], source: 'empty' };
@@ -137,45 +254,36 @@ async function searchProducts(query, { limit = 6, zip = '10001' } = {}) {
   const hit = cacheGet(cacheKey);
   if (hit) return { ...hit, cached: true };
 
-  const apiKey = process.env.SERPAPI_KEY;
-  if (!apiKey) {
+  const haveLive = process.env.BESTBUY_API_KEY
+    || (process.env.EBAY_CLIENT_ID && process.env.EBAY_CLIENT_SECRET)
+    || process.env.SERPAPI_KEY;
+  if (!haveLive) {
     const data = { query: trimmed, results: mockResults(trimmed).slice(0, limit), source: 'mock' };
     cacheSet(cacheKey, data);
     return data;
   }
-
-  // SerpAPI's `location` param must match a name in their location database
-  // (free-form addresses or ZIPs are rejected with "Unsupported … location").
-  // For NYC we use the canonical name; for non-NYC zips we omit location and
-  // rely on gl/hl to localize. zip is accepted as input for future use.
-  const params = new URLSearchParams({
-    engine: 'google_shopping',
-    q: trimmed,
-    api_key: apiKey,
-    location: 'New York, New York, United States',
-    gl: 'us',
-    hl: 'en',
-    num: String(Math.min(limit * 3, 30)),
-  });
-  const url = `https://serpapi.com/search.json?${params.toString()}`;
-
-  const response = await fetch(url);
-  if (!response.ok) {
-    const detail = await response.text();
-    const err = new Error(`SerpAPI error: ${response.status}`);
-    err.detail = detail.slice(0, 500);
-    throw err;
+  if (!rateOk()) {
+    // Over the hourly cap: serve mock rather than spend/queue. Not cached, so a
+    // later (in-budget) call still fetches live results.
+    return { query: trimmed, results: mockResults(trimmed).slice(0, limit), source: 'rate_limited' };
   }
-  const json = await response.json();
-  const raw = json.shopping_results || [];
 
-  // Prefer results from known retailers, then take highest rated / cheapest.
-  const normalized = raw.map(normalizeResult).filter((r) => r.price != null);
-  const preferred = normalized.filter((r) => PREFERRED_RETAILERS.some((p) => r.retailer.includes(p.replace("'", ''))));
-  const rest = normalized.filter((r) => !preferred.includes(r));
-  const merged = [...preferred, ...rest].slice(0, limit);
+  const perSource = Math.max(limit, 8);
+  const settled = await Promise.allSettled([
+    bestBuySearch(trimmed, perSource),
+    ebaySearch(trimmed, perSource),
+    serpApiSearch(trimmed, perSource),
+  ]);
+  const all = settled.flatMap((s) => (s.status === 'fulfilled' ? s.value : []));
+  let results = dedupeAndRank(all, limit);
 
-  const data = { query: trimmed, results: merged, source: 'serpapi' };
+  const sources = [];
+  if (process.env.BESTBUY_API_KEY) sources.push('bestbuy');
+  if (process.env.EBAY_CLIENT_ID && process.env.EBAY_CLIENT_SECRET) sources.push('ebay');
+  if (process.env.SERPAPI_KEY) sources.push('serpapi');
+
+  if (!results.length) results = mockResults(trimmed).slice(0, limit);
+  const data = { query: trimmed, results, source: results.length && all.length ? sources.join('+') : 'mock' };
   cacheSet(cacheKey, data);
   return data;
 }
