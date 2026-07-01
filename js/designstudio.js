@@ -528,14 +528,30 @@ function renderSegmentChips() {
     const customStyle = s.custom ? 'background:#fff;border-color:#0d6efd;color:#0d6efd;' : '';
     const customMark  = s.custom ? '<i class="fas fa-plus me-1" style="font-size:0.7rem;"></i>' : '';
     return `
-      <button type="button" class="ds-seg-chip" data-seg-i="${i}" style="${customStyle}">
-        ${customMark}${esc(s.label)}${s.confidence ? ` · ${Math.round(s.confidence * 100)}%` : ''}
-      </button>
+      <span class="ds-seg-chip-wrap">
+        <button type="button" class="ds-seg-chip" data-seg-i="${i}" style="${customStyle}">
+          ${customMark}${esc(s.label)}${s.confidence ? ` · ${Math.round(s.confidence * 100)}%` : ''}
+        </button>
+        <button type="button" class="ds-seg-x" data-del-i="${i}" title="Remove this tag" aria-label="Remove ${esc(s.label)}">&times;</button>
+      </span>
     `;
   }).join('');
   list.querySelectorAll('[data-seg-i]').forEach((btn) => {
     btn.addEventListener('click', () => selectSegment(state.segments[+btn.dataset.segI]));
   });
+  list.querySelectorAll('[data-del-i]').forEach((btn) => {
+    btn.addEventListener('click', (e) => { e.stopPropagation(); removeSegment(+btn.dataset.delI); });
+  });
+}
+
+// Remove a wrong/unwanted detected tag.
+function removeSegment(i) {
+  const seg = state.segments[i];
+  if (!seg) return;
+  state.segments.splice(i, 1);
+  if (state.selectedSegment === seg) state.selectedSegment = null;
+  redrawSegments();
+  renderSegmentChips();
 }
 
 // ===== 3. Clarify =====
@@ -676,9 +692,13 @@ function renderProducts(products) {
   const cheapest = products.reduce((m, p) =>
     p.price != null && (m == null || p.price < m) ? p.price : m, null);
 
-  grid.innerHTML = products.map((p, i) => `
-    <div class="ds-product" data-pi="${i}">
-      ${p.thumbnail ? `<img src="${esc(p.thumbnail)}" alt="${esc(p.title)}" loading="lazy">` : ''}
+  grid.innerHTML = products.map((p, i) => {
+    const hasImg = !!p.thumbnail;
+    return `
+    <div class="ds-product ${hasImg ? '' : 'no-image'}" data-pi="${i}">
+      ${hasImg
+        ? `<img src="${esc(p.thumbnail)}" alt="${esc(p.title)}" loading="lazy">`
+        : `<div class="ds-noimg"><i class="far fa-image"></i><span>No preview image</span></div>`}
       <div class="ds-product-title">${esc(p.title)}</div>
       <div class="ds-product-retailer">
         ${esc(p.retailer)} ${p.rating ? `· ⭐ ${(+p.rating).toFixed(1)}` : ''}
@@ -687,14 +707,26 @@ function renderProducts(products) {
         ${esc(p.priceDisplay || (p.price != null ? '$' + p.price.toFixed(2) : 'See price'))}
         ${cheapest != null && p.price === cheapest ? '<span class="badge bg-success ms-1" style="font-size:0.65rem;">BEST</span>' : ''}
       </div>
-    </div>
-  `).join('');
+      ${p.link ? `<a href="${esc(p.link)}" target="_blank" rel="noopener" class="ds-product-link">View details ↗</a>` : ''}
+      ${hasImg ? '' : `<div class="ds-noimg-note">No image — can't preview; open the retailer for details.</div>`}
+    </div>`;
+  }).join('');
+
+  grid.querySelectorAll('.ds-product-link').forEach((a) =>
+    a.addEventListener('click', (e) => e.stopPropagation()));
 
   grid.querySelectorAll('[data-pi]').forEach((card) => {
     card.addEventListener('click', () => {
+      const p = products[+card.dataset.pi];
       grid.querySelectorAll('[data-pi]').forEach((c) => c.classList.remove('selected'));
       card.classList.add('selected');
-      pickProduct(products[+card.dataset.pi]);
+      // No image → no render preview (Render / View-in-3D need a product photo).
+      if (!p.thumbnail) {
+        if (p.link) window.open(p.link, '_blank', 'noopener');
+        else alert('This product has no preview image, so it can\'t be rendered in your room.');
+        return;
+      }
+      pickProduct(p);
     });
   });
 }
@@ -797,6 +829,14 @@ function setRenderBtnBusy(busy) {
   }
 }
 
+// fetch with a hard client-side timeout so a slow/hung request can't spin
+// forever (e.g. a product with no image).
+function fetchWithTimeout(url, opts = {}, ms = 120000) {
+  const ctrl = new AbortController();
+  const t = setTimeout(() => ctrl.abort(), ms);
+  return fetch(url, { ...opts, signal: ctrl.signal }).finally(() => clearTimeout(t));
+}
+
 async function runComposite(product) {
   if (!product || !state.imageDataUrl) return;
 
@@ -828,7 +868,7 @@ async function runComposite(product) {
 
   try {
     const seg = state.selectedSegment;
-    const res = await fetch(`${API}/api/ds-composite`, {
+    const res = await fetchWithTimeout(`${API}/api/ds-composite`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({
@@ -843,7 +883,7 @@ async function runComposite(product) {
         },
         photoSize: state.imageNaturalSize,
       }),
-    });
+    }, 120000);
     const data = await res.json().catch(() => ({}));
     // A newer render started — let that one own the spinner/button. Don't
     // tear down the UI it set up.
@@ -888,7 +928,10 @@ async function runComposite(product) {
     if (state._activeCompositeToken !== token) return;
     console.error('composite failed', err);
     hideSpinner();
-    showCompositeError(err.message || 'Composite failed');
+    const msg = err.name === 'AbortError'
+      ? 'Render timed out after 2 minutes. Try again, or pick a product that has a photo.'
+      : (err.message || 'Composite failed');
+    showCompositeError(msg);
     setRenderBtnBusy(false);
   }
 }
@@ -1248,15 +1291,15 @@ function hideRetryButton() {
 
 async function pollUntilComplete({ requestId, statusUrl, responseUrl, imageUrl }) {
   const startedAt = Date.now();
-  const timeoutMs = 180 * 1000;  // 3 minutes hard cap
+  const timeoutMs = 120 * 1000;  // 2 minutes hard cap
   let lastStatus = '';
   while (Date.now() - startedAt < timeoutMs) {
     await sleep(3000);
-    const res = await fetch(`${API}/api/ds-render3d-status`, {
+    const res = await fetchWithTimeout(`${API}/api/ds-render3d-status`, {
       method:  'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ requestId, statusUrl, responseUrl, imageUrl }),
-    });
+    }, 15000);
     const data = await res.json();
     if (!res.ok) throw new Error(data.upstream_message || data.error || `HTTP ${res.status}`);
 
@@ -1273,7 +1316,7 @@ async function pollUntilComplete({ requestId, statusUrl, responseUrl, imageUrl }
       setThreeDStatus(`${humanStatus(data.status)}…`);
     }
   }
-  throw new Error('Render timed out after 3 minutes');
+  throw new Error('Render timed out after 2 minutes');
 }
 
 function humanStatus(s) {

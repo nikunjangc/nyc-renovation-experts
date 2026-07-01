@@ -110,6 +110,23 @@
       }
       .ds-seg-chip:hover { background: #FDA12B; color: #fff; }
       .ds-seg-chip.selected { background: #FDA12B; color: #fff; }
+      .ds-seg-chip-wrap { display: inline-flex; align-items: center; }
+      .ds-seg-x {
+        border: 1.5px solid #FDA12B; border-left: none;
+        background: #fff; color: #c0392b; cursor: pointer;
+        width: 26px; height: 30px; border-radius: 0 20px 20px 0;
+        font-size: 1rem; line-height: 1; margin-left: -2px;
+      }
+      .ds-seg-x:hover { background: #c0392b; color: #fff; border-color: #c0392b; }
+      .ds-noimg {
+        width: 100%; height: 120px; display: flex; flex-direction: column;
+        align-items: center; justify-content: center; gap: 6px;
+        background: #f3f4f6; border-radius: 8px; color: #9aa3ad; font-size: 0.78rem;
+      }
+      .ds-noimg i { font-size: 22px; }
+      .ds-noimg-note { font-size: 0.72rem; color: #b9770f; margin-top: 4px; }
+      .ds-product-link { font-size: 0.78rem; color: #0d6efd; margin-top: 4px; display: inline-block; }
+      .ds-product.no-image { opacity: 0.92; }
       .ds-product-grid {
         display: grid;
         grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
