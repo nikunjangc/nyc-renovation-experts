@@ -244,9 +244,49 @@ function dedupeAndRank(results, limit) {
   return uniq.slice(0, limit);
 }
 
-// The tagged label (e.g. "television", "sofa") is the query — fanned out to all
-// configured sources in parallel.
-async function searchProducts(query, { limit = 6, zip = '10001' } = {}) {
+// ---- Controller: pick the RIGHT sources per item BEFORE calling them -------
+// Don't call Best Buy for a faucet, or Best Buy for furniture — route by the
+// item's category. Unknown items fall back to every configured source.
+const CATEGORY_KEYWORDS = {
+  electronics: ['television', 'speaker', 'soundbar', 'game console', 'playstation', 'xbox', 'ps5', 'monitor', 'projector', 'receiver'],
+  appliance:   ['refrigerator', 'fridge', 'oven', 'stove', 'range', 'cooktop', 'microwave', 'dishwasher', 'washer', 'dryer', 'freezer', 'air conditioner'],
+  lighting:    ['lamp', 'light', 'chandelier', 'sconce', 'pendant'],
+  fixture:     ['faucet', 'sink', 'toilet', 'vanity', 'countertop', 'backsplash', 'tile', 'shower', 'bathtub', 'mirror', 'cabinet'],
+  furniture:   ['sofa', 'couch', 'sectional', 'armchair', 'chair', 'table', 'desk', 'bed', 'nightstand', 'dresser', 'wardrobe', 'bookshelf', 'bookcase', 'ottoman', 'stand'],
+  decor:       ['rug', 'carpet', 'plant', 'curtain', 'artwork', 'poster'],
+};
+
+// Which sources to query per category (only the CONFIGURED ones actually run).
+const SOURCE_ROUTES = {
+  electronics: ['bestbuy', 'ebay', 'serpapi'],
+  appliance:   ['bestbuy', 'serpapi', 'ebay'],
+  lighting:    ['serpapi', 'ebay'],            // Best Buy doesn't carry light fixtures
+  fixture:     ['serpapi', 'ebay'],            // faucets/toilets/vanities → HD/Lowe's via serpapi
+  furniture:   ['ebay', 'serpapi'],            // not Best Buy
+  decor:       ['ebay', 'serpapi'],
+  default:     ['bestbuy', 'ebay', 'serpapi'], // unknown → search everything
+};
+
+function classifyCategory(label) {
+  const l = String(label || '').toLowerCase();
+  for (const cat of ['electronics', 'appliance', 'lighting', 'fixture', 'furniture', 'decor']) {
+    if (CATEGORY_KEYWORDS[cat].some((k) => l.includes(k))) return cat;
+  }
+  return 'default';
+}
+
+// Registry of sources: name -> { configured?, run }.
+const SOURCE_FNS = {
+  bestbuy: { enabled: () => !!process.env.BESTBUY_API_KEY, run: bestBuySearch },
+  ebay:    { enabled: () => !!(process.env.EBAY_CLIENT_ID && process.env.EBAY_CLIENT_SECRET), run: ebaySearch },
+  serpapi: { enabled: () => !!process.env.SERPAPI_KEY, run: serpApiSearch },
+  // dataforseo: { enabled: () => !!process.env.DATAFORSEO_LOGIN, run: dataForSeoSearch }, // future
+};
+
+// The tagged label is the query. The controller classifies it and calls ONLY
+// the sources that make sense for that category (and are configured). Pass
+// opts.sources to override the routing explicitly.
+async function searchProducts(query, { limit = 6, zip = '10001', sources: forced } = {}) {
   const trimmed = String(query || '').trim();
   if (!trimmed) return { query: '', results: [], source: 'empty' };
 
@@ -254,38 +294,33 @@ async function searchProducts(query, { limit = 6, zip = '10001' } = {}) {
   const hit = cacheGet(cacheKey);
   if (hit) return { ...hit, cached: true };
 
-  const haveLive = process.env.BESTBUY_API_KEY
-    || (process.env.EBAY_CLIENT_ID && process.env.EBAY_CLIENT_SECRET)
-    || process.env.SERPAPI_KEY;
-  if (!haveLive) {
-    const data = { query: trimmed, results: mockResults(trimmed).slice(0, limit), source: 'mock' };
+  const category = classifyCategory(trimmed);
+  const routed = forced || SOURCE_ROUTES[category] || SOURCE_ROUTES.default;
+  // Only sources that are BOTH routed for this category AND configured…
+  let active = routed.filter((n) => SOURCE_FNS[n]?.enabled());
+  // …and if none of the routed ones are configured, fall back to any configured.
+  if (!active.length) active = Object.keys(SOURCE_FNS).filter((n) => SOURCE_FNS[n].enabled());
+
+  if (!active.length) {
+    const data = { query: trimmed, category, results: mockResults(trimmed).slice(0, limit), source: 'mock' };
     cacheSet(cacheKey, data);
     return data;
   }
   if (!rateOk()) {
-    // Over the hourly cap: serve mock rather than spend/queue. Not cached, so a
-    // later (in-budget) call still fetches live results.
-    return { query: trimmed, results: mockResults(trimmed).slice(0, limit), source: 'rate_limited' };
+    // Over the hourly cap: serve mock rather than spend. Not cached, so a later
+    // (in-budget) call still fetches live results.
+    return { query: trimmed, category, results: mockResults(trimmed).slice(0, limit), source: 'rate_limited' };
   }
 
   const perSource = Math.max(limit, 8);
-  const settled = await Promise.allSettled([
-    bestBuySearch(trimmed, perSource),
-    ebaySearch(trimmed, perSource),
-    serpApiSearch(trimmed, perSource),
-  ]);
+  const settled = await Promise.allSettled(active.map((n) => SOURCE_FNS[n].run(trimmed, perSource)));
   const all = settled.flatMap((s) => (s.status === 'fulfilled' ? s.value : []));
   let results = dedupeAndRank(all, limit);
-
-  const sources = [];
-  if (process.env.BESTBUY_API_KEY) sources.push('bestbuy');
-  if (process.env.EBAY_CLIENT_ID && process.env.EBAY_CLIENT_SECRET) sources.push('ebay');
-  if (process.env.SERPAPI_KEY) sources.push('serpapi');
-
   if (!results.length) results = mockResults(trimmed).slice(0, limit);
-  const data = { query: trimmed, results, source: results.length && all.length ? sources.join('+') : 'mock' };
+
+  const data = { query: trimmed, category, sourcesUsed: active, results, source: all.length ? active.join('+') : 'mock' };
   cacheSet(cacheKey, data);
   return data;
 }
 
-module.exports = { searchProducts };
+module.exports = { searchProducts, classifyCategory, SOURCE_ROUTES };
