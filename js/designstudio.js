@@ -21,6 +21,10 @@ import { GLTFLoader }    from 'three/addons/loaders/GLTFLoader.js';
 
 const API = window.BACKEND_API_URL || 'http://localhost:3001';
 
+// Phones have limited memory: heavy in-browser AI models (OWL-ViT, SAM) can
+// crash the tab. On mobile we use the light detector + the server for masks.
+const IS_MOBILE = /Mobi|Android|iPhone|iPad|iPod/i.test(navigator.userAgent || '');
+
 // ===== Spinner overlay =====
 function showSpinner(message = 'Processing…') {
   const spinner = el('spinner');
@@ -101,13 +105,21 @@ async function fileToResizedDataUrl(file, maxEdge = 1920) {
 
 // ===== 1. Upload =====
 function setupUpload() {
-  const fileInput = el('ds-file-input');
-  const dropZone  = el('ds-upload-area');
+  const fileInput   = el('ds-file-input');
+  const cameraInput = el('ds-camera-input');
+  const dropZone    = el('ds-upload-area');
 
-  fileInput.addEventListener('change', (e) => {
+  // Explicit choices: "Take a photo" opens the rear camera (capture attr),
+  // "Upload a photo" opens the library/file picker. Works on iPhone + Android.
+  el('ds-take-photo')?.addEventListener('click', () => cameraInput?.click());
+  el('ds-upload-photo')?.addEventListener('click', () => fileInput.click());
+
+  const onPick = (e) => {
     const f = e.target.files?.[0];
     if (f) handleFile(f);
-  });
+  };
+  fileInput.addEventListener('change', onPick);
+  cameraInput?.addEventListener('change', onPick);
 
   ['dragenter', 'dragover'].forEach((ev) =>
     dropZone.addEventListener(ev, (e) => { e.preventDefault(); dropZone.classList.add('drag'); }));
@@ -136,28 +148,242 @@ async function runSegmentation() {
   loader.style.display = 'inline-block';
 
   try {
-    const res = await fetch(`${API}/api/ds-segment`, {
-      method:  'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body:    JSON.stringify({ imageUrl: state.imageDataUrl }),
-    });
-    const data = await res.json();
-    if (!res.ok) throw new Error(data.upstream_message || data.error || `HTTP ${res.status}`);
-    state.segments = data.segments || [];
+    // Detection ladder, all preferring FREE on-device:
+    //  1) OWL-ViT open-vocabulary — we pass OUR renovation label list and it
+    //     finds exactly those (incl. rug/backsplash/vanity COCO-SSD can't).
+    //  2) COCO-SSD — fast 80-class fallback if OWL-ViT can't load.
+    //  3) server (paid fal.ai Florence-2) — last resort.
+    el('ds-segment-list').innerHTML =
+      '<div class="text-muted small">Detecting items… (first run downloads a small on-device AI model).</div>';
+    let segments = null;
+    // On phones the big open-vocab model (OWL-ViT) can exhaust memory and crash
+    // the tab. Use the light COCO-SSD there; keep OWL-ViT for desktop only.
+    if (!IS_MOBILE) {
+      try { segments = await detectOpenVocab(); }
+      catch (e) { console.warn('open-vocab detection unavailable; trying COCO-SSD', e); }
+    }
+    if (!segments && window.cocoSsd) {
+      try { segments = await detectOnDevice(); }
+      catch (e) { console.warn('COCO-SSD failed; falling back to server', e); }
+    }
+    if (!segments) segments = await detectOnServer();
+    state.segments = segments;
     drawSegmentationOverlay();
     renderSegmentChips();
   } catch (err) {
     console.error('segmentation failed', err);
     el('ds-segment-list').innerHTML =
       `<div class="alert alert-warning w-100" style="font-size:0.9rem;">
-        Couldn't segment this photo. ${esc(err.message)}.
-        ${err.message?.includes('not configured')
-          ? 'Make sure FAL_API_KEY is set in Vercel env vars and the project has been redeployed.'
-          : 'Try another photo with better lighting.'}
+        Couldn't detect items in this photo. ${esc(err.message)}.
+        Try another photo with better lighting, or use "Add a custom area" / "Precise select" to tag items by hand.
       </div>`;
   } finally {
     loader.style.display = 'none';
   }
+}
+
+// Free, in-browser object detection. COCO-SSD knows ~80 common objects (tv,
+// couch, chair, potted plant, bed, dining table, refrigerator, oven, sink,
+// microwave, toilet, …). Niche renovation items (backsplash, vanity, rug) are
+// handled by the manual "Add custom area" / "Precise select" tools.
+let _cocoModelPromise = null;
+async function detectOnDevice() {
+  if (!_cocoModelPromise) _cocoModelPromise = window.cocoSsd.load();
+  const model = await _cocoModelPromise;
+  const img = await loadImageEl(state.imageDataUrl);
+  const preds = await model.detect(img, 30);
+  return preds
+    .filter((p) => p.score >= 0.4)
+    .map((p, i) => ({
+      id: `seg-${i}`,
+      label: String(p.class || 'object').toLowerCase(),
+      confidence: +p.score.toFixed(3),
+      bbox: [Math.round(p.bbox[0]), Math.round(p.bbox[1]), Math.round(p.bbox[2]), Math.round(p.bbox[3])],
+      polygon: null,
+    }));
+}
+
+function loadImageEl(src) {
+  return new Promise((resolve, reject) => {
+    const im = new Image();
+    im.onload = () => resolve(im);
+    im.onerror = () => reject(new Error('image load failed'));
+    im.src = src;
+  });
+}
+
+// ---- FREE open-vocabulary detection: OWL-ViT (Google) via transformers.js ----
+// We pass OUR own label list; the model finds exactly those, no retraining.
+// Runs in the browser ($0, no key). Heavier than COCO-SSD: a one-time model
+// download + a few seconds per photo.
+const RENOVATION_LABELS = [
+  'television', 'sofa', 'couch', 'armchair', 'coffee table', 'tv stand', 'console table',
+  'rug', 'floor lamp', 'table lamp', 'potted plant', 'bookshelf', 'window', 'door',
+  'radiator', 'game console', 'speaker', 'dining table', 'chair', 'bed', 'nightstand',
+  'dresser', 'wardrobe', 'refrigerator', 'oven', 'stove', 'range hood', 'microwave',
+  'dishwasher', 'kitchen sink', 'faucet', 'kitchen cabinet', 'countertop', 'backsplash',
+  'kitchen island', 'toilet', 'bathroom vanity', 'bathtub', 'shower', 'mirror', 'ceiling light',
+  'game console', 'sectional sofa', 'curtains', 'side table', 'ottoman', 'fireplace', 'tile floor',
+];
+
+let _owlPromise = null;
+async function getOwlDetector() {
+  if (!_owlPromise) {
+    _owlPromise = (async () => {
+      const t = await import('@huggingface/transformers');
+      if (t?.env) t.env.allowLocalModels = false;          // fetch weights from HF CDN
+      return t.pipeline('zero-shot-object-detection', 'Xenova/owlvit-base-patch32');
+    })();
+  }
+  return _owlPromise;
+}
+
+// Intersection-over-union NMS so overlapping duplicate boxes collapse to one.
+function bboxIoU(a, b) {
+  const ax2 = a[0] + a[2], ay2 = a[1] + a[3], bx2 = b[0] + b[2], by2 = b[1] + b[3];
+  const ix = Math.max(0, Math.min(ax2, bx2) - Math.max(a[0], b[0]));
+  const iy = Math.max(0, Math.min(ay2, by2) - Math.max(a[1], b[1]));
+  const inter = ix * iy;
+  const uni = a[2] * a[3] + b[2] * b[3] - inter;
+  return uni > 0 ? inter / uni : 0;
+}
+
+async function detectOpenVocab() {
+  const detector = await getOwlDetector();
+  const out = await detector(state.imageDataUrl, RENOVATION_LABELS, { threshold: 0.1 });
+  const mapped = (out || [])
+    .filter((o) => o.box && o.score >= 0.1)
+    .sort((a, b) => b.score - a.score)
+    .map((o) => ({
+      label: String(o.label || 'object').toLowerCase(),
+      confidence: +o.score.toFixed(3),
+      bbox: [Math.round(o.box.xmin), Math.round(o.box.ymin),
+             Math.round(o.box.xmax - o.box.xmin), Math.round(o.box.ymax - o.box.ymin)],
+      polygon: null,
+    }))
+    .filter((s) => s.bbox[2] > 4 && s.bbox[3] > 4);
+
+  // Greedy NMS (input is already sorted by score desc).
+  const kept = [];
+  for (const s of mapped) {
+    if (kept.every((k) => bboxIoU(k.bbox, s.bbox) < 0.5)) kept.push(s);
+  }
+  const finalSegs = kept.slice(0, 25).map((s, i) => ({ id: `seg-${i}`, ...s }));
+  if (!finalSegs.length) throw new Error('no open-vocab detections');
+  return finalSegs;
+}
+
+// ---- FREE on-device precise masks: SAM via transformers.js -----------------
+// Point-prompted Segment Anything in the browser ($0, no key). Returns the same
+// { maskCanvas, bbox } shape as the server path, so the composite step is
+// unchanged. Falls back to /api/ds-mask if this can't load.
+let _samPromise = null;
+async function getSam() {
+  if (!_samPromise) {
+    _samPromise = (async () => {
+      const t = await import('@huggingface/transformers');
+      if (t?.env) t.env.allowLocalModels = false;
+      const model = await t.SamModel.from_pretrained('Xenova/slimsam-77-uniform');
+      const processor = await t.AutoProcessor.from_pretrained('Xenova/slimsam-77-uniform');
+      return { t, model, processor };
+    })();
+  }
+  return _samPromise;
+}
+
+async function segmentOnDeviceAt(x, y) {
+  const { t, model, processor } = await getSam();
+  const image = await t.RawImage.read(state.imageDataUrl);
+  const inputs = await processor(image, { input_points: [[[x, y]]], input_labels: [[1]] });
+  const outputs = await model(inputs);
+  const masks = await processor.post_process_masks(outputs.pred_masks, inputs.original_sizes, inputs.reshaped_input_sizes);
+  const maskTensor = masks[0];                    // [1, nMasks, H, W]
+  const dims = maskTensor.dims;
+  const H = dims[dims.length - 2], W = dims[dims.length - 1];
+  const nMasks = dims[dims.length - 3] || 1;
+  const md = maskTensor.data;
+  // Pick the highest-IoU mask among the candidates.
+  const scores = outputs.iou_scores?.data || [0];
+  let best = 0;
+  for (let i = 1; i < nMasks && i < scores.length; i++) if (scores[i] > scores[best]) best = i;
+
+  const c = document.createElement('canvas'); c.width = W; c.height = H;
+  const ctx = c.getContext('2d');
+  const out = ctx.createImageData(W, H);
+  const off = best * H * W;
+  let minX = W, minY = H, maxX = 0, maxY = 0, any = false;
+  for (let py = 0; py < H; py++) {
+    for (let px = 0; px < W; px++) {
+      const v = md[off + py * W + px];
+      const i = (py * W + px) * 4;
+      if (v) {
+        out.data[i] = 255; out.data[i + 1] = 255; out.data[i + 2] = 255; out.data[i + 3] = 255; any = true;
+        if (px < minX) minX = px; if (px > maxX) maxX = px;
+        if (py < minY) minY = py; if (py > maxY) maxY = py;
+      } else { out.data[i + 3] = 0; }
+    }
+  }
+  ctx.putImageData(out, 0, 0);
+  if (!any) return null;
+
+  // Scale to the photo's natural size if SAM returned a different resolution.
+  const W0 = state.imageNaturalSize.width, H0 = state.imageNaturalSize.height;
+  if (W !== W0 || H !== H0) {
+    const c2 = document.createElement('canvas'); c2.width = W0; c2.height = H0;
+    c2.getContext('2d').drawImage(c, 0, 0, W0, H0);
+    const sx = W0 / W, sy = H0 / H;
+    return { maskCanvas: c2, bbox: { x: Math.round(minX * sx), y: Math.round(minY * sy), w: Math.round((maxX - minX + 1) * sx), h: Math.round((maxY - minY + 1) * sy) } };
+  }
+  return { maskCanvas: c, bbox: { x: minX, y: minY, w: maxX - minX + 1, h: maxY - minY + 1 } };
+}
+
+// Paid fallback: server-side Florence-2 object detection via /api/ds-segment.
+async function detectOnServer() {
+  const res = await fetch(`${API}/api/ds-segment`, {
+    method:  'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body:    JSON.stringify({ imageUrl: state.imageDataUrl }),
+  });
+  const data = await res.json().catch(() => ({}));
+  if (!res.ok) throw new Error(data.upstream_message || data.error || `HTTP ${res.status}`);
+  return data.segments || [];
+}
+
+// Crop a tagged segment to a small thumbnail (data URL) for the quote gallery.
+function cropSegmentThumb(seg, maxEdge = 240) {
+  return new Promise((resolve) => {
+    if (!seg?.bbox) { resolve(null); return; }
+    const img = new Image();
+    img.onload = () => {
+      const [x, y, w, h] = seg.bbox;
+      const scale = Math.min(maxEdge / Math.max(w, h), 1);
+      const cw = Math.max(1, Math.round(w * scale)), ch = Math.max(1, Math.round(h * scale));
+      const c = document.createElement('canvas'); c.width = cw; c.height = ch;
+      c.getContext('2d').drawImage(img, x, y, w, h, 0, 0, cw, ch);
+      resolve(c.toDataURL('image/jpeg', 0.8));
+    };
+    img.onerror = () => resolve(null);
+    img.src = state.workingPhoto || state.imageDataUrl;
+  });
+}
+
+// Send every tagged item — each as its own labelled box/crop — to the quote,
+// instead of re-uploading the whole photo. Enables granular, per-item requests.
+async function sendTaggedItemsToQuote() {
+  if (!state.segments?.length) {
+    alert('Tag some items first — upload a photo, then tap items or use Precise select.');
+    return;
+  }
+  showSpinner('Preparing your items…');
+  const items = [];
+  for (const seg of state.segments) {
+    const thumb = await cropSegmentThumb(seg);
+    items.push({ label: seg.label, thumb, bbox: seg.bbox });
+  }
+  hideSpinner();
+  try { localStorage.setItem('ds_quote_items', JSON.stringify({ items, at: Date.now() })); } catch (e) {}
+  const note = 'Items from my photo: ' + state.segments.map((s) => s.label).join(', ') + '.';
+  window.location.href = `quote.html?source=designstudio&note=${encodeURIComponent(note)}`;
 }
 
 function drawSegmentationOverlay() {
@@ -176,6 +402,10 @@ function drawSegmentationOverlay() {
     const x = (e.clientX - rect.left) * (canvas.width / rect.width);
     const y = (e.clientY - rect.top)  * (canvas.height / rect.height);
 
+    if (state.preciseMode) {
+      fetchPreciseMaskAt(x, y);
+      return;
+    }
     if (state.tagMode) {
       addCustomSegmentAt(x, y);
       return;
@@ -197,6 +427,16 @@ function drawSegmentationOverlay() {
     cancelBtn.dataset.bound = '1';
     cancelBtn.addEventListener('click', () => enterTagMode(false));
   }
+  const preciseBtn = el('ds-precise');
+  if (preciseBtn && !preciseBtn.dataset.bound) {
+    preciseBtn.dataset.bound = '1';
+    preciseBtn.addEventListener('click', () => enterPreciseMode(!state.preciseMode));
+  }
+  const toQuoteBtn = el('ds-to-quote');
+  if (toQuoteBtn && !toQuoteBtn.dataset.bound) {
+    toQuoteBtn.dataset.bound = '1';
+    toQuoteBtn.addEventListener('click', sendTaggedItemsToQuote);
+  }
 }
 
 // Re-renders the photo + every segment box. Called whenever segments change
@@ -208,6 +448,15 @@ function redrawSegments(highlight) {
   const img = new Image();
   img.onload = () => {
     ctx.drawImage(img, 0, 0);
+    // Tint the precise mask of the highlighted item so its exact outline shows.
+    state.segments.forEach((seg) => {
+      if (seg.maskCanvas && seg === highlight) {
+        ctx.save();
+        ctx.globalAlpha = 0.4;
+        ctx.drawImage(seg.maskCanvas, 0, 0, canvas.width, canvas.height);
+        ctx.restore();
+      }
+    });
     state.segments.forEach((seg) => drawSegmentBox(ctx, seg, seg === highlight));
   };
   img.src = state.imageDataUrl;
@@ -287,14 +536,30 @@ function renderSegmentChips() {
     const customStyle = s.custom ? 'background:#fff;border-color:#0d6efd;color:#0d6efd;' : '';
     const customMark  = s.custom ? '<i class="fas fa-plus me-1" style="font-size:0.7rem;"></i>' : '';
     return `
-      <button type="button" class="ds-seg-chip" data-seg-i="${i}" style="${customStyle}">
-        ${customMark}${esc(s.label)}${s.confidence ? ` · ${Math.round(s.confidence * 100)}%` : ''}
-      </button>
+      <span class="ds-seg-chip-wrap">
+        <button type="button" class="ds-seg-chip" data-seg-i="${i}" style="${customStyle}">
+          ${customMark}${esc(s.label)}${s.confidence ? ` · ${Math.round(s.confidence * 100)}%` : ''}
+        </button>
+        <button type="button" class="ds-seg-x" data-del-i="${i}" title="Remove this tag" aria-label="Remove ${esc(s.label)}">&times;</button>
+      </span>
     `;
   }).join('');
   list.querySelectorAll('[data-seg-i]').forEach((btn) => {
     btn.addEventListener('click', () => selectSegment(state.segments[+btn.dataset.segI]));
   });
+  list.querySelectorAll('[data-del-i]').forEach((btn) => {
+    btn.addEventListener('click', (e) => { e.stopPropagation(); removeSegment(+btn.dataset.delI); });
+  });
+}
+
+// Remove a wrong/unwanted detected tag.
+function removeSegment(i) {
+  const seg = state.segments[i];
+  if (!seg) return;
+  state.segments.splice(i, 1);
+  if (state.selectedSegment === seg) state.selectedSegment = null;
+  redrawSegments();
+  renderSegmentChips();
 }
 
 // ===== 3. Clarify =====
@@ -435,9 +700,13 @@ function renderProducts(products) {
   const cheapest = products.reduce((m, p) =>
     p.price != null && (m == null || p.price < m) ? p.price : m, null);
 
-  grid.innerHTML = products.map((p, i) => `
-    <div class="ds-product" data-pi="${i}">
-      ${p.thumbnail ? `<img src="${esc(p.thumbnail)}" alt="${esc(p.title)}" loading="lazy">` : ''}
+  grid.innerHTML = products.map((p, i) => {
+    const hasImg = !!p.thumbnail;
+    return `
+    <div class="ds-product ${hasImg ? '' : 'no-image'}" data-pi="${i}">
+      ${hasImg
+        ? `<img src="${esc(p.thumbnail)}" alt="${esc(p.title)}" loading="lazy">`
+        : `<div class="ds-noimg"><i class="far fa-image"></i><span>No preview image</span></div>`}
       <div class="ds-product-title">${esc(p.title)}</div>
       <div class="ds-product-retailer">
         ${esc(p.retailer)} ${p.rating ? `· ⭐ ${(+p.rating).toFixed(1)}` : ''}
@@ -446,14 +715,26 @@ function renderProducts(products) {
         ${esc(p.priceDisplay || (p.price != null ? '$' + p.price.toFixed(2) : 'See price'))}
         ${cheapest != null && p.price === cheapest ? '<span class="badge bg-success ms-1" style="font-size:0.65rem;">BEST</span>' : ''}
       </div>
-    </div>
-  `).join('');
+      ${p.link ? `<a href="${esc(p.link)}" target="_blank" rel="noopener" class="ds-product-link">View details ↗</a>` : ''}
+      ${hasImg ? '' : `<div class="ds-noimg-note">No image — can't preview; open the retailer for details.</div>`}
+    </div>`;
+  }).join('');
+
+  grid.querySelectorAll('.ds-product-link').forEach((a) =>
+    a.addEventListener('click', (e) => e.stopPropagation()));
 
   grid.querySelectorAll('[data-pi]').forEach((card) => {
     card.addEventListener('click', () => {
+      const p = products[+card.dataset.pi];
       grid.querySelectorAll('[data-pi]').forEach((c) => c.classList.remove('selected'));
       card.classList.add('selected');
-      pickProduct(products[+card.dataset.pi]);
+      // No image → no render preview (Render / View-in-3D need a product photo).
+      if (!p.thumbnail) {
+        if (p.link) window.open(p.link, '_blank', 'noopener');
+        else alert('This product has no preview image, so it can\'t be rendered in your room.');
+        return;
+      }
+      pickProduct(p);
     });
   });
 }
@@ -556,6 +837,14 @@ function setRenderBtnBusy(busy) {
   }
 }
 
+// fetch with a hard client-side timeout so a slow/hung request can't spin
+// forever (e.g. a product with no image).
+function fetchWithTimeout(url, opts = {}, ms = 120000) {
+  const ctrl = new AbortController();
+  const t = setTimeout(() => ctrl.abort(), ms);
+  return fetch(url, { ...opts, signal: ctrl.signal }).finally(() => clearTimeout(t));
+}
+
 async function runComposite(product) {
   if (!product || !state.imageDataUrl) return;
 
@@ -571,7 +860,10 @@ async function runComposite(product) {
     showCompositeError('Position the product on the photo first, then try again.');
     return;
   }
-  const maskDataUrl = buildMaskDataUrl(bbox);
+  // Precise path: if the selected item has an exact SAM mask, constrain the edit
+  // to its outline instead of the rectangle. Falls back to the rect otherwise.
+  const preciseMask = state.selectedSegment?.maskCanvas || null;
+  const maskDataUrl = preciseMask ? buildMaskDataUrlFromCanvas(preciseMask) : buildMaskDataUrl(bbox);
 
   // Lock the button + show the full-screen spinner for the WHOLE render.
   setRenderBtnBusy(true);
@@ -584,7 +876,7 @@ async function runComposite(product) {
 
   try {
     const seg = state.selectedSegment;
-    const res = await fetch(`${API}/api/ds-composite`, {
+    const res = await fetchWithTimeout(`${API}/api/ds-composite`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({
@@ -599,7 +891,7 @@ async function runComposite(product) {
         },
         photoSize: state.imageNaturalSize,
       }),
-    });
+    }, 120000);
     const data = await res.json().catch(() => ({}));
     // A newer render started — let that one own the spinner/button. Don't
     // tear down the UI it set up.
@@ -621,7 +913,9 @@ async function runComposite(product) {
       // selected box: everything OUTSIDE the box stays bit-identical.
       let finalUrl = data.imageDataUrl;
       try {
-        finalUrl = await compositeMaskedRegion(base, data.imageDataUrl, bbox);
+        finalUrl = preciseMask
+          ? await compositeMaskedRegionWithMask(base, data.imageDataUrl, preciseMask)
+          : await compositeMaskedRegion(base, data.imageDataUrl, bbox);
       } catch (e) {
         console.warn('client composite failed; showing raw GPT result', e);
       }
@@ -642,7 +936,10 @@ async function runComposite(product) {
     if (state._activeCompositeToken !== token) return;
     console.error('composite failed', err);
     hideSpinner();
-    showCompositeError(err.message || 'Composite failed');
+    const msg = err.name === 'AbortError'
+      ? 'Render timed out after 2 minutes. Try again, or pick a product that has a photo.'
+      : (err.message || 'Composite failed');
+    showCompositeError(msg);
     setRenderBtnBusy(false);
   }
 }
@@ -728,6 +1025,149 @@ function buildMaskDataUrl(bbox) {
   // Punch a transparent hole where the AI is allowed to paint.
   ctx.clearRect(bbox.x, bbox.y, bbox.w, bbox.h);
   return canvas.toDataURL('image/png');
+}
+
+/* ===== Precise per-object masks (SAM 2 via /api/ds-mask) =================
+ * Coarse rectangles let edits leak onto neighbours ("change the TV" nudges the
+ * sofa). Here the user taps one object; SAM 2 returns its exact outline; we
+ * clip the edit to that outline. Strictly additive: if a segment has no
+ * maskCanvas, the original rectangle path runs unchanged.
+ * ====================================================================== */
+
+function enterPreciseMode(on) {
+  state.preciseMode = !!on;
+  if (state.preciseMode) enterTagMode(false);   // the two tap-modes are exclusive
+  const wrap = el('ds-canvas-wrap');
+  if (wrap) wrap.classList.toggle('tagmode', state.preciseMode);
+  const btn = el('ds-precise');
+  if (btn) btn.innerHTML = state.preciseMode
+    ? '<i class="fas fa-crosshairs me-1"></i>Tap the object in the photo…'
+    : '<i class="fas fa-bullseye me-1"></i>Precise select (tap one item)';
+}
+
+// Load the SAM mask image, rasterize to a natural-size canvas where the object
+// is opaque white and everything else transparent, and compute its tight bbox.
+function rasterizeMask(maskUrl) {
+  return new Promise((resolve, reject) => {
+    const W = state.imageNaturalSize.width, H = state.imageNaturalSize.height;
+    const img = new Image();
+    img.crossOrigin = 'anonymous';
+    img.onload = () => {
+      const c = document.createElement('canvas'); c.width = W; c.height = H;
+      const ctx = c.getContext('2d');
+      ctx.drawImage(img, 0, 0, W, H);
+      let data;
+      try { data = ctx.getImageData(0, 0, W, H); }
+      catch (e) { reject(new Error('mask blocked by CORS')); return; }
+      const d = data.data;
+      let minX = W, minY = H, maxX = 0, maxY = 0, any = false;
+      for (let py = 0; py < H; py++) {
+        for (let px = 0; px < W; px++) {
+          const i = (py * W + px) * 4;
+          // SAM masks come either white-on-black or as an alpha cutout — treat a
+          // pixel as "object" if it's both visible and bright.
+          const on = d[i + 3] > 16 && (d[i] > 64 || d[i + 1] > 64 || d[i + 2] > 64);
+          if (on) {
+            d[i] = 255; d[i + 1] = 255; d[i + 2] = 255; d[i + 3] = 255; any = true;
+            if (px < minX) minX = px; if (px > maxX) maxX = px;
+            if (py < minY) minY = py; if (py > maxY) maxY = py;
+          } else { d[i + 3] = 0; }
+        }
+      }
+      ctx.putImageData(data, 0, 0);
+      resolve({ maskCanvas: c, bbox: any ? { x: minX, y: minY, w: maxX - minX + 1, h: maxY - minY + 1 } : null });
+    };
+    img.onerror = () => reject(new Error('mask image load failed'));
+    img.src = maskUrl;
+  });
+}
+
+async function fetchPreciseMaskAt(x, y) {
+  enterPreciseMode(false);
+  showSpinner('Finding the exact object…');
+  try {
+    // Free on-device SAM first — but NOT on phones (loading it on top of the
+    // detector can exhaust memory and crash the tab). Mobile uses the server.
+    let result = null;
+    if (!IS_MOBILE) {
+      try { result = await segmentOnDeviceAt(Math.round(x), Math.round(y)); }
+      catch (e) { console.warn('on-device SAM failed; trying server', e); }
+    }
+    if (!result) {
+      const res = await fetch(`${API}/api/ds-mask`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ imageUrl: state.imageDataUrl, point: { x: Math.round(x), y: Math.round(y) } }),
+      });
+      const data = await res.json().catch(() => ({}));
+      if (!res.ok || !data.maskUrl) throw new Error(data.upstream_message || data.error || `HTTP ${res.status}`);
+      result = await rasterizeMask(data.maskUrl);
+    }
+    const { maskCanvas, bbox } = result;
+    if (!bbox) throw new Error('empty mask — try tapping the center of the object');
+
+    // Attach to the segment under the tap, or create a new precise one.
+    let seg = state.segments.find((s) =>
+      s.bbox && x >= s.bbox[0] && x <= s.bbox[0] + s.bbox[2] &&
+                y >= s.bbox[1] && y <= s.bbox[1] + s.bbox[3]);
+    if (!seg) {
+      const labelRaw = (window.prompt('What is this? (e.g. sofa, tv, rug)') || '').trim();
+      if (!labelRaw) { hideSpinner(); return; }
+      seg = { id: `precise-${Date.now()}`, label: labelRaw.toLowerCase(), confidence: null, polygon: null, custom: true };
+      state.segments.push(seg);
+    }
+    seg.maskCanvas = maskCanvas;
+    seg.bbox = [bbox.x, bbox.y, bbox.w, bbox.h];
+    hideSpinner();
+    redrawSegments(seg);
+    renderSegmentChips();
+    selectSegment(seg);
+  } catch (err) {
+    hideSpinner();
+    console.error('precise mask failed', err);
+    alert(`Couldn't isolate that object: ${err.message}. You can still select it as a box.`);
+  }
+}
+
+// gpt-image-1 mask from an object canvas: opaque white = preserve, transparent
+// = edit. We punch the object's shape out of a white field.
+function buildMaskDataUrlFromCanvas(maskCanvas) {
+  const W = state.imageNaturalSize.width, H = state.imageNaturalSize.height;
+  const c = document.createElement('canvas'); c.width = W; c.height = H;
+  const ctx = c.getContext('2d');
+  ctx.fillStyle = '#ffffff';
+  ctx.fillRect(0, 0, W, H);
+  ctx.globalCompositeOperation = 'destination-out';
+  ctx.drawImage(maskCanvas, 0, 0, W, H);
+  ctx.globalCompositeOperation = 'source-over';
+  return c.toDataURL('image/png');
+}
+
+// Like compositeMaskedRegion, but clips the AI result to the object's mask
+// shape instead of a rectangle — so only the object changes, not its bounding box.
+function compositeMaskedRegionWithMask(originalUrl, resultUrl, maskCanvas) {
+  return new Promise((resolve, reject) => {
+    const orig = new Image(); const result = new Image(); let loaded = 0;
+    const onErr = () => reject(new Error('composite image load failed'));
+    const onLoad = () => {
+      if (++loaded < 2) return;
+      const W = orig.naturalWidth, H = orig.naturalHeight;
+      const c = document.createElement('canvas'); c.width = W; c.height = H;
+      const ctx = c.getContext('2d');
+      ctx.drawImage(orig, 0, 0, W, H);
+      const tmp = document.createElement('canvas'); tmp.width = W; tmp.height = H;
+      const tctx = tmp.getContext('2d');
+      tctx.drawImage(result, 0, 0, W, H);
+      tctx.globalCompositeOperation = 'destination-in';
+      tctx.drawImage(maskCanvas, 0, 0, W, H);
+      ctx.drawImage(tmp, 0, 0);
+      resolve(c.toDataURL('image/jpeg', 0.92));
+    };
+    orig.onload = onLoad; orig.onerror = onErr;
+    result.onload = onLoad; result.onerror = onErr;
+    orig.src = originalUrl;
+    result.src = resultUrl;
+  });
 }
 
 function showCompositeStatus(text) {
@@ -862,15 +1302,15 @@ function hideRetryButton() {
 
 async function pollUntilComplete({ requestId, statusUrl, responseUrl, imageUrl }) {
   const startedAt = Date.now();
-  const timeoutMs = 180 * 1000;  // 3 minutes hard cap
+  const timeoutMs = 120 * 1000;  // 2 minutes hard cap
   let lastStatus = '';
   while (Date.now() - startedAt < timeoutMs) {
     await sleep(3000);
-    const res = await fetch(`${API}/api/ds-render3d-status`, {
+    const res = await fetchWithTimeout(`${API}/api/ds-render3d-status`, {
       method:  'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ requestId, statusUrl, responseUrl, imageUrl }),
-    });
+    }, 15000);
     const data = await res.json();
     if (!res.ok) throw new Error(data.upstream_message || data.error || `HTTP ${res.status}`);
 
@@ -887,7 +1327,7 @@ async function pollUntilComplete({ requestId, statusUrl, responseUrl, imageUrl }
       setThreeDStatus(`${humanStatus(data.status)}…`);
     }
   }
-  throw new Error('Render timed out after 3 minutes');
+  throw new Error('Render timed out after 2 minutes');
 }
 
 function humanStatus(s) {

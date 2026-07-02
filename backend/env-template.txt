@@ -33,6 +33,27 @@ ADMIN_PASSWORD=your-strong-admin-password-here
 # Get one at: https://serpapi.com/  (free tier: 100 searches/mo)
 SERPAPI_KEY=
 
+# Multi-source product search fans out to all configured sources in parallel,
+# merges, dedupes, and ranks (items with images first). All FREE unless noted.
+#
+# Best Buy (FREE) — appliances, TVs, electronics.
+#   Get a key: https://developer.bestbuy.com/  (Products API)
+BESTBUY_API_KEY=
+#
+# eBay Browse (FREE) — huge household/furniture selection.
+#   Create an app + get Client ID/Secret: https://developer.ebay.com/
+#   (Uses the client-credentials OAuth flow automatically.)
+EBAY_CLIENT_ID=
+EBAY_CLIENT_SECRET=
+#
+# Optional paid backbone for broadest coverage (skip if using free sources
+# only). DataForSEO (~$0.60/1k) is a cheaper alternative to SerpAPI — wire it
+# later if needed.
+#
+# Cost cap: max LIVE external searches per hour per instance (the 24h cache
+# absorbs repeats). Default 200. Over the cap, search serves mock data.
+PRODUCT_SEARCH_MAX_PER_HOUR=200
+
 # ===== Affiliate / Referral (Phase 1: hybrid revenue layer) =====
 # Optional. If set, product links to that retailer are rewritten so you earn
 # commission on referred sales. Apply for each network separately:

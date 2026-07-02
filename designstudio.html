@@ -110,6 +110,23 @@
       }
       .ds-seg-chip:hover { background: #FDA12B; color: #fff; }
       .ds-seg-chip.selected { background: #FDA12B; color: #fff; }
+      .ds-seg-chip-wrap { display: inline-flex; align-items: center; }
+      .ds-seg-x {
+        border: 1.5px solid #FDA12B; border-left: none;
+        background: #fff; color: #c0392b; cursor: pointer;
+        width: 26px; height: 30px; border-radius: 0 20px 20px 0;
+        font-size: 1rem; line-height: 1; margin-left: -2px;
+      }
+      .ds-seg-x:hover { background: #c0392b; color: #fff; border-color: #c0392b; }
+      .ds-noimg {
+        width: 100%; height: 120px; display: flex; flex-direction: column;
+        align-items: center; justify-content: center; gap: 6px;
+        background: #f3f4f6; border-radius: 8px; color: #9aa3ad; font-size: 0.78rem;
+      }
+      .ds-noimg i { font-size: 22px; }
+      .ds-noimg-note { font-size: 0.72rem; color: #b9770f; margin-top: 4px; }
+      .ds-product-link { font-size: 0.78rem; color: #0d6efd; margin-top: 4px; display: inline-block; }
+      .ds-product.no-image { opacity: 0.92; }
       .ds-product-grid {
         display: grid;
         grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
@@ -355,6 +372,7 @@
           <a href="about.html" class="nav-item nav-link">About Us</a>
           <a href="service.html" class="nav-item nav-link">Our Services</a>
           <a href="designstudio.html" class="nav-item nav-link active">Design Studio</a>
+          <a href="measure.html" class="nav-item nav-link">Measure</a>
           <a href="self-fix.html" class="nav-item nav-link">Self-Fix</a>
           <a href="contact.html" class="nav-item nav-link">Contact Us</a>
           <a href="quote.html" class="nav-item nav-link">Get Free Quote</a>
@@ -389,10 +407,18 @@
             <div class="ds-stage-title">
               <i class="fas fa-camera text-primary me-2"></i>1. Upload a photo
             </div>
-            <div class="ds-upload-area" id="ds-upload-area" onclick="document.getElementById('ds-file-input').click()">
+            <div class="ds-upload-area" id="ds-upload-area">
               <i class="fas fa-cloud-upload-alt" style="font-size: 48px; color: #FDA12B; margin-bottom: 12px;"></i>
-              <h5 class="mb-1">Drag &amp; drop or tap to upload</h5>
-              <p class="text-muted mb-0" style="font-size: 0.85rem;">JPG or PNG, up to 10MB. Best results: well-lit, head-on view of the room.</p>
+              <h5 class="mb-1">Add a photo of your room</h5>
+              <p class="text-muted mb-0" style="font-size: 0.85rem;">Take a new photo or upload one — JPG or PNG, up to 12MB. Best results: well-lit, head-on view.</p>
+              <div class="d-flex gap-2 justify-content-center flex-wrap mt-3">
+                <button type="button" class="btn btn-primary" id="ds-take-photo"><i class="fas fa-camera me-2"></i>Take a photo</button>
+                <button type="button" class="btn btn-outline-primary" id="ds-upload-photo"><i class="fas fa-image me-2"></i>Upload a photo</button>
+              </div>
+              <p class="text-muted mb-0 mt-2 d-none d-lg-block" style="font-size: 0.78rem;">…or drag &amp; drop an image here.</p>
+              <p class="mb-0 mt-2" style="font-size: 0.82rem;"><i class="fas fa-ruler-combined text-primary me-1"></i>Want exact sizes? <a href="measure.html">Measure dimensions from a photo →</a></p>
+              <!-- capture="environment" opens the rear camera directly on iPhone &amp; Android. -->
+              <input type="file" id="ds-camera-input" accept="image/*" capture="environment" style="display:none;" />
               <input type="file" id="ds-file-input" accept="image/*" style="display:none;" />
             </div>
           </div>
@@ -413,7 +439,13 @@
             <button type="button" class="btn btn-outline-primary btn-sm mt-2" id="ds-add-custom">
               <i class="fas fa-plus me-1"></i>Add a custom area (AI missed something)
             </button>
-            <div class="ds-cost-note">Click a chip above (or directly on the photo) to find replacement products.</div>
+            <button type="button" class="btn btn-outline-primary btn-sm mt-2" id="ds-precise">
+              <i class="fas fa-bullseye me-1"></i>Precise select (tap one item)
+            </button>
+            <button type="button" class="btn btn-primary btn-sm mt-2" id="ds-to-quote">
+              <i class="fas fa-file-invoice-dollar me-1"></i>Send tagged items to my quote
+            </button>
+            <div class="ds-cost-note">Click a chip above (or directly on the photo) to find replacement products. <strong>Precise select</strong> isolates one item's exact shape so an edit changes only that item — not its neighbours. <strong>Send tagged items to my quote</strong> carries each item as its own labelled box — no need to re-upload the photo.</div>
           </div>
 
           <!-- Stage 3: clarify -->
@@ -440,6 +472,7 @@
             </div>
             <div class="ds-product-grid" id="ds-product-grid"></div>
             <div class="ds-cost-note">Real prices from Home Depot, Lowe's, IKEA, Amazon &amp; more. Click any product to preview it in 3D.</div>
+            <div class="ds-cost-note" style="margin-top:6px;"><em>As an Amazon Associate and affiliate partner, NYC Renovation Experts earns from qualifying purchases. Some product links are affiliate links, at no extra cost to you.</em></div>
           </div>
 
           <!-- Stage 5: 3D preview -->
@@ -569,14 +602,26 @@
       {
         "imports": {
           "three": "https://cdn.jsdelivr.net/npm/three@0.160.0/build/three.module.js",
-          "three/addons/": "https://cdn.jsdelivr.net/npm/three@0.160.0/examples/jsm/"
+          "three/addons/": "https://cdn.jsdelivr.net/npm/three@0.160.0/examples/jsm/",
+          "@huggingface/transformers": "https://cdn.jsdelivr.net/npm/@huggingface/transformers@3.0.2/+esm"
         }
       }
     </script>
 
     <script>
-      window.BACKEND_API_URL = window.BACKEND_API_URL || 'https://nyc-renovation-experts.vercel.app';
+      // On a *.vercel.app deployment (incl. PR previews) call THIS deployment's
+      // own /api so the preview tests its own branch backend (e.g. Nano Banana).
+      // On the custom domain, use the production backend.
+      window.BACKEND_API_URL = window.BACKEND_API_URL ||
+        (location.hostname.endsWith('.vercel.app') ? location.origin : 'https://nyc-renovation-experts.vercel.app');
     </script>
+
+    <!-- Free, on-device object detection (TensorFlow.js COCO-SSD). Runs in the
+         browser — no API key, no per-call cost. Sets window.tf / window.cocoSsd.
+         The paid fal.ai path is kept as a fallback if these fail to load. -->
+    <script src="https://cdn.jsdelivr.net/npm/@tensorflow/tfjs@4.22.0/dist/tf.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/@tensorflow-models/coco-ssd@2.2.3/dist/coco-ssd.min.js"></script>
+
     <script type="module" src="js/designstudio.js"></script>
   </body>
 </html>
