@@ -111,8 +111,9 @@ function normalizeResult(r) {
 }
 
 function mockResults(query) {
-  // Deterministic-ish mock so the UI is exercisable without SerpAPI.
-  const retailers = ['home depot', 'lowes', 'amazon', 'ikea', 'wayfair'];
+  // Amazon first (highest precedence). Links go to each retailer's REAL search
+  // page via RETAILER_SEARCH_URLS (valid, not dead); Amazon carries the tag.
+  const retailers = ['amazon', 'home depot', 'lowes', 'ikea', 'wayfair'];
   const base = 30 + (query.length * 7) % 200;
   return retailers.map((retailer, i) => ({
     title: `${query} — ${retailer}`,
@@ -122,10 +123,13 @@ function mockResults(query) {
     rating: 4 + ((i * 0.13) % 1),
     reviews: 50 + i * 21,
     thumbnail: null,
-    link: applyAffiliate(`https://www.${retailer.replace(/[^a-z]/g, '')}.com/s?k=${encodeURIComponent(query)}`, retailer),
+    link: applyAffiliate(
+      directRetailerLink(retailer, query) || `https://www.google.com/search?tbm=shop&q=${encodeURIComponent(query)}`,
+      retailer,
+    ),
     productId: null, // mocks skip the product-detail lookup
     delivery: i % 2 ? 'Free delivery' : 'In stock nearby',
-    snippet: 'Mock result — set SERPAPI_KEY to enable live retailer search.',
+    snippet: 'Demo result — set SERPAPI_KEY (or Best Buy / eBay keys) for live products with photos.',
   }));
 }
 
@@ -234,9 +238,12 @@ function dedupeAndRank(results, limit) {
     if (seen.has(key)) continue;
     seen.add(key); uniq.push(r);
   }
+  const isAmz = (r) => /amazon/i.test(r.retailer || '');
   uniq.sort((a, b) => {
+    const aa = isAmz(a) ? 1 : 0, ba = isAmz(b) ? 1 : 0;
+    if (aa !== ba) return ba - aa;                 // Amazon first (higher precedence)
     const ai = a.thumbnail ? 1 : 0, bi = b.thumbnail ? 1 : 0;
-    if (ai !== bi) return bi - ai;
+    if (ai !== bi) return bi - ai;                 // then items with a photo
     const ar = a.rating || 0, br = b.rating || 0;
     if (br !== ar) return br - ar;
     return (a.price ?? 1e9) - (b.price ?? 1e9);
