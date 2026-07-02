@@ -21,6 +21,10 @@ import { GLTFLoader }    from 'three/addons/loaders/GLTFLoader.js';
 
 const API = window.BACKEND_API_URL || 'http://localhost:3001';
 
+// Phones have limited memory: heavy in-browser AI models (OWL-ViT, SAM) can
+// crash the tab. On mobile we use the light detector + the server for masks.
+const IS_MOBILE = /Mobi|Android|iPhone|iPad|iPod/i.test(navigator.userAgent || '');
+
 // ===== Spinner overlay =====
 function showSpinner(message = 'Processing…') {
   const spinner = el('spinner');
@@ -152,8 +156,12 @@ async function runSegmentation() {
     el('ds-segment-list').innerHTML =
       '<div class="text-muted small">Detecting items… (first run downloads a small on-device AI model).</div>';
     let segments = null;
-    try { segments = await detectOpenVocab(); }
-    catch (e) { console.warn('open-vocab detection unavailable; trying COCO-SSD', e); }
+    // On phones the big open-vocab model (OWL-ViT) can exhaust memory and crash
+    // the tab. Use the light COCO-SSD there; keep OWL-ViT for desktop only.
+    if (!IS_MOBILE) {
+      try { segments = await detectOpenVocab(); }
+      catch (e) { console.warn('open-vocab detection unavailable; trying COCO-SSD', e); }
+    }
     if (!segments && window.cocoSsd) {
       try { segments = await detectOnDevice(); }
       catch (e) { console.warn('COCO-SSD failed; falling back to server', e); }
@@ -1078,10 +1086,13 @@ async function fetchPreciseMaskAt(x, y) {
   enterPreciseMode(false);
   showSpinner('Finding the exact object…');
   try {
-    // Free on-device SAM first; fall back to the server mask endpoint (paid).
+    // Free on-device SAM first — but NOT on phones (loading it on top of the
+    // detector can exhaust memory and crash the tab). Mobile uses the server.
     let result = null;
-    try { result = await segmentOnDeviceAt(Math.round(x), Math.round(y)); }
-    catch (e) { console.warn('on-device SAM failed; trying server', e); }
+    if (!IS_MOBILE) {
+      try { result = await segmentOnDeviceAt(Math.round(x), Math.round(y)); }
+      catch (e) { console.warn('on-device SAM failed; trying server', e); }
+    }
     if (!result) {
       const res = await fetch(`${API}/api/ds-mask`, {
         method: 'POST',
