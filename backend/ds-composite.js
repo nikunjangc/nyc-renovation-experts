@@ -90,26 +90,25 @@ async function writeEditPrompt({ segmentLabel, product, positionWords, masked })
     ? `Paint only within the masked (transparent) area; the rest of the photo will be preserved automatically by the mask.`
     : `Keep all other elements (walls, floor, lighting, other appliances, cabinets) unchanged.`;
 
-  const canned = `Completely REMOVE the existing ${segmentLabel} located ${positionWords}, and install the new ${segmentLabel} — ${product.title} — in EXACTLY that same position. ` +
-                 `Do not leave the old ${segmentLabel} anywhere, and do not add any extra or duplicate ${segmentLabel}. ` +
+  const canned = `Remove the existing ${segmentLabel} from the room and install the new ${segmentLabel}${product?.title ? ` (${product.title})` : ''} in the same spot where the old one was. ` +
+                 `Keep it a realistic, natural size and proportion for the space — do NOT make it oversized; it should look like a normal ${segmentLabel} for this room. ` +
                  `${maskClause} ` +
-                 `Match the photo's lighting, perspective, scale, and shadows. Photorealistic. No text, no watermarks, no labels.`;
+                 `Match the room's perspective, lighting, and shadows, and change nothing else. Photorealistic. No text, no watermarks.`;
   if (!dsKey) return canned;
 
-  const sys = `You write a single concise image-edit prompt for an AI model that REPLACES one fixture in a room photo.
-Hard rules:
-- Output ONLY the prompt text. No preface, no quotes, no JSON, no markdown.
-- The prompt MUST: (1) completely REMOVE the existing ${segmentLabel} at the named location, (2) place the new product in EXACTLY that same spot, (3) forbid leaving the old fixture or adding any duplicate/extra fixture.
-- Be specific about WHAT product to render.
-- Leave every other object, surface, and the room layout unchanged.
-- ${masked
-    ? 'A binary mask marks the editable region; render the new product naturally within it.'
-    : 'Include: "Keep all other elements unchanged. Match the original photo\'s lighting, perspective, and shadows."'}
-- ALWAYS include: "Photorealistic. No text, no watermarks, no labels."
-- 1-2 sentences, under 70 words.`;
-  const usr = `In a kitchen/bathroom photo, completely remove the existing ${segmentLabel} located ${positionWords} and replace it — in that exact spot — with this product:
-"${product.title}"${product.retailer ? ` (from ${product.retailer})` : ''}.
-Write the edit prompt.`;
+  // Keep it SIMPLE — over-engineered prompts made the model oversize/mis-place
+  // the item. Mirror the plain "remove it and put the new one where it was,
+  // natural size" instruction that works well.
+  const sys = `You write ONE short image-edit instruction for an AI model replacing a single fixture in a room photo.
+Rules:
+- Output ONLY the instruction. No preface, quotes, JSON, or markdown.
+- Say to REMOVE the existing ${segmentLabel} and install the new product in the SAME location where the old one was.
+- Say to keep it a REALISTIC, NATURAL size for the room — never oversized.
+- Keep everything else in the room unchanged; match the original lighting, perspective, and shadows.
+- ${masked ? 'A mask marks the region to edit; render the product naturally within it.' : 'Do not change the rest of the room.'}
+- End with: "Photorealistic. No text, no watermarks."
+- One sentence, under 50 words.`;
+  const usr = `Remove the existing ${segmentLabel} and replace it, in the same spot at a natural size, with "${product.title}"${product.retailer ? ` (${product.retailer})` : ''}. Write the instruction.`;
 
   try {
     const res = await fetch('https://api.deepseek.com/v1/chat/completions', {
@@ -327,7 +326,7 @@ async function compositeProduct({ photoUrl, maskDataUrl, segmentLabel, segmentPo
       const pb = await urlToBlob(product.thumbnail).catch(() => null);
       if (pb) {
         refBlobs = [{ blob: pb, name: 'product.png' }];
-        editPrompt = `${prompt} Use the product shown in the reference image as the EXACT item to place — match its design, color, and shape.`;
+        editPrompt = `${prompt} The reference image shows the exact product — match its design, color, and shape, but scale it to a realistic, natural size for the room (not oversized).`;
       }
     }
     dataUrl = (await callOpenAIEdit({ photoBlob: blob, filename, maskBlob, prompt: editPrompt, quality: quality || 'medium', refBlobs })).dataUrl;
