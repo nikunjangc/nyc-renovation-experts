@@ -25,7 +25,12 @@
 const crypto = require('crypto');
 
 const OPENAI_EDIT_URL  = 'https://api.openai.com/v1/images/edits';
+const OPENAI_CHAT_URL  = 'https://api.openai.com/v1/chat/completions';
 const OPENAI_MODEL     = 'gpt-image-1';
+// Vision model that actually LOOKS at the room photo to ground the edit prompt
+// in the real scene (where the old fixture is, how big it should be) — this is
+// the reasoning step ChatGPT does before it renders.
+const OPENAI_VISION_MODEL = 'gpt-4o-mini';
 
 const cache = new Map();
 const CACHE_TTL_MS = 24 * 60 * 60 * 1000;
@@ -80,7 +85,64 @@ function describePosition(seg, photo) {
 // Use DeepSeek to write a tight, strict edit prompt. If DeepSeek isn't
 // configured (or call fails), fall back to a canned template — the feature
 // still works.
-async function writeEditPrompt({ segmentLabel, product, positionWords, masked }) {
+// Vision-grounded prompt writer — the ChatGPT-style step. Sends the ACTUAL
+// room photo (and the product image when available) to a vision LLM and asks
+// it to locate the old fixture and describe its correct real-world scale, then
+// emit one tight edit instruction. Falls back to null so callers can drop to
+// the blind text writer / canned prompt.
+async function writeVisionPrompt({ segmentLabel, product, photoUrl }) {
+  const key = process.env.OPENAI_API_KEY;
+  if (!key || !photoUrl) return null;
+
+  const sys = `You are directing a photorealistic image edit. You are shown a ROOM PHOTO and (sometimes) a PRODUCT PHOTO. Your job is to write ONE short instruction to swap a single ${segmentLabel} in the room.
+First, silently look at the room photo: find the existing ${segmentLabel}, note WHERE it is (which wall/ceiling area, above what) and how BIG it is relative to the room.
+Then write the instruction so that:
+- The existing ${segmentLabel} is REMOVED and the new one installed in the EXACT SAME position it occupies now.
+- The new ${segmentLabel} is sized to look natural in THIS room — reference the real objects near it (e.g. "about the width of the island below it") so it is not oversized or undersized.
+- If a product photo is given, the new ${segmentLabel} matches that product's design, shape, and finish.
+- Everything else in the room stays identical; match the existing perspective, lighting, and shadows.
+Output ONLY the instruction, one or two sentences, no preface or quotes. End with "Photorealistic. No text, no watermarks."`;
+
+  const content = [
+    { type: 'text', text: `Room photo:` },
+    { type: 'image_url', image_url: { url: photoUrl, detail: 'high' } },
+  ];
+  if (product?.thumbnail) {
+    const pd = await urlToDataUrl(product.thumbnail).catch(() => null);
+    if (pd) {
+      content.push({ type: 'text', text: `New product to install (${product.title || segmentLabel}):` });
+      content.push({ type: 'image_url', image_url: { url: pd, detail: 'low' } });
+    }
+  }
+  content.push({ type: 'text', text: `Write the single edit instruction now.` });
+
+  try {
+    const res = await fetch(OPENAI_CHAT_URL, {
+      method: 'POST',
+      headers: { 'Authorization': `Bearer ${key}`, 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        model: OPENAI_VISION_MODEL,
+        messages: [{ role: 'system', content: sys }, { role: 'user', content }],
+        max_tokens: 220,
+        temperature: 0.3,
+      }),
+    });
+    if (!res.ok) return null;
+    const json = await res.json();
+    const txt = json?.choices?.[0]?.message?.content?.trim() || '';
+    return txt || null;
+  } catch {
+    return null;
+  }
+}
+
+async function writeEditPrompt({ segmentLabel, product, positionWords, masked, photoUrl }) {
+  // Prefer the vision-grounded writer (looks at the actual photo) — this is the
+  // reasoning step that lets a maskless render match ChatGPT.
+  if (!masked) {
+    const visioned = await writeVisionPrompt({ segmentLabel, product, photoUrl });
+    if (visioned) return visioned;
+  }
   const dsKey = process.env.DEEPSEEK_API_KEY;
   // When a mask is provided, OpenAI strictly preserves pixels OUTSIDE the
   // mask — we don't need to over-warn the model. But the prompt should still
@@ -303,7 +365,7 @@ async function compositeProduct({ photoUrl, maskDataUrl, segmentLabel, segmentPo
   if (hit) return { ...hit, cached: true };
 
   const positionWords = describePosition(segmentPosition, photoSize);
-  const prompt = await writeEditPrompt({ segmentLabel, product, positionWords, masked: false });
+  const prompt = await writeEditPrompt({ segmentLabel, product, positionWords, masked: false, photoUrl });
 
   // Primary: Nano Banana 2 (fal). Fallback: gpt-image-1 (mask-based) if Nano
   // Banana errors and OpenAI is configured. The browser still clips the result

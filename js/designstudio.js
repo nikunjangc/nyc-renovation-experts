@@ -54,7 +54,7 @@ const state = {
   workingPhoto: null,         // cumulative edited photo — edits stack onto this
   baseMode: 'edited',         // 'edited' | 'original' — what the NEXT render builds on
   previewMode: '2d',          // '2d' | '3d'
-  renderStyle: 'precise',     // 'precise' (mask over old fixture — forces spot+size) | 'natural' (holistic)
+  renderStyle: 'natural',     // 'natural' (vision-grounded, maskless — ChatGPT-style) | 'precise' (mask over old fixture)
   modelUrlByThumb: new Map(), // thumbnailUrl -> rendered GLB url (3D cache)
   three: null,
   tagMode: false,
