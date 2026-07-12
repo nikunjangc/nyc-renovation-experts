@@ -54,10 +54,19 @@ const state = {
   workingPhoto: null,         // cumulative edited photo — edits stack onto this
   baseMode: 'edited',         // 'edited' | 'original' — what the NEXT render builds on
   previewMode: '2d',          // '2d' | '3d'
+  renderStyle: 'natural',     // 'natural' (holistic, no clip) | 'precise' (clip to box)
   modelUrlByThumb: new Map(), // thumbnailUrl -> rendered GLB url (3D cache)
   three: null,
   tagMode: false,
 };
+
+// Natural = re-render the whole scene so the product blends in (best realism,
+// like a pro/ChatGPT edit). Precise = constrain the edit to the selection.
+function setRenderStyle(style) {
+  state.renderStyle = style;
+  el('ds-style-natural')?.classList.toggle('active', style === 'natural');
+  el('ds-style-precise')?.classList.toggle('active', style === 'precise');
+}
 
 // ===== Element refs =====
 const el = (id) => document.getElementById(id);
@@ -860,10 +869,15 @@ async function runComposite(product) {
     showCompositeError('Position the product on the photo first, then try again.');
     return;
   }
-  // Precise path: if the selected item has an exact SAM mask, constrain the edit
-  // to its outline instead of the rectangle. Falls back to the rect otherwise.
+  // Natural (default): send NO mask so the model re-renders the whole scene and
+  // blends the product naturally (best realism, like a pro edit) — nothing gets
+  // clipped/cut. Precise: constrain the edit to the object's exact SAM mask, or
+  // the dragged box, and keep the rest of the photo pixel-identical.
+  const natural = state.renderStyle !== 'precise';
   const preciseMask = state.selectedSegment?.maskCanvas || null;
-  const maskDataUrl = preciseMask ? buildMaskDataUrlFromCanvas(preciseMask) : buildMaskDataUrl(bbox);
+  const maskDataUrl = natural
+    ? null
+    : (preciseMask ? buildMaskDataUrlFromCanvas(preciseMask) : buildMaskDataUrl(bbox));
 
   // Lock the button + show the full-screen spinner for the WHOLE render.
   setRenderBtnBusy(true);
@@ -913,11 +927,16 @@ async function runComposite(product) {
       // selected box: everything OUTSIDE the box stays bit-identical.
       let finalUrl = data.imageDataUrl;
       try {
-        finalUrl = preciseMask
-          ? await compositeMaskedRegionWithMask(base, data.imageDataUrl, preciseMask)
-          : await compositeMaskedRegion(base, data.imageDataUrl, bbox);
+        // Natural: keep the model's full holistic result (no clipping → no
+        // "half light"). Precise: clip the result to the object/box so only
+        // the selection changes.
+        if (!natural) {
+          finalUrl = preciseMask
+            ? await compositeMaskedRegionWithMask(base, data.imageDataUrl, preciseMask)
+            : await compositeMaskedRegion(base, data.imageDataUrl, bbox);
+        }
       } catch (e) {
-        console.warn('client composite failed; showing raw GPT result', e);
+        console.warn('client composite failed; showing raw result', e);
       }
       // This becomes the new running photo so the NEXT edit stacks on it.
       state.workingPhoto = finalUrl;
@@ -1410,6 +1429,18 @@ function setupCompositeView() {
       if (state.previewMode !== '2d') return;
       runComposite(state.selectedProduct);
     });
+  }
+
+  // Render style toggle: Natural (holistic, no clip) vs Precise (clip to box).
+  const styleNatural = el('ds-style-natural');
+  const stylePrecise = el('ds-style-precise');
+  if (styleNatural && !styleNatural.dataset.bound) {
+    styleNatural.dataset.bound = '1';
+    styleNatural.addEventListener('click', () => setRenderStyle('natural'));
+  }
+  if (stylePrecise && !stylePrecise.dataset.bound) {
+    stylePrecise.dataset.bound = '1';
+    stylePrecise.addEventListener('click', () => setRenderStyle('precise'));
   }
 
   // Stacking controls: choose what the next render builds on, and reset.
