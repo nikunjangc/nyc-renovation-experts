@@ -863,21 +863,22 @@ async function runComposite(product) {
 
   // Build the mask from the floater's current position. If the floater isn't
   // visible (somehow), fall back to the segment bbox.
-  const bbox = getFloaterBboxInPhotoCoords()
-    || segmentBboxInPhotoCoords(state.selectedSegment);
-  if (!bbox) {
-    showCompositeError('Position the product on the photo first, then try again.');
+  // Anchor a "precise replace" on the OLD fixture's detected location, so the new
+  // one lands there and the old one is removed. Prefer the segment box over the
+  // dragged floater box.
+  const anchor = segmentBboxInPhotoCoords(state.selectedSegment)
+    || getFloaterBboxInPhotoCoords();
+  if (!anchor) {
+    showCompositeError('Select the item you want to replace first, then try again.');
     return;
   }
-  // Natural (default): send NO mask so the model re-renders the whole scene and
-  // blends the product naturally (best realism, like a pro edit) — nothing gets
-  // clipped/cut. Precise: constrain the edit to the object's exact SAM mask, or
-  // the dragged box, and keep the rest of the photo pixel-identical.
+  // Natural (default): NO mask → the model re-renders the whole scene and blends
+  // the product naturally (uses the product photo as a reference; best realism).
+  // Precise: a GENEROUS mask over the old fixture forces its removal and keeps
+  // the rest of the photo pixel-identical. Padded so the full fixture isn't cut.
   const natural = state.renderStyle !== 'precise';
-  const preciseMask = state.selectedSegment?.maskCanvas || null;
-  const maskDataUrl = natural
-    ? null
-    : (preciseMask ? buildMaskDataUrlFromCanvas(preciseMask) : buildMaskDataUrl(bbox));
+  const padded = padBbox(anchor, 0.7);
+  const maskDataUrl = natural ? null : buildMaskDataUrl(padded);
 
   // Lock the button + show the full-screen spinner for the WHOLE render.
   setRenderBtnBusy(true);
@@ -897,7 +898,7 @@ async function runComposite(product) {
         photoUrl: base,
         maskDataUrl,
         segmentLabel: seg?.label || 'fixture',
-        segmentPosition: bbox, // {x,y,w,h} in natural photo pixels
+        segmentPosition: anchor, // {x,y,w,h} in natural photo pixels — old fixture location
         product: {
           title: product.title,
           retailer: product.retailer,
@@ -928,12 +929,10 @@ async function runComposite(product) {
       let finalUrl = data.imageDataUrl;
       try {
         // Natural: keep the model's full holistic result (no clipping → no
-        // "half light"). Precise: clip the result to the object/box so only
-        // the selection changes.
+        // "half light"). Precise: clip to the GENEROUS padded region so the rest
+        // of the photo stays identical while the full new fixture fits.
         if (!natural) {
-          finalUrl = preciseMask
-            ? await compositeMaskedRegionWithMask(base, data.imageDataUrl, preciseMask)
-            : await compositeMaskedRegion(base, data.imageDataUrl, bbox);
+          finalUrl = await compositeMaskedRegion(base, data.imageDataUrl, padded);
         }
       } catch (e) {
         console.warn('client composite failed; showing raw result', e);
@@ -1026,6 +1025,19 @@ function getFloaterBboxInPhotoCoords() {
 function segmentBboxInPhotoCoords(seg) {
   if (!seg?.bbox) return null;
   return { x: seg.bbox[0], y: seg.bbox[1], w: seg.bbox[2], h: seg.bbox[3] };
+}
+
+// Expand a bbox by `frac` of its size on every side (clamped to the image), so
+// a masked replace has room for the FULL new fixture and reliably covers/removes
+// the old one.
+function padBbox(b, frac) {
+  const W = state.imageNaturalSize.width, H = state.imageNaturalSize.height;
+  const px = b.w * frac, py = b.h * frac;
+  const x = Math.max(0, Math.round(b.x - px));
+  const y = Math.max(0, Math.round(b.y - py));
+  const x2 = Math.min(W, Math.round(b.x + b.w + px));
+  const y2 = Math.min(H, Math.round(b.y + b.h + py));
+  return { x, y, w: Math.max(1, x2 - x), h: Math.max(1, y2 - y) };
 }
 
 // Build a PNG mask the same size as the photo. Opaque white everywhere
