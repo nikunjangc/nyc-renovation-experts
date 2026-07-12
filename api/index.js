@@ -925,7 +925,7 @@ app.post('/admin/quotes/:id', adminAuth, async (req, res) => {
 app.post('/api/product-search', rateLimiter, async (req, res) => {
   setCORSHeaders(req, res);
   try {
-    const { query, limit, zip } = req.body || {};
+    const { query, limit, zip, fallbackQuery } = req.body || {};
     if (!query) {
       setCORSHeaders(req, res);
       return res.status(400).json({ error: 'query is required' });
@@ -933,6 +933,7 @@ app.post('/api/product-search', rateLimiter, async (req, res) => {
     const data = await searchProducts(query, {
       limit: Math.min(Math.max(+limit || 6, 1), 12),
       zip: zip || '10001',
+      fallbackQuery: typeof fallbackQuery === 'string' ? fallbackQuery : undefined,
     });
     res.json(data);
   } catch (error) {

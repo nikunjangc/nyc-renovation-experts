@@ -33,6 +33,32 @@ function directRetailerLink(retailer, title) {
   return builder ? builder(title || '') : null;
 }
 
+// Over-specific queries (e.g. clarification answers concatenated into one long
+// string: "Engineered wood Dark / espresso Matte Extra-wide (9+ inches)
+// Embossed (wood grain) carpet") return ZERO live shopping results, forcing the
+// image-less mock fallback. Strip parenthetical asides, punctuation, and common
+// descriptor/qualifier words, then keep the last few tokens — the actual product
+// noun tends to sit at the END of these queries. Returns '' if nothing is left.
+const QUALIFIER_WORDS = new Set([
+  'matte', 'gloss', 'glossy', 'satin', 'embossed', 'textured', 'smooth',
+  'extra', 'wide', 'extra-wide', 'narrow', 'standard', 'premium', 'deluxe',
+  'dark', 'light', 'medium', 'grain', 'finish', 'style', 'modern', 'classic',
+  'inches', 'inch', 'in', 'ft', 'foot', 'feet', 'cm', 'mm',
+]);
+function simplifyQuery(q) {
+  const noParens = String(q || '').replace(/\([^)]*\)/g, ' ');
+  const tokens = noParens
+    .replace(/[\/,;|]+/g, ' ')
+    .replace(/[^\w\s+-]/g, ' ')
+    .split(/\s+/)
+    .filter(Boolean)
+    .filter((w) => !/^\d+\+?$/.test(w))                 // drop bare numbers like "9+"
+    .filter((w) => !QUALIFIER_WORDS.has(w.toLowerCase()));
+  // The product noun is usually last; keep the final 3 meaningful tokens.
+  const kept = tokens.slice(-3).join(' ').trim();
+  return kept.toLowerCase() === String(q || '').trim().toLowerCase() ? '' : kept;
+}
+
 const PREFERRED_RETAILERS = [
   'home depot',
   'homedepot',
@@ -293,7 +319,7 @@ const SOURCE_FNS = {
 // The tagged label is the query. The controller classifies it and calls ONLY
 // the sources that make sense for that category (and are configured). Pass
 // opts.sources to override the routing explicitly.
-async function searchProducts(query, { limit = 6, zip = '10001', sources: forced } = {}) {
+async function searchProducts(query, { limit = 6, zip = '10001', sources: forced, fallbackQuery } = {}) {
   const trimmed = String(query || '').trim();
   if (!trimmed) return { query: '', results: [], source: 'empty' };
 
@@ -313,20 +339,43 @@ async function searchProducts(query, { limit = 6, zip = '10001', sources: forced
     cacheSet(cacheKey, data);
     return data;
   }
-  if (!rateOk()) {
-    // Over the hourly cap: serve mock rather than spend. Not cached, so a later
-    // (in-budget) call still fetches live results.
-    return { query: trimmed, category, results: mockResults(trimmed).slice(0, limit), source: 'rate_limited' };
-  }
 
   const perSource = Math.max(limit, 8);
-  const settled = await Promise.allSettled(active.map((n) => SOURCE_FNS[n].run(trimmed, perSource)));
-  const all = settled.flatMap((s) => (s.status === 'fulfilled' ? s.value : []));
-  let results = dedupeAndRank(all, limit);
-  if (!results.length) results = mockResults(trimmed).slice(0, limit);
+  // Run the active sources for one query string. Honors the hourly rate cap;
+  // returns null (not []) when we're over budget so the caller can distinguish
+  // "no results" from "didn't search".
+  async function runLive(q) {
+    if (!q || !q.trim()) return [];
+    if (!rateOk()) return null;
+    const settled = await Promise.allSettled(active.map((n) => SOURCE_FNS[n].run(q, perSource)));
+    return settled.flatMap((s) => (s.status === 'fulfilled' ? s.value : []));
+  }
 
-  const data = { query: trimmed, category, sourcesUsed: active, results, source: all.length ? active.join('+') : 'mock' };
-  cacheSet(cacheKey, data);
+  // Try the full query, then a de-cluttered version, then the bare fallback
+  // label — an over-specific query returns zero live results and would
+  // otherwise drop us to image-less mock cards.
+  const attempts = [trimmed, simplifyQuery(trimmed), (fallbackQuery || '').trim()]
+    .filter((q, i, arr) => q && arr.indexOf(q) === i); // dedupe, drop empties
+
+  let all = [], rateLimited = false;
+  for (const q of attempts) {
+    const live = await runLive(q);
+    if (live === null) { rateLimited = true; break; }
+    if (live.length) { all = live; break; }
+  }
+
+  let results = dedupeAndRank(all, limit);
+  let source;
+  if (results.length) {
+    source = active.join('+');
+  } else {
+    // Over the hourly cap → don't cache (a later in-budget call can fetch live).
+    results = mockResults(trimmed).slice(0, limit);
+    source = rateLimited ? 'rate_limited' : 'mock';
+  }
+
+  const data = { query: trimmed, category, sourcesUsed: active, results, source };
+  if (source !== 'rate_limited') cacheSet(cacheKey, data);
   return data;
 }
 

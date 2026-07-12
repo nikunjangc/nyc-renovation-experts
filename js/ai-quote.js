@@ -679,7 +679,8 @@ function itemRow(item, id) {
           <div class="tm-item-meta">${escapeHtml(item.category || '')} ${qty ? '· ' + qty : ''}</div>
         </div>
         <button type="button" class="tm-search-btn"
-          data-search-btn data-query="${escapeHtml(item.query)}">
+          data-search-btn data-query="${escapeHtml(item.query)}"
+          data-fallback="${escapeHtml(item.category || item.name || '')}">
           Compare prices
         </button>
       </div>
@@ -711,11 +712,13 @@ async function searchAndRender(btn) {
     const response = await fetch(`${BACKEND_API_URL}/api/product-search`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ query, limit: 6 }),
+      // fallbackQuery lets the backend retry with the bare category/name when the
+      // detailed query returns nothing — real products instead of image-less mock.
+      body: JSON.stringify({ query, fallbackQuery: btn.dataset.fallback || '', limit: 6 }),
     });
     if (!response.ok) throw new Error(`HTTP ${response.status}`);
     const data = await response.json();
-    renderProducts(resultsEl, data.results || [], data.source);
+    renderProducts(resultsEl, data.results || [], data.source, query);
     wrapper.dataset.loaded = '1';
     btn.textContent = 'Hide prices';
   } catch (err) {
@@ -727,17 +730,38 @@ async function searchAndRender(btn) {
   }
 }
 
-function renderProducts(container, products, source) {
-  if (!products.length) {
-    container.innerHTML = `<div class="tm-empty">No matching products found.</div>`;
+const QUOTE_AMAZON_TAG = 'nycrenovation-20';
+function quoteRetailerLinks(query) {
+  const q = encodeURIComponent(query || '');
+  return [
+    { name: 'Amazon',     url: `https://www.amazon.com/s?k=${q}&tag=${QUOTE_AMAZON_TAG}` },
+    { name: 'Home Depot', url: `https://www.homedepot.com/s/${q}` },
+    { name: 'Wayfair',    url: `https://www.wayfair.com/keyword.php?keyword=${q}` },
+  ];
+}
+
+function renderProducts(container, products, source, query) {
+  // Only show real, previewable listings. Image-less cards (mock, or listings
+  // with no photo) read as untrustworthy — replace them with honest, tagged
+  // retailer search links so the page still earns affiliate credit.
+  const withImg = (products || []).filter((p) => !!p.thumbnail);
+  const isMock = source === 'mock' || source === 'rate_limited';
+  if (!withImg.length || isMock) {
+    const btns = quoteRetailerLinks(query).map((r) =>
+      `<a href="${escapeHtml(r.url)}" target="_blank" rel="noopener noreferrer" class="tm-retailer-link">Search ${escapeHtml(r.name)}</a>`).join('');
+    container.innerHTML = `
+      <div class="tm-empty" style="grid-column:1/-1;">
+        <div style="margin-bottom:6px;">We couldn't pull live listings for this exact item. Browse it at a retailer:</div>
+        <div class="tm-retailer-links">${btns}</div>
+      </div>`;
     return;
   }
-  const cheapest = products.reduce((min, p) =>
+  const cheapest = withImg.reduce((min, p) =>
     p.price != null && (min == null || p.price < min) ? p.price : min, null);
 
-  const cards = products.map((p) => `
+  container.innerHTML = withImg.map((p) => `
     <div class="tm-product">
-      ${p.thumbnail ? `<img src="${escapeHtml(p.thumbnail)}" alt="${escapeHtml(p.title)}" loading="lazy">` : ''}
+      <img src="${escapeHtml(p.thumbnail)}" alt="${escapeHtml(p.title)}" loading="lazy">
       <div class="tm-product-title">${escapeHtml(p.title)}</div>
       <div class="tm-product-retailer">
         ${escapeHtml(p.retailer)} ${p.rating ? `· ⭐ ${(+p.rating).toFixed(1)}` : ''}
@@ -749,11 +773,6 @@ function renderProducts(container, products, source) {
       <a href="${escapeHtml(p.link || '#')}" target="_blank" rel="noopener noreferrer">View</a>
     </div>
   `).join('');
-
-  const note = source === 'mock'
-    ? `<div class="tm-empty" style="grid-column:1/-1;padding:6px;">Showing sample data — live retailer search activates once SERPAPI_KEY is configured.</div>`
-    : '';
-  container.innerHTML = cards + note;
 }
 
 function bindTmTabs() {

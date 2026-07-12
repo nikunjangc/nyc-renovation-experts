@@ -491,11 +491,12 @@ app.post('/admin/quotes/:id', adminAuth, async (req, res) => {
 // mock data if SERPAPI_KEY is unset so the UI is exercisable.
 app.post('/api/product-search', rateLimiter, async (req, res) => {
   try {
-    const { query, limit, zip } = req.body || {};
+    const { query, limit, zip, fallbackQuery } = req.body || {};
     if (!query) return res.status(400).json({ error: 'query is required' });
     const data = await searchProducts(query, {
       limit: Math.min(Math.max(+limit || 6, 1), 12),
       zip: zip || '10001',
+      fallbackQuery: typeof fallbackQuery === 'string' ? fallbackQuery : undefined,
     });
     res.json(data);
   } catch (error) {

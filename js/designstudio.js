@@ -962,33 +962,58 @@ async function fetchProducts(label) {
     const res = await fetch(`${API}/api/product-search`, {
       method:  'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ query, limit: 9 }),
+      // fallbackQuery = the bare item label; the backend retries with it when the
+      // detailed query returns nothing, so we get real products instead of mock.
+      body: JSON.stringify({ query, fallbackQuery: label, limit: 9 }),
     });
     const data = await res.json();
     if (!res.ok) throw new Error(data.upstream_message || data.error || `HTTP ${res.status}`);
-    renderProducts(data.results || []);
+    renderProducts(data.results || [], data.source, label);
   } catch (err) {
     console.error('product search failed', err);
     grid.innerHTML = `<div class="alert alert-warning" style="grid-column:1/-1;">Couldn't load products. ${esc(err.message)}</div>`;
   }
 }
 
-function renderProducts(products) {
+// Tagged retailer search links for the honest "no live listings" fallback, so
+// the page still earns affiliate credit without fake, image-less product cards.
+const AMAZON_TAG = 'nycrenovation-20';
+function retailerSearchLinks(query) {
+  const q = encodeURIComponent(query || '');
+  return [
+    { name: 'Amazon',     url: `https://www.amazon.com/s?k=${q}&tag=${AMAZON_TAG}` },
+    { name: 'Home Depot', url: `https://www.homedepot.com/s/${q}` },
+    { name: 'Wayfair',    url: `https://www.wayfair.com/keyword.php?keyword=${q}` },
+  ];
+}
+
+function renderNoLiveProducts(grid, query) {
+  const btns = retailerSearchLinks(query).map((r) =>
+    `<a href="${esc(r.url)}" target="_blank" rel="noopener" class="btn btn-outline-primary btn-sm me-2 mb-2">
+       <i class="fas fa-search me-1"></i>Search ${esc(r.name)}</a>`).join('');
+  grid.innerHTML = `
+    <div style="grid-column:1/-1;">
+      <div class="text-muted mb-2">We couldn't pull live listings for this exact item right now. Browse it directly at a retailer:</div>
+      <div>${btns}</div>
+    </div>`;
+}
+
+function renderProducts(products, source, query) {
   const grid = el('ds-product-grid');
-  if (!products.length) {
-    grid.innerHTML = `<div class="text-muted" style="grid-column:1/-1;">No matching products found. Try a different segment or adjust your preferences.</div>`;
+  // Only show real, previewable products. Drop image-less cards (mock or
+  // listings with no photo) — they read as untrustworthy and can't be rendered.
+  const withImg = (products || []).filter((p) => !!p.thumbnail);
+  const isMock = source === 'mock' || source === 'rate_limited';
+  if (!withImg.length || isMock) {
+    renderNoLiveProducts(grid, query);
     return;
   }
-  const cheapest = products.reduce((m, p) =>
+  const cheapest = withImg.reduce((m, p) =>
     p.price != null && (m == null || p.price < m) ? p.price : m, null);
 
-  grid.innerHTML = products.map((p, i) => {
-    const hasImg = !!p.thumbnail;
-    return `
-    <div class="ds-product ${hasImg ? '' : 'no-image'}" data-pi="${i}">
-      ${hasImg
-        ? `<img src="${esc(p.thumbnail)}" alt="${esc(p.title)}" loading="lazy">`
-        : `<div class="ds-noimg"><i class="far fa-image"></i><span>No preview image</span></div>`}
+  grid.innerHTML = withImg.map((p, i) => `
+    <div class="ds-product" data-pi="${i}">
+      <img src="${esc(p.thumbnail)}" alt="${esc(p.title)}" loading="lazy">
       <div class="ds-product-title">${esc(p.title)}</div>
       <div class="ds-product-retailer">
         ${esc(p.retailer)} ${p.rating ? `· ⭐ ${(+p.rating).toFixed(1)}` : ''}
@@ -998,24 +1023,16 @@ function renderProducts(products) {
         ${cheapest != null && p.price === cheapest ? '<span class="badge bg-success ms-1" style="font-size:0.65rem;">BEST</span>' : ''}
       </div>
       ${p.link ? `<a href="${esc(p.link)}" target="_blank" rel="noopener" class="ds-product-link">View details ↗</a>` : ''}
-      ${hasImg ? '' : `<div class="ds-noimg-note">No image — can't preview; open the retailer for details.</div>`}
-    </div>`;
-  }).join('');
+    </div>`).join('');
 
   grid.querySelectorAll('.ds-product-link').forEach((a) =>
     a.addEventListener('click', (e) => e.stopPropagation()));
 
   grid.querySelectorAll('[data-pi]').forEach((card) => {
     card.addEventListener('click', () => {
-      const p = products[+card.dataset.pi];
+      const p = withImg[+card.dataset.pi];
       grid.querySelectorAll('[data-pi]').forEach((c) => c.classList.remove('selected'));
       card.classList.add('selected');
-      // No image → no render preview (Render / View-in-3D need a product photo).
-      if (!p.thumbnail) {
-        if (p.link) window.open(p.link, '_blank', 'noopener');
-        else alert('This product has no preview image, so it can\'t be rendered in your room.');
-        return;
-      }
       pickProduct(p);
     });
   });
