@@ -317,19 +317,31 @@ async function compositeProduct({ photoUrl, maskDataUrl, segmentLabel, segmentPo
     engine = 'gpt-image-1';
     const { blob, filename } = dataUrlToBlob(photoUrl);
     const maskBlob = maskDataUrl ? dataUrlToBlob(maskDataUrl).blob : null;
-    // Natural (no mask): pass the product photo as a second reference image so
-    // gpt-image-1 places the EXACT product — same as ChatGPT. (A reference image
-    // can't be combined with a mask, so this only applies to the holistic path.)
+    // Pass the product photo as a second reference image so gpt-image-1 paints
+    // the EXACT product — same as ChatGPT. gpt-image-1 accepts a mask alongside
+    // image[]; the mask applies to the first image (the room photo), which is
+    // what anchors the swap to the old fixture's spot in Precise mode.
     let refBlobs = [];
     let editPrompt = prompt;
-    if (!maskBlob && product?.thumbnail) {
+    if (product?.thumbnail) {
       const pb = await urlToBlob(product.thumbnail).catch(() => null);
       if (pb) {
         refBlobs = [{ blob: pb, name: 'product.png' }];
         editPrompt = `${prompt} The reference image shows the exact product — match its design, color, and shape, but scale it to a realistic, natural size for the room (not oversized).`;
       }
     }
-    dataUrl = (await callOpenAIEdit({ photoBlob: blob, filename, maskBlob, prompt: editPrompt, quality: quality || 'medium', refBlobs })).dataUrl;
+    try {
+      dataUrl = (await callOpenAIEdit({ photoBlob: blob, filename, maskBlob, prompt: editPrompt, quality: quality || 'medium', refBlobs })).dataUrl;
+    } catch (err) {
+      // Some accounts / model versions reject image[] combined with a mask.
+      // Retry once without the reference image so the swap still succeeds.
+      if (refBlobs.length) {
+        console.warn('gpt-image-1 rejected reference image + mask; retrying without reference:', err.message);
+        dataUrl = (await callOpenAIEdit({ photoBlob: blob, filename, maskBlob, prompt, quality: quality || 'medium' })).dataUrl;
+      } else {
+        throw err;
+      }
+    }
   }
 
   const data = { imageDataUrl: dataUrl, promptUsed: prompt, engine };
