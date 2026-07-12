@@ -82,6 +82,19 @@ function describePosition(seg, photo) {
   return `the ${sizeWord} ${horiz} ${vert} area of the photo`;
 }
 
+// Exact detected location of the old fixture as image-relative percentages, so
+// the vision model has a hard anchor and can't drift the swap toward center.
+function describeExactLocation(seg, photo) {
+  if (!seg || !photo) return '';
+  const w = photo.width || 1920;
+  const h = photo.height || 1080;
+  const cx = Math.round(((seg.x + seg.w / 2) / w) * 100);
+  const cy = Math.round(((seg.y + seg.h / 2) / h) * 100);
+  const bw = Math.round((seg.w / w) * 100);
+  const bh = Math.round((seg.h / h) * 100);
+  return `The existing fixture's center is at ${cx}% from the left and ${cy}% from the top of the image, and it spans roughly ${bw}% of the image width and ${bh}% of the height. Install the new fixture centered on that exact point at that same scale.`;
+}
+
 // Use DeepSeek to write a tight, strict edit prompt. If DeepSeek isn't
 // configured (or call fails), fall back to a canned template — the feature
 // still works.
@@ -90,14 +103,18 @@ function describePosition(seg, photo) {
 // it to locate the old fixture and describe its correct real-world scale, then
 // emit one tight edit instruction. Falls back to null so callers can drop to
 // the blind text writer / canned prompt.
-async function writeVisionPrompt({ segmentLabel, product, photoUrl }) {
+async function writeVisionPrompt({ segmentLabel, product, photoUrl, locationAnchor }) {
   const key = process.env.OPENAI_API_KEY;
   if (!key || !photoUrl) return null;
 
+  const anchorLine = locationAnchor
+    ? `\nWe already detected the old fixture's location: ${locationAnchor} Treat this as the ground truth for WHERE the new fixture goes — do not move it toward the center or anywhere else.`
+    : '';
+
   const sys = `You are directing a photorealistic image edit. You are shown a ROOM PHOTO and (sometimes) a PRODUCT PHOTO. Your job is to write ONE short instruction to swap a single ${segmentLabel} in the room.
-First, silently look at the room photo: find the existing ${segmentLabel}, note WHERE it is (which wall/ceiling area, above what) and how BIG it is relative to the room.
+First, silently look at the room photo: find the existing ${segmentLabel}, note WHERE it is (which wall/ceiling area, above what) and how BIG it is relative to the room.${anchorLine}
 Then write the instruction so that:
-- The existing ${segmentLabel} is REMOVED and the new one installed in the EXACT SAME position it occupies now.
+- The existing ${segmentLabel} is REMOVED and the new one installed in the EXACT SAME position it occupies now — same spot, do not recenter it.
 - The new ${segmentLabel} is sized to look natural in THIS room — reference the real objects near it (e.g. "about the width of the island below it") so it is not oversized or undersized.
 - If a product photo is given, the new ${segmentLabel} matches that product's design, shape, and finish.
 - Everything else in the room stays identical; match the existing perspective, lighting, and shadows.
@@ -136,11 +153,11 @@ Output ONLY the instruction, one or two sentences, no preface or quotes. End wit
   }
 }
 
-async function writeEditPrompt({ segmentLabel, product, positionWords, masked, photoUrl }) {
+async function writeEditPrompt({ segmentLabel, product, positionWords, locationAnchor, masked, photoUrl }) {
   // Prefer the vision-grounded writer (looks at the actual photo) — this is the
   // reasoning step that lets a maskless render match ChatGPT.
   if (!masked) {
-    const visioned = await writeVisionPrompt({ segmentLabel, product, photoUrl });
+    const visioned = await writeVisionPrompt({ segmentLabel, product, photoUrl, locationAnchor });
     if (visioned) return visioned;
   }
   const dsKey = process.env.DEEPSEEK_API_KEY;
@@ -365,7 +382,8 @@ async function compositeProduct({ photoUrl, maskDataUrl, segmentLabel, segmentPo
   if (hit) return { ...hit, cached: true };
 
   const positionWords = describePosition(segmentPosition, photoSize);
-  const prompt = await writeEditPrompt({ segmentLabel, product, positionWords, masked: false, photoUrl });
+  const locationAnchor = describeExactLocation(segmentPosition, photoSize);
+  const prompt = await writeEditPrompt({ segmentLabel, product, positionWords, locationAnchor, masked: false, photoUrl });
 
   // Primary: Nano Banana 2 (fal). Fallback: gpt-image-1 (mask-based) if Nano
   // Banana errors and OpenAI is configured. The browser still clips the result
