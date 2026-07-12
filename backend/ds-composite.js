@@ -90,24 +90,25 @@ async function writeEditPrompt({ segmentLabel, product, positionWords, masked })
     ? `Paint only within the masked (transparent) area; the rest of the photo will be preserved automatically by the mask.`
     : `Keep all other elements (walls, floor, lighting, other appliances, cabinets) unchanged.`;
 
-  const canned = `Replace ONLY the ${segmentLabel} ${positionWords} with: ${product.title}. ` +
-                 `Render just the new ${segmentLabel} in that spot; do not add, move, or alter any other fixtures, surfaces, or objects. ` +
+  const canned = `Completely REMOVE the existing ${segmentLabel} located ${positionWords}, and install the new ${segmentLabel} — ${product.title} — in EXACTLY that same position. ` +
+                 `Do not leave the old ${segmentLabel} anywhere, and do not add any extra or duplicate ${segmentLabel}. ` +
                  `${maskClause} ` +
-                 `Match the photo's lighting and perspective. Photorealistic. No text, no watermarks, no labels.`;
+                 `Match the photo's lighting, perspective, scale, and shadows. Photorealistic. No text, no watermarks, no labels.`;
   if (!dsKey) return canned;
 
-  const sys = `You write a single concise image-edit prompt for an AI image model.
+  const sys = `You write a single concise image-edit prompt for an AI model that REPLACES one fixture in a room photo.
 Hard rules:
 - Output ONLY the prompt text. No preface, no quotes, no JSON, no markdown.
+- The prompt MUST: (1) completely REMOVE the existing ${segmentLabel} at the named location, (2) place the new product in EXACTLY that same spot, (3) forbid leaving the old fixture or adding any duplicate/extra fixture.
 - Be specific about WHAT product to render.
-- Instruct it to replace ONLY the named fixture and to leave every other object, surface, fixture and the layout unchanged.
+- Leave every other object, surface, and the room layout unchanged.
 - ${masked
-    ? 'A binary mask is also provided; the model will only paint inside the transparent region. Tell it to render the product naturally within that masked area.'
-    : 'ALWAYS include: "Keep all other elements unchanged. Match the original photo\'s lighting and perspective."'}
+    ? 'A binary mask marks the editable region; render the new product naturally within it.'
+    : 'Include: "Keep all other elements unchanged. Match the original photo\'s lighting, perspective, and shadows."'}
 - ALWAYS include: "Photorealistic. No text, no watermarks, no labels."
-- 1-2 sentences total. Under 60 words.`;
-  const usr = `Replace the ${segmentLabel} in ${positionWords} of a kitchen/bathroom photo with this product:
-"${product.title}"${product.retailer ? ` (sold at ${product.retailer})` : ''}.
+- 1-2 sentences, under 70 words.`;
+  const usr = `In a kitchen/bathroom photo, completely remove the existing ${segmentLabel} located ${positionWords} and replace it — in that exact spot — with this product:
+"${product.title}"${product.retailer ? ` (from ${product.retailer})` : ''}.
 Write the edit prompt.`;
 
   try {
