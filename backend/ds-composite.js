@@ -136,7 +136,7 @@ Write the edit prompt.`;
 // dataUrlToBlob (declared above) is re-used by both photo and mask.
 
 
-async function callOpenAIEdit({ photoBlob, filename, maskBlob, prompt, size = 'auto', quality = 'medium' }) {
+async function callOpenAIEdit({ photoBlob, filename, maskBlob, prompt, size = 'auto', quality = 'medium', refBlobs = [] }) {
   const apiKey = process.env.OPENAI_API_KEY;
   if (!apiKey) {
     const err = new Error('OPENAI_API_KEY not configured');
@@ -149,7 +149,15 @@ async function callOpenAIEdit({ photoBlob, filename, maskBlob, prompt, size = 'a
   // becomes the bottleneck.
   const form = new FormData();
   form.append('model', OPENAI_MODEL);
-  form.append('image', photoBlob, filename);
+  // gpt-image-1 accepts MULTIPLE input images via image[] — the room photo plus
+  // (optionally) the product photo as a reference, exactly like ChatGPT. With a
+  // single image we keep the plain `image` field.
+  if (refBlobs.length) {
+    form.append('image[]', photoBlob, filename);
+    refBlobs.forEach((r, i) => form.append('image[]', r.blob, r.name || `ref${i}.png`));
+  } else {
+    form.append('image', photoBlob, filename);
+  }
   // Mask is a PNG same-sized as the image: alpha=0 (transparent) = edit here,
   // alpha=255 (opaque) = preserve pixels untouched. OpenAI enforces this
   // strictly — pixels outside the mask remain bit-identical to the input.
@@ -225,6 +233,18 @@ async function urlToDataUrl(url) {
   return `data:${mime};base64,${buf.toString('base64')}`;
 }
 
+// Fetch a product image (URL or data URL) into a Blob for use as a reference
+// image on the OpenAI edits endpoint.
+async function urlToBlob(url) {
+  if (!url) return null;
+  if (url.startsWith('data:')) { try { return dataUrlToBlob(url).blob; } catch { return null; } }
+  const r = await fetch(url);
+  if (!r.ok) return null;
+  const mime = r.headers.get('content-type') || 'image/png';
+  const buf = Buffer.from(await r.arrayBuffer());
+  return new Blob([buf], { type: mime });
+}
+
 async function callNanoBanana({ photoUrl, prompt, product }) {
   const apiKey = process.env.FAL_API_KEY;
   if (!apiKey) { const e = new Error('FAL_API_KEY not configured'); e.code = 'NOT_CONFIGURED'; throw e; }
@@ -297,7 +317,19 @@ async function compositeProduct({ photoUrl, maskDataUrl, segmentLabel, segmentPo
     engine = 'gpt-image-1';
     const { blob, filename } = dataUrlToBlob(photoUrl);
     const maskBlob = maskDataUrl ? dataUrlToBlob(maskDataUrl).blob : null;
-    dataUrl = (await callOpenAIEdit({ photoBlob: blob, filename, maskBlob, prompt, quality: quality || 'medium' })).dataUrl;
+    // Natural (no mask): pass the product photo as a second reference image so
+    // gpt-image-1 places the EXACT product — same as ChatGPT. (A reference image
+    // can't be combined with a mask, so this only applies to the holistic path.)
+    let refBlobs = [];
+    let editPrompt = prompt;
+    if (!maskBlob && product?.thumbnail) {
+      const pb = await urlToBlob(product.thumbnail).catch(() => null);
+      if (pb) {
+        refBlobs = [{ blob: pb, name: 'product.png' }];
+        editPrompt = `${prompt} Use the product shown in the reference image as the EXACT item to place — match its design, color, and shape.`;
+      }
+    }
+    dataUrl = (await callOpenAIEdit({ photoBlob: blob, filename, maskBlob, prompt: editPrompt, quality: quality || 'medium', refBlobs })).dataUrl;
   }
 
   const data = { imageDataUrl: dataUrl, promptUsed: prompt, engine };
