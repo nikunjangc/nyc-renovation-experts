@@ -51,6 +51,7 @@ const state = {
   clarifications: {},         // active question_id -> chosen_option (for current segment)
   clarificationsBySeg: {},    // segment.id -> {qid: value}
   selectedProduct: null,      // chosen Product object
+  selections: [],             // multi-item cart: [{id, label, product, addedAt}]
   workingPhoto: null,         // cumulative edited photo — edits stack onto this
   baseMode: 'edited',         // 'edited' | 'original' — what the NEXT render builds on
   previewMode: '2d',          // '2d' | '3d'
@@ -390,9 +391,281 @@ async function sendTaggedItemsToQuote() {
     items.push({ label: seg.label, thumb, bbox: seg.bbox });
   }
   hideSpinner();
-  try { localStorage.setItem('ds_quote_items', JSON.stringify({ items, at: Date.now() })); } catch (e) {}
+  // Also carry the actual products the user picked (title/price/link) so the
+  // quote/lead reflects real selections, not just the tagged regions. Additive:
+  // quote.html still reads `items`; `products` is there for a later enhancement.
+  const products = state.selections.map((s) => ({ label: s.label, ...s.product }));
+  try { localStorage.setItem('ds_quote_items', JSON.stringify({ items, products, at: Date.now() })); } catch (e) {}
   const note = 'Items from my photo: ' + state.segments.map((s) => s.label).join(', ') + '.';
   window.location.href = `quote.html?source=designstudio&note=${encodeURIComponent(note)}`;
+}
+
+// ===== "My design" cart: collect picked products across the room =====
+const CART_KEY = 'ds_selections';
+
+function loadSelections() {
+  try {
+    const raw = JSON.parse(localStorage.getItem(CART_KEY) || '{}');
+    if (Array.isArray(raw.items)) state.selections = raw.items;
+  } catch (e) {}
+  renderCartBadge();
+}
+
+function persistSelections() {
+  try {
+    localStorage.setItem(CART_KEY, JSON.stringify({ items: state.selections, at: Date.now() }));
+  } catch (e) {}
+}
+
+// Snapshot the currently-picked product into the list. Deduped by product link.
+function addSelection() {
+  const p = state.selectedProduct;
+  if (!p) { alert('Pick a product first, then add it to your list.'); return; }
+  const link = p.link || p.thumbnail || p.title;
+  if (state.selections.some((s) => (s.product.link || s.product.thumbnail || s.product.title) === link)) {
+    renderCartBadge();
+    openDesignSummary();
+    return;
+  }
+  state.selections.push({
+    id: 's' + Date.now() + Math.random().toString(36).slice(2, 6),
+    label: state.selectedSegment?.label || 'Item',
+    product: {
+      title: p.title, price: p.price ?? null, priceDisplay: p.priceDisplay || null,
+      retailer: p.retailer || '', link: p.link || '', thumbnail: p.thumbnail || '',
+    },
+    addedAt: Date.now(),
+  });
+  persistSelections();
+  renderCartBadge();
+  openDesignSummary();
+}
+
+function removeSelection(id) {
+  state.selections = state.selections.filter((s) => s.id !== id);
+  persistSelections();
+  renderCartBadge();
+  openDesignSummary();
+}
+
+function cartTotal() {
+  let total = 0, pricedCount = 0, unpricedCount = 0;
+  for (const s of state.selections) {
+    if (typeof s.product.price === 'number' && !isNaN(s.product.price)) { total += s.product.price; pricedCount++; }
+    else unpricedCount++;
+  }
+  return { total, pricedCount, unpricedCount };
+}
+
+function renderCartBadge() {
+  const badge = el('ds-cart-count');
+  if (badge) badge.textContent = String(state.selections.length);
+  const btn = el('ds-my-design');
+  if (btn) btn.classList.toggle('ds-hidden', state.selections.length === 0);
+}
+
+function priceLabel(p) {
+  if (p.priceDisplay) return p.priceDisplay;
+  if (typeof p.price === 'number' && !isNaN(p.price)) return '$' + p.price.toFixed(2);
+  return 'See price';
+}
+
+// Render the "My design" modal: before/after, item rows, total, then show it.
+function openDesignSummary() {
+  const body = el('ds-summary-body');
+  if (!body) return;
+  const before = state.imageDataUrl;
+  const after = state.workingPhoto || state.imageDataUrl;
+
+  const beforeAfter = before ? `
+    <div class="row g-2 mb-3">
+      <div class="col-6 text-center">
+        <div class="small text-muted mb-1">Before</div>
+        <img src="${esc(before)}" alt="Before" style="width:100%;border-radius:8px;border:1px solid #eee;">
+      </div>
+      <div class="col-6 text-center">
+        <div class="small text-muted mb-1">After</div>
+        <img src="${esc(after)}" alt="After" style="width:100%;border-radius:8px;border:1px solid #eee;">
+      </div>
+    </div>` : '';
+
+  let itemsHtml;
+  if (!state.selections.length) {
+    itemsHtml = `<div class="text-muted text-center py-3">No items yet. Pick a product, then tap <strong>Add to my list</strong>.</div>`;
+  } else {
+    itemsHtml = state.selections.map((s) => {
+      const p = s.product;
+      const img = p.thumbnail
+        ? `<img src="${esc(p.thumbnail)}" alt="" style="width:56px;height:56px;object-fit:cover;border-radius:6px;flex:0 0 auto;">`
+        : `<div style="width:56px;height:56px;border-radius:6px;background:#f1f1f1;display:flex;align-items:center;justify-content:center;flex:0 0 auto;"><i class="far fa-image text-muted"></i></div>`;
+      const buy = p.link
+        ? `<a href="${esc(p.link)}" target="_blank" rel="noopener" class="btn btn-sm btn-success">Buy</a>`
+        : '';
+      return `
+      <div class="d-flex align-items-center gap-2 py-2 border-bottom" data-sel="${esc(s.id)}">
+        ${img}
+        <div class="flex-grow-1" style="min-width:0;">
+          <div class="fw-semibold text-truncate" style="font-size:0.9rem;">${esc(p.title || 'Product')}</div>
+          <div class="small text-muted">${esc(s.label || '')}${s.label ? ' · ' : ''}${esc(p.retailer || '')} · ${esc(priceLabel(p))}</div>
+        </div>
+        ${buy}
+        <button type="button" class="btn btn-sm btn-outline-danger" data-remove="${esc(s.id)}" title="Remove">&times;</button>
+      </div>`;
+    }).join('');
+  }
+
+  const { total, pricedCount, unpricedCount } = cartTotal();
+  const totalHtml = state.selections.length ? `
+    <div class="d-flex justify-content-between align-items-center mt-3 pt-2 border-top">
+      <span class="fw-bold">Estimated total</span>
+      <span class="fw-bold fs-5">$${total.toFixed(2)}</span>
+    </div>
+    ${unpricedCount ? `<div class="small text-muted text-end">${pricedCount} item${pricedCount === 1 ? '' : 's'} priced; ${unpricedCount} shown "See price" on the retailer.</div>` : ''}
+    <div class="small text-muted mt-2"><em>Prices are estimates from retailer listings and may change. As an Amazon Associate and affiliate we may earn from qualifying purchases.</em></div>
+  ` : '';
+
+  body.innerHTML = beforeAfter + itemsHtml + totalHtml;
+
+  body.querySelectorAll('[data-remove]').forEach((b) =>
+    b.addEventListener('click', () => removeSelection(b.dataset.remove)));
+
+  // Show via Bootstrap (bundle is loaded on the page).
+  try {
+    const modalEl = el('ds-summary-modal');
+    if (window.bootstrap && modalEl) bootstrap.Modal.getOrCreateInstance(modalEl).show();
+  } catch (e) {}
+}
+
+// Open every picked product's buy link. The first opens on the click gesture;
+// later ones may be popup-blocked, so we open with a tiny stagger and rely on
+// the in-modal per-item Buy buttons as the reliable path.
+function buyAllSelections() {
+  const links = state.selections.map((s) => s.product.link).filter(Boolean);
+  if (!links.length) { alert('No buyable links in your list yet.'); return; }
+  links.forEach((href) => window.open(href, '_blank', 'noopener'));
+}
+
+// Load an image URL into a data URL for embedding in the PDF. Data URLs pass
+// through; remote thumbnails are drawn via a CORS-enabled canvas (best-effort —
+// resolves null if the host blocks cross-origin reads).
+function imgToDataUrl(url) {
+  return new Promise((resolve) => {
+    if (!url) { resolve(null); return; }
+    if (url.startsWith('data:')) { resolve(url); return; }
+    const img = new Image();
+    img.crossOrigin = 'anonymous';
+    img.onload = () => {
+      try {
+        const c = document.createElement('canvas');
+        c.width = img.naturalWidth; c.height = img.naturalHeight;
+        c.getContext('2d').drawImage(img, 0, 0);
+        resolve(c.toDataURL('image/jpeg', 0.85));
+      } catch (e) { resolve(null); }
+    };
+    img.onerror = () => resolve(null);
+    img.src = url;
+  });
+}
+
+// Get pixel dimensions of a data-URL image (for aspect-correct PDF placement).
+function imgSize(dataUrl) {
+  return new Promise((resolve) => {
+    if (!dataUrl) { resolve(null); return; }
+    const img = new Image();
+    img.onload = () => resolve({ w: img.naturalWidth, h: img.naturalHeight });
+    img.onerror = () => resolve(null);
+    img.src = dataUrl;
+  });
+}
+
+// Build and download a PDF of the design (before/after + items + total).
+async function downloadDesignPdf() {
+  const jsPDFctor = window.jspdf && window.jspdf.jsPDF;
+  if (!jsPDFctor) { alert('PDF tool is still loading — please try again in a moment.'); return; }
+  if (!state.selections.length) { alert('Add some items to your list first.'); return; }
+
+  showSpinner('Building your PDF…');
+  try {
+    const doc = new jsPDFctor({ unit: 'pt', format: 'a4' });
+    const pageW = doc.internal.pageSize.getWidth();
+    const pageH = doc.internal.pageSize.getHeight();
+    const margin = 40;
+    const contentW = pageW - margin * 2;
+    let y = margin;
+
+    doc.setFont('helvetica', 'bold'); doc.setFontSize(18);
+    doc.text('NYC Renovation Experts — My Design', margin, y); y += 22;
+    doc.setFont('helvetica', 'normal'); doc.setFontSize(10); doc.setTextColor(120);
+    doc.text(new Date().toLocaleDateString(), margin, y); y += 18;
+    doc.setTextColor(0);
+
+    // Before / after images.
+    const before = state.imageDataUrl;
+    const after = state.workingPhoto || state.imageDataUrl;
+    if (before) {
+      const gap = 12;
+      const cellW = (contentW - gap) / 2;
+      const [bs, as] = await Promise.all([imgSize(before), imgSize(after)]);
+      const bh = bs ? Math.min(cellW * (bs.h / bs.w), 210) : 120;
+      const ah = as ? Math.min(cellW * (as.h / as.w), 210) : 120;
+      const rowH = Math.max(bh, ah);
+      doc.setFontSize(9); doc.setTextColor(120);
+      doc.text('Before', margin, y); doc.text('After', margin + cellW + gap, y);
+      doc.setTextColor(0);
+      y += 6;
+      try { doc.addImage(before, 'JPEG', margin, y, cellW, bh); } catch (e) {}
+      try { doc.addImage(after, 'JPEG', margin + cellW + gap, y, cellW, ah); } catch (e) {}
+      y += rowH + 20;
+    }
+
+    doc.setFont('helvetica', 'bold'); doc.setFontSize(13);
+    doc.text('Your items', margin, y); y += 16;
+    doc.setFont('helvetica', 'normal'); doc.setFontSize(10);
+
+    for (const s of state.selections) {
+      if (y > pageH - 90) { doc.addPage(); y = margin; }
+      const p = s.product;
+      const thumb = await imgToDataUrl(p.thumbnail);
+      const rowTop = y;
+      const imgSz = 54;
+      if (thumb) { try { doc.addImage(thumb, 'JPEG', margin, y, imgSz, imgSz); } catch (e) {} }
+      const textX = margin + imgSz + 12;
+      const textW = contentW - imgSz - 12;
+      doc.setFont('helvetica', 'bold'); doc.setFontSize(10.5); doc.setTextColor(0);
+      const titleLines = doc.splitTextToSize(p.title || 'Product', textW);
+      doc.text(titleLines.slice(0, 2), textX, y + 12);
+      let ty = y + 12 + Math.min(titleLines.length, 2) * 12 + 2;
+      doc.setFont('helvetica', 'normal'); doc.setFontSize(9.5); doc.setTextColor(90);
+      const meta = [s.label, p.retailer, priceLabel(p)].filter(Boolean).join('  ·  ');
+      doc.text(meta, textX, ty); ty += 13;
+      if (p.link) {
+        doc.setTextColor(20, 90, 200);
+        doc.textWithLink('Buy / view product ↗', textX, ty, { url: p.link });
+        doc.setTextColor(0);
+        ty += 13;
+      }
+      y = Math.max(rowTop + imgSz, ty) + 10;
+    }
+
+    // Total + disclosure.
+    if (y > pageH - 80) { doc.addPage(); y = margin; }
+    const { total, unpricedCount } = cartTotal();
+    doc.setDrawColor(220); doc.line(margin, y, pageW - margin, y); y += 18;
+    doc.setFont('helvetica', 'bold'); doc.setFontSize(13); doc.setTextColor(0);
+    doc.text('Estimated total', margin, y);
+    doc.text('$' + total.toFixed(2), pageW - margin, y, { align: 'right' });
+    y += 18;
+    doc.setFont('helvetica', 'normal'); doc.setFontSize(8); doc.setTextColor(130);
+    const disc = (unpricedCount ? `${unpricedCount} item(s) show "See price" on the retailer. ` : '') +
+      'Prices are estimates from retailer listings and may change. As an Amazon Associate and affiliate, NYC Renovation Experts may earn from qualifying purchases.';
+    doc.text(doc.splitTextToSize(disc, contentW), margin, y);
+
+    doc.save('my-design.pdf');
+  } catch (e) {
+    alert('Sorry — could not build the PDF. ' + (e?.message || ''));
+  } finally {
+    hideSpinner();
+  }
 }
 
 function drawSegmentationOverlay() {
@@ -1443,6 +1716,9 @@ function setupCompositeView() {
     });
   }
 
+  // "My design" cart controls (idempotent; also bound at page load).
+  bindCartButtons();
+
   // Render style toggle: Natural (holistic, no clip) vs Precise (clip to box).
   const styleNatural = el('ds-style-natural');
   const stylePrecise = el('ds-style-precise');
@@ -1754,4 +2030,32 @@ function bindModeToggle() {
 window.addEventListener('DOMContentLoaded', () => {
   hideSpinner(); // Hide the spinner on page load
   setupUpload();
+  loadSelections(); // restore the "My design" cart from a previous visit
+  // Wire the cart/summary/PDF buttons even before a composite view is set up.
+  bindCartButtons();
 });
+
+// Idempotent binding for the "My design" cart controls (also called from the
+// composite view setup). Split out so the cart works from page load.
+function bindCartButtons() {
+  const addBtn = el('ds-add-to-list');
+  if (addBtn && !addBtn.dataset.bound) {
+    addBtn.dataset.bound = '1';
+    addBtn.addEventListener('click', addSelection);
+  }
+  const myDesignBtn = el('ds-my-design');
+  if (myDesignBtn && !myDesignBtn.dataset.bound) {
+    myDesignBtn.dataset.bound = '1';
+    myDesignBtn.addEventListener('click', openDesignSummary);
+  }
+  const pdfBtn = el('ds-download-pdf');
+  if (pdfBtn && !pdfBtn.dataset.bound) {
+    pdfBtn.dataset.bound = '1';
+    pdfBtn.addEventListener('click', downloadDesignPdf);
+  }
+  const buyAllBtn = el('ds-buy-all');
+  if (buyAllBtn && !buyAllBtn.dataset.bound) {
+    buyAllBtn.dataset.bound = '1';
+    buyAllBtn.addEventListener('click', buyAllSelections);
+  }
+}

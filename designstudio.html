@@ -519,6 +519,14 @@
                 <button type="button" class="btn btn-primary btn-sm" id="ds-render-room">
                   <i class="fas fa-magic me-1"></i>Render in my room
                 </button>
+                <!-- Cart: collect the products you like across the room, then
+                     save a before/after PDF and buy them. -->
+                <button type="button" class="btn btn-success btn-sm" id="ds-add-to-list" title="Add this product to your design list">
+                  <i class="fas fa-plus me-1"></i>Add to my list
+                </button>
+                <button type="button" class="btn btn-outline-dark btn-sm ds-hidden" id="ds-my-design" title="View your saved items, before/after, total, and download a PDF">
+                  <i class="fas fa-clipboard-list me-1"></i>My design (<span id="ds-cart-count">0</span>)
+                </button>
                 <!-- Render style: Natural = holistic re-render (best realism, like a
                      pro edit); Precise = change only the box, keep the rest exact. -->
                 <div class="btn-group btn-group-sm" id="ds-style-toggle" role="group" aria-label="Render style">
@@ -554,6 +562,26 @@
             </div>
           </div>
 
+        </div>
+      </div>
+    </div>
+
+    <!-- My Design summary modal: before/after + picked items + total + PDF -->
+    <div class="modal fade" id="ds-summary-modal" tabindex="-1" aria-labelledby="ds-summary-title" aria-hidden="true">
+      <div class="modal-dialog modal-lg modal-dialog-centered modal-dialog-scrollable">
+        <div class="modal-content">
+          <div class="modal-header">
+            <h5 class="modal-title" id="ds-summary-title"><i class="fas fa-clipboard-list me-2"></i>My design</h5>
+            <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+          </div>
+          <div class="modal-body" id="ds-summary-body">
+            <!-- filled by openDesignSummary() -->
+          </div>
+          <div class="modal-footer flex-wrap gap-2">
+            <button type="button" class="btn btn-primary" id="ds-download-pdf"><i class="fas fa-file-pdf me-1"></i>Download PDF</button>
+            <button type="button" class="btn btn-success" id="ds-buy-all"><i class="fas fa-shopping-cart me-1"></i>Buy all</button>
+            <button type="button" class="btn btn-outline-secondary" data-bs-dismiss="modal">Close</button>
+          </div>
         </div>
       </div>
     </div>
@@ -625,6 +653,8 @@
     <!-- Free, on-device object detection (TensorFlow.js COCO-SSD). Runs in the
          browser — no API key, no per-call cost. Sets window.tf / window.cocoSsd.
          The paid fal.ai path is kept as a fallback if these fail to load. -->
+    <!-- jsPDF: client-side "Download PDF" of the design summary (save to phone). -->
+    <script src="https://cdn.jsdelivr.net/npm/jspdf@2.5.1/dist/jspdf.umd.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/@tensorflow/tfjs@4.22.0/dist/tf.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/@tensorflow-models/coco-ssd@2.2.3/dist/coco-ssd.min.js"></script>
 
