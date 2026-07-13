@@ -83,6 +83,10 @@ const stage = {
   threeD:    el('ds-stage-3d'),
 };
 function showStage(name) {
+  // Null-guard: if a stage element is missing (e.g. a transient HTML/JS cache
+  // mismatch right after a deploy), warn instead of throwing so the flow never
+  // dead-ends mid-interaction.
+  if (!stage[name]) { console.warn('showStage: missing stage', name); return; }
   stage[name].classList.remove('ds-hidden');
   stage[name].scrollIntoView({ behavior: 'smooth', block: 'start' });
 }
@@ -421,28 +425,63 @@ function persistSelections() {
   } catch (e) {}
 }
 
-// Snapshot the currently-picked product into the list. Deduped by product link.
-function addSelection() {
-  const p = state.selectedProduct;
-  if (!p) { alert('Pick a product first, then add it to your list.'); return; }
-  const link = p.link || p.thumbnail || p.title;
-  if (state.selections.some((s) => (s.product.link || s.product.thumbnail || s.product.title) === link)) {
-    renderCartBadge();
-    openDesignSummary();
-    return;
-  }
-  state.selections.push({
-    id: 's' + Date.now() + Math.random().toString(36).slice(2, 6),
-    label: state.selectedSegment?.label || 'Item',
-    product: {
-      title: p.title, price: p.price ?? null, priceDisplay: p.priceDisplay || null,
-      retailer: p.retailer || '', link: p.link || '', thumbnail: p.thumbnail || '',
-    },
-    addedAt: Date.now(),
-  });
+// Stable identity for dedupe: paint by color+surface, products by link/title.
+function selectionKey(entry) {
+  if (entry.paint) return `paint:${entry.paint.hex}:${(entry.label || '').toLowerCase()}`;
+  const p = entry.product || {};
+  return p.link || p.thumbnail || p.title || '';
+}
+
+// Low-level add: dedupe + persist + badge. Does NOT open the modal (so auto-add
+// on every render is silent). Returns true if a new item was added.
+function pushSelection(entry) {
+  const key = selectionKey(entry);
+  if (state.selections.some((s) => selectionKey(s) === key)) { renderCartBadge(); return false; }
+  state.selections.push({ id: 's' + Date.now() + Math.random().toString(36).slice(2, 6), addedAt: Date.now(), ...entry });
   persistSelections();
   renderCartBadge();
-  openDesignSummary();
+  return true;
+}
+
+// Called after every successful render — auto-adds the finished edit (product
+// swap OR paint recolor) to the design list so the download has everything.
+function autoQueueCurrentEdit() {
+  let added = false;
+  if (state.renderMode === 'recolor' && state.selectedPaintColor) {
+    const c = state.selectedPaintColor;
+    const label = state.selectedSegment?.label || 'wall';
+    const buy = `https://www.amazon.com/s?k=${encodeURIComponent(c.name + ' interior paint')}&tag=${AMAZON_TAG}`;
+    added = pushSelection({
+      label,
+      paint: { name: c.name, code: c.code || '', hex: c.hex },
+      product: {
+        title: `${c.name}${c.code ? ' ' + c.code : ''} — wall paint`,
+        price: null, priceDisplay: null, retailer: 'Sherwin-Williams',
+        link: buy, thumbnail: '',
+      },
+    });
+  } else if (state.selectedProduct) {
+    const p = state.selectedProduct;
+    added = pushSelection({
+      label: state.selectedSegment?.label || 'Item',
+      product: {
+        title: p.title, price: p.price ?? null, priceDisplay: p.priceDisplay || null,
+        retailer: p.retailer || '', link: p.link || '', thumbnail: p.thumbnail || '',
+      },
+    });
+  }
+  if (added) flashAddedNote();
+}
+
+// Brief inline confirmation near the render controls (auto-hides).
+let _addedNoteTimer = null;
+function flashAddedNote() {
+  const note = el('ds-added-note');
+  if (!note) return;
+  note.textContent = `✓ Added to your design — ${state.selections.length} item${state.selections.length === 1 ? '' : 's'}`;
+  note.classList.remove('ds-hidden');
+  if (_addedNoteTimer) clearTimeout(_addedNoteTimer);
+  _addedNoteTimer = setTimeout(() => note.classList.add('ds-hidden'), 3000);
 }
 
 function removeSelection(id) {
@@ -474,6 +513,13 @@ function priceLabel(p) {
   return 'See price';
 }
 
+function hexToRgb(hex) {
+  const m = /^#?([0-9a-f]{6})$/i.exec(String(hex || ''));
+  if (!m) return null;
+  const n = parseInt(m[1], 16);
+  return { r: (n >> 16) & 255, g: (n >> 8) & 255, b: n & 255 };
+}
+
 // Render the "My design" modal: before/after, item rows, total, then show it.
 function openDesignSummary() {
   const body = el('ds-summary-body');
@@ -495,11 +541,13 @@ function openDesignSummary() {
 
   let itemsHtml;
   if (!state.selections.length) {
-    itemsHtml = `<div class="text-muted text-center py-3">No items yet. Pick a product, then tap <strong>Add to my list</strong>.</div>`;
+    itemsHtml = `<div class="text-muted text-center py-3">No items yet. Render a product or a wall color and it'll appear here automatically.</div>`;
   } else {
     itemsHtml = state.selections.map((s) => {
       const p = s.product;
-      const img = p.thumbnail
+      const img = s.paint
+        ? `<span style="width:56px;height:56px;border-radius:6px;flex:0 0 auto;border:1px solid #ccc;background:${esc(s.paint.hex)};display:inline-block;"></span>`
+        : p.thumbnail
         ? `<img src="${esc(p.thumbnail)}" alt="" style="width:56px;height:56px;object-fit:cover;border-radius:6px;flex:0 0 auto;">`
         : `<div style="width:56px;height:56px;border-radius:6px;background:#f1f1f1;display:flex;align-items:center;justify-content:center;flex:0 0 auto;"><i class="far fa-image text-muted"></i></div>`;
       const buy = p.link
@@ -629,10 +677,18 @@ async function downloadDesignPdf() {
     for (const s of state.selections) {
       if (y > pageH - 90) { doc.addPage(); y = margin; }
       const p = s.product;
-      const thumb = await imgToDataUrl(p.thumbnail);
       const rowTop = y;
       const imgSz = 54;
-      if (thumb) { try { doc.addImage(thumb, 'JPEG', margin, y, imgSz, imgSz); } catch (e) {} }
+      if (s.paint) {
+        // Paint item → draw a filled color swatch instead of a product photo.
+        const rgb = hexToRgb(s.paint.hex) || { r: 200, g: 200, b: 200 };
+        doc.setFillColor(rgb.r, rgb.g, rgb.b);
+        doc.setDrawColor(180);
+        doc.rect(margin, y, imgSz, imgSz, 'FD');
+      } else {
+        const thumb = await imgToDataUrl(p.thumbnail);
+        if (thumb) { try { doc.addImage(thumb, 'JPEG', margin, y, imgSz, imgSz); } catch (e) {} }
+      }
       const textX = margin + imgSz + 12;
       const textW = contentW - imgSz - 12;
       doc.setFont('helvetica', 'bold'); doc.setFontSize(10.5); doc.setTextColor(0);
@@ -1370,6 +1426,9 @@ async function runComposite(product) {
       state.workingPhoto = finalUrl;
       state.baseMode = 'edited';
       updateBaseToggleUI();
+      // Auto-add this finished edit (product or paint) to the design list so
+      // the download always reflects everything the user rendered.
+      autoQueueCurrentEdit();
       // Keep the spinner up until the new image has actually painted.
       await showCompositeBackdrop(finalUrl);
       hideSpinner();
@@ -2194,11 +2253,7 @@ window.addEventListener('DOMContentLoaded', () => {
 // Idempotent binding for the "My design" cart controls (also called from the
 // composite view setup). Split out so the cart works from page load.
 function bindCartButtons() {
-  const addBtn = el('ds-add-to-list');
-  if (addBtn && !addBtn.dataset.bound) {
-    addBtn.dataset.bound = '1';
-    addBtn.addEventListener('click', addSelection);
-  }
+  // (Items auto-add on every render — no manual "Add to my list" button.)
   const myDesignBtn = el('ds-my-design');
   if (myDesignBtn && !myDesignBtn.dataset.bound) {
     myDesignBtn.dataset.bound = '1';

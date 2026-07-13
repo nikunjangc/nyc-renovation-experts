@@ -133,6 +133,7 @@
         gap: 14px;
         margin-top: 14px;
       }
+      .ds-added-note { margin-top: 8px; font-size: 0.85rem; font-weight: 600; color: #198754; }
       /* Paint / wall-color picker */
       .ds-paint-controls { display: flex; align-items: center; gap: 14px; flex-wrap: wrap; margin-bottom: 12px; }
       .ds-paint-custom-label { display: inline-flex; align-items: center; gap: 6px; font-size: 0.85rem; color: #555; margin: 0; }
@@ -566,13 +567,10 @@
                 <button type="button" class="btn btn-primary btn-sm" id="ds-render-room">
                   <i class="fas fa-magic me-1"></i>Render in my room
                 </button>
-                <!-- Cart: collect the products you like across the room, then
-                     save a before/after PDF and buy them. -->
-                <button type="button" class="btn btn-success btn-sm" id="ds-add-to-list" title="Add this product to your design list">
-                  <i class="fas fa-plus me-1"></i>Add to my list
-                </button>
-                <button type="button" class="btn btn-outline-dark btn-sm ds-hidden" id="ds-my-design" title="View your saved items, before/after, total, and download a PDF">
-                  <i class="fas fa-clipboard-list me-1"></i>My design (<span id="ds-cart-count">0</span>)
+                <!-- Every render auto-joins your design list; this opens it to
+                     review before/after + all items and download the PDF. -->
+                <button type="button" class="btn btn-success btn-sm ds-hidden" id="ds-my-design" title="Before/after, every item with a buy link, and a downloadable PDF">
+                  <i class="fas fa-clipboard-list me-1"></i>My design &amp; download (<span id="ds-cart-count">0</span>)
                 </button>
                 <!-- Render style: Natural = holistic re-render (best realism, like a
                      pro edit); Precise = change only the box, keep the rest exact. -->
@@ -601,6 +599,7 @@
                   <i class="fas fa-expand me-1"></i>Inspect
                 </button>
               </div>
+              <div class="ds-added-note ds-hidden" id="ds-added-note"></div>
             </div>
             <div class="ds-cost-note">
               <strong>Natural</strong>: blends the product into the whole scene using its photo as a reference — most realistic, but placement is up to the AI.
