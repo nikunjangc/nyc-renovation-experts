@@ -1183,26 +1183,73 @@ async function fetchProducts(label) {
     .map(([, v]) => v)
     .join(' ');
   const query = picks ? `${picks} ${label}` : label;
+  const broad = broadenQuery(label);
 
   try {
-    const res = await fetch(`${API}/api/product-search`, {
-      method:  'POST',
-      headers: { 'Content-Type': 'application/json' },
-      // fallbackQuery = the bare item label; the backend retries with it when the
-      // detailed query returns nothing, so we get real products instead of mock.
-      body: JSON.stringify({ query, fallbackQuery: label, limit: 9 }),
-    });
-    const data = await res.json();
-    if (!res.ok) throw new Error(data.upstream_message || data.error || `HTTP ${res.status}`);
+    // fallbackQuery = a broad, generic category term; the backend retries with
+    // it when the detailed query returns nothing.
+    let data = await searchProductsReq(query, broad);
+    let renderable = (data.results || []).filter((p) => p.thumbnail);
+    const weak = !renderable.length || data.source === 'mock' || data.source === 'rate_limited';
+    // "Surprise me": if nothing renderable came back, re-search with just the
+    // broad category term so the user always gets real, previewable products —
+    // never an off-site dead end they can't render.
+    if (weak && broad && broad.toLowerCase() !== query.toLowerCase()) {
+      const data2 = await searchProductsReq(broad, broad);
+      if ((data2.results || []).some((p) => p.thumbnail)) data = data2;
+    }
     renderProducts(data.results || [], data.source, label);
   } catch (err) {
     console.error('product search failed', err);
-    grid.innerHTML = `<div class="alert alert-warning" style="grid-column:1/-1;">Couldn't load products. ${esc(err.message)}</div>`;
+    renderProducts([], 'error', label);
   }
 }
 
-// Tagged retailer search links for the honest "no live listings" fallback, so
-// the page still earns affiliate credit without fake, image-less product cards.
+// Small POST helper for product search.
+async function searchProductsReq(query, fallbackQuery) {
+  const res = await fetch(`${API}/api/product-search`, {
+    method:  'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ query, fallbackQuery, limit: 9 }),
+  });
+  const data = await res.json();
+  if (!res.ok) throw new Error(data.upstream_message || data.error || `HTTP ${res.status}`);
+  return data;
+}
+
+// Map a specific/odd label to a broad, reliably-searchable category term so the
+// "surprise me" fallback returns real, renderable products.
+function broadenQuery(label) {
+  const l = String(label || '').toLowerCase();
+  const map = [
+    [/(chandelier|pendant|sconce|lamp|light)/, 'ceiling light fixture'],
+    [/(rug|carpet)/, 'area rug'],
+    [/(sofa|couch|sectional|loveseat)/, 'sofa'],
+    [/(armchair|accent chair|recliner|chair)/, 'accent chair'],
+    [/(nightstand|dresser|wardrobe)/, 'dresser'],
+    [/(bookshelf|bookcase|shelf|shelving)/, 'bookshelf'],
+    [/(desk)/, 'desk'],
+    [/(table)/, 'table'],
+    [/(bed)/, 'bed frame'],
+    [/(tv|television|monitor)/, 'television'],
+    [/(refrigerator|fridge|freezer)/, 'refrigerator'],
+    [/(oven|stove|range|cooktop)/, 'range oven'],
+    [/(microwave)/, 'microwave'],
+    [/(dishwasher)/, 'dishwasher'],
+    [/(faucet)/, 'kitchen faucet'],
+    [/(sink)/, 'sink'],
+    [/(vanity)/, 'bathroom vanity'],
+    [/(mirror)/, 'wall mirror'],
+    [/(cabinet)/, 'cabinet'],
+    [/(curtain|drape)/, 'curtains'],
+  ];
+  for (const [re, term] of map) if (re.test(l)) return term;
+  // Fallback: the last word of the label (usually the noun).
+  const words = l.trim().split(/\s+/);
+  return words[words.length - 1] || l;
+}
+
+// Amazon Associates tag, appended to Amazon links so purchases earn commission.
 const AMAZON_TAG = 'nycrenovation-20';
 // Where to buy a given paint color — route to the brand's actual retailer so
 // "buy" lands on the real product (Behr→Home Depot, Valspar→Lowe's, etc.).
@@ -1217,34 +1264,33 @@ function paintBuyLink(c) {
   }
 }
 
-function retailerSearchLinks(query) {
-  const q = encodeURIComponent(query || '');
-  return [
-    { name: 'Amazon',     url: `https://www.amazon.com/s?k=${q}&tag=${AMAZON_TAG}` },
-    { name: 'Home Depot', url: `https://www.homedepot.com/s/${q}` },
-    { name: 'Wayfair',    url: `https://www.wayfair.com/keyword.php?keyword=${q}` },
-  ];
-}
-
-function renderNoLiveProducts(grid, query) {
-  const btns = retailerSearchLinks(query).map((r) =>
-    `<a href="${esc(r.url)}" target="_blank" rel="noopener" class="btn btn-outline-primary btn-sm me-2 mb-2">
-       <i class="fas fa-search me-1"></i>Search ${esc(r.name)}</a>`).join('');
+// On-site "nothing renderable" state. We never send users off-site here — the
+// whole point of the studio is to render a product in their room, which needs a
+// real product photo. Offer to retry or adjust preferences instead.
+function renderNoProducts(grid, label) {
   grid.innerHTML = `
-    <div style="grid-column:1/-1;">
-      <div class="text-muted mb-2">We couldn't pull live listings for this exact item right now. Browse it directly at a retailer:</div>
-      <div>${btns}</div>
+    <div style="grid-column:1/-1;" class="text-center py-3">
+      <div class="text-muted mb-3">We couldn't find products to preview for “${esc(label)}” right now. Try again, or adjust your preferences for more options.</div>
+      <button type="button" class="btn btn-primary btn-sm me-2" id="ds-prod-retry"><i class="fas fa-redo me-1"></i>Try again</button>
+      <button type="button" class="btn btn-outline-secondary btn-sm" id="ds-prod-refine"><i class="fas fa-sliders-h me-1"></i>Adjust preferences</button>
     </div>`;
+  const retry = el('ds-prod-retry');
+  if (retry) retry.addEventListener('click', () => fetchProducts(label));
+  const refine = el('ds-prod-refine');
+  if (refine) refine.addEventListener('click', () => {
+    const c = el('ds-stage-clarify');
+    if (c) c.scrollIntoView({ behavior: 'smooth', block: 'start' });
+  });
 }
 
-function renderProducts(products, source, query) {
+function renderProducts(products, source, label) {
   const grid = el('ds-product-grid');
   // Only show real, previewable products. Drop image-less cards (mock or
-  // listings with no photo) — they read as untrustworthy and can't be rendered.
+  // listings with no photo) — they can't be rendered in the room.
   const withImg = (products || []).filter((p) => !!p.thumbnail);
   const isMock = source === 'mock' || source === 'rate_limited';
   if (!withImg.length || isMock) {
-    renderNoLiveProducts(grid, query);
+    renderNoProducts(grid, label);
     return;
   }
   const cheapest = withImg.reduce((m, p) =>
