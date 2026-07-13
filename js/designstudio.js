@@ -491,6 +491,17 @@ function removeSelection(id) {
   openDesignSummary();
 }
 
+// Wipe the whole design list (the list persists across sessions, so this lets
+// the user start fresh instead of carrying old test renders forward).
+function clearSelections() {
+  if (!state.selections.length) return;
+  if (!confirm('Remove all items from your design list?')) return;
+  state.selections = [];
+  persistSelections();
+  renderCartBadge();
+  openDesignSummary();
+}
+
 function cartTotal() {
   let total = 0, pricedCount = 0, unpricedCount = 0;
   for (const s of state.selections) {
@@ -2283,5 +2294,10 @@ function bindCartButtons() {
   if (buyAllBtn && !buyAllBtn.dataset.bound) {
     buyAllBtn.dataset.bound = '1';
     buyAllBtn.addEventListener('click', buyAllSelections);
+  }
+  const clearBtn = el('ds-clear-all');
+  if (clearBtn && !clearBtn.dataset.bound) {
+    clearBtn.dataset.bound = '1';
+    clearBtn.addEventListener('click', clearSelections);
   }
 }
