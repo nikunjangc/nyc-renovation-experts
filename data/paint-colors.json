@@ -1,0 +1,87 @@
+{
+  "brand": "Sherwin-Williams",
+  "note": "Curated set of popular Sherwin-Williams colors. Hex values are close on-screen approximations of the paint chips and may differ from a physical sample under real lighting.",
+  "colors": [
+    { "name": "Pure White", "code": "SW 7005", "hex": "#EDECE6", "family": "White" },
+    { "name": "Alabaster", "code": "SW 7008", "hex": "#EDEAE0", "family": "White" },
+    { "name": "Extra White", "code": "SW 7006", "hex": "#EEF0EC", "family": "White" },
+    { "name": "Snowbound", "code": "SW 7004", "hex": "#EAE7E1", "family": "White" },
+    { "name": "High Reflective White", "code": "SW 7757", "hex": "#F4F4EF", "family": "White" },
+    { "name": "Greek Villa", "code": "SW 7551", "hex": "#EEE9DD", "family": "White" },
+    { "name": "Dover White", "code": "SW 6385", "hex": "#EDE4D0", "family": "White" },
+
+    { "name": "Agreeable Gray", "code": "SW 7029", "hex": "#D1CBC1", "family": "Greige" },
+    { "name": "Accessible Beige", "code": "SW 7036", "hex": "#D0C8B8", "family": "Greige" },
+    { "name": "Repose Gray", "code": "SW 7015", "hex": "#CCC9C0", "family": "Greige" },
+    { "name": "Balanced Beige", "code": "SW 7037", "hex": "#C5B6A3", "family": "Greige" },
+    { "name": "Worldly Gray", "code": "SW 7043", "hex": "#CDC4B6", "family": "Greige" },
+    { "name": "Natural Linen", "code": "SW 9109", "hex": "#DDD3C1", "family": "Greige" },
+    { "name": "Perfect Greige", "code": "SW 6073", "hex": "#BCB0A2", "family": "Greige" },
+
+    { "name": "Mindful Gray", "code": "SW 7016", "hex": "#BBB5AC", "family": "Gray" },
+    { "name": "Gray Screen", "code": "SW 7071", "hex": "#C6C8C6", "family": "Gray" },
+    { "name": "Passive", "code": "SW 7064", "hex": "#C6C8C7", "family": "Gray" },
+    { "name": "Dorian Gray", "code": "SW 7017", "hex": "#A8A199", "family": "Gray" },
+    { "name": "Gauntlet Gray", "code": "SW 7019", "hex": "#7C7873", "family": "Gray" },
+    { "name": "Peppercorn", "code": "SW 7674", "hex": "#585857", "family": "Gray" },
+    { "name": "Network Gray", "code": "SW 7073", "hex": "#8E8B84", "family": "Gray" },
+
+    { "name": "Sea Salt", "code": "SW 6204", "hex": "#CDD2CA", "family": "Green" },
+    { "name": "Evergreen Fog", "code": "SW 9130", "hex": "#95998D", "family": "Green" },
+    { "name": "Clary Sage", "code": "SW 6178", "hex": "#9E9B7F", "family": "Green" },
+    { "name": "Rosemary", "code": "SW 6187", "hex": "#5C6152", "family": "Green" },
+    { "name": "Retreat", "code": "SW 6207", "hex": "#5E655C", "family": "Green" },
+    { "name": "Pewter Green", "code": "SW 6208", "hex": "#5E6157", "family": "Green" },
+    { "name": "Dried Thyme", "code": "SW 6186", "hex": "#7C7C61", "family": "Green" },
+    { "name": "Softened Green", "code": "SW 6177", "hex": "#B9BBA0", "family": "Green" },
+
+    { "name": "Naval", "code": "SW 6244", "hex": "#2F3A4A", "family": "Blue" },
+    { "name": "Sea Serpent", "code": "SW 7615", "hex": "#4C5B5C", "family": "Blue" },
+    { "name": "Sleepy Blue", "code": "SW 6225", "hex": "#B4C4C2", "family": "Blue" },
+    { "name": "Rainwashed", "code": "SW 6211", "hex": "#C0CFC6", "family": "Blue" },
+    { "name": "Slate Tile", "code": "SW 7624", "hex": "#5C6A70", "family": "Blue" },
+    { "name": "Distance", "code": "SW 6243", "hex": "#5A6A76", "family": "Blue" },
+    { "name": "Aleutian", "code": "SW 6241", "hex": "#8894A3", "family": "Blue" },
+    { "name": "Misty", "code": "SW 6232", "hex": "#C4D0CE", "family": "Blue" },
+    { "name": "Indigo Batik", "code": "SW 7602", "hex": "#3C4859", "family": "Blue" },
+
+    { "name": "Kilim Beige", "code": "SW 6106", "hex": "#D2BFA6", "family": "Warm Neutral" },
+    { "name": "Latte", "code": "SW 6108", "hex": "#B49F86", "family": "Warm Neutral" },
+    { "name": "Macadamia", "code": "SW 6142", "hex": "#CBB79B", "family": "Warm Neutral" },
+    { "name": "Nomadic Desert", "code": "SW 6107", "hex": "#C3AC90", "family": "Warm Neutral" },
+    { "name": "Camelback", "code": "SW 6122", "hex": "#C1A57F", "family": "Warm Neutral" },
+    { "name": "Bagel", "code": "SW 6114", "hex": "#C6AC8E", "family": "Warm Neutral" },
+    { "name": "Tony Taupe", "code": "SW 7038", "hex": "#B0A18B", "family": "Warm Neutral" },
+
+    { "name": "Alabaster Cream", "code": "SW 6357", "hex": "#EBD9BC", "family": "Yellow" },
+    { "name": "Restrained Gold", "code": "SW 6129", "hex": "#C7A96D", "family": "Yellow" },
+    { "name": "Nugget", "code": "SW 6997", "hex": "#C98B3A", "family": "Yellow" },
+    { "name": "Compatible Cream", "code": "SW 6387", "hex": "#EAD9B7", "family": "Yellow" },
+
+    { "name": "Cavern Clay", "code": "SW 7701", "hex": "#B06A4E", "family": "Terracotta" },
+    { "name": "Baked Clay", "code": "SW 6340", "hex": "#B06A55", "family": "Terracotta" },
+    { "name": "Copper Wire", "code": "SW 7707", "hex": "#B98A6A", "family": "Terracotta" },
+    { "name": "Sandbar", "code": "SW 7547", "hex": "#D9C3A6", "family": "Terracotta" },
+
+    { "name": "Redend Point", "code": "SW 9081", "hex": "#B08B7B", "family": "Pink / Mauve" },
+    { "name": "Malabar", "code": "SW 9105", "hex": "#C9AC9C", "family": "Pink / Mauve" },
+    { "name": "Intimate White", "code": "SW 6322", "hex": "#EBDDD3", "family": "Pink / Mauve" },
+    { "name": "Rosy Outlook", "code": "SW 6316", "hex": "#E3CBC5", "family": "Pink / Mauve" },
+
+    { "name": "Iron Ore", "code": "SW 7069", "hex": "#43413E", "family": "Bold / Dark" },
+    { "name": "Tricorn Black", "code": "SW 6258", "hex": "#2F3032", "family": "Bold / Dark" },
+    { "name": "Urbane Bronze", "code": "SW 7048", "hex": "#54504A", "family": "Bold / Dark" },
+    { "name": "Cyberspace", "code": "SW 7076", "hex": "#494E54", "family": "Bold / Dark" },
+    { "name": "Black Fox", "code": "SW 7020", "hex": "#4B443E", "family": "Bold / Dark" },
+    { "name": "Grizzle Gray", "code": "SW 7068", "hex": "#5E5F5C", "family": "Bold / Dark" },
+    { "name": "Caviar", "code": "SW 6990", "hex": "#2B2B2C", "family": "Bold / Dark" },
+
+    { "name": "Rookwood Red", "code": "SW 2802", "hex": "#5E3033", "family": "Red" },
+    { "name": "Fireweed", "code": "SW 6328", "hex": "#B2452F", "family": "Red" },
+    { "name": "Roycroft Copper Red", "code": "SW 2839", "hex": "#8A4B3A", "family": "Red" },
+
+    { "name": "Ripe Olive", "code": "SW 6209", "hex": "#4E4A3C", "family": "Olive" },
+    { "name": "Basil", "code": "SW 6194", "hex": "#7A7A63", "family": "Olive" },
+    { "name": "Coriander", "code": "SW 9048", "hex": "#8E7E63", "family": "Olive" }
+  ]
+}

@@ -51,6 +51,9 @@ const state = {
   clarifications: {},         // active question_id -> chosen_option (for current segment)
   clarificationsBySeg: {},    // segment.id -> {qid: value}
   selectedProduct: null,      // chosen Product object
+  renderMode: 'swap',         // 'swap' (place a product) | 'recolor' (paint a surface)
+  selectedPaintColor: null,   // { name, code, hex } when recoloring
+  paintColors: null,          // cached data/paint-colors.json
   selections: [],             // multi-item cart: [{id, label, product, addedAt}]
   workingPhoto: null,         // cumulative edited photo — edits stack onto this
   baseMode: 'edited',         // 'edited' | 'original' — what the NEXT render builds on
@@ -76,6 +79,7 @@ const stage = {
   segment:   el('ds-stage-segment'),
   clarify:   el('ds-stage-clarify'),
   products:  el('ds-stage-products'),
+  paint:     el('ds-stage-paint'),
   threeD:    el('ds-stage-3d'),
 };
 function showStage(name) {
@@ -844,9 +848,26 @@ function removeSegment(i) {
   renderSegmentChips();
 }
 
+// A wall/ceiling/paint tag isn't a product to buy — it's a surface to recolor.
+function isPaintLabel(label) {
+  return /\b(wall|walls|paint|ceiling|accent wall|drywall)\b/i.test(String(label || ''));
+}
+
 // ===== 3. Clarify =====
 async function selectSegment(seg) {
   state.selectedSegment = seg;
+
+  // Paint/wall tag → color picker + recolor, NOT clarifier + product search.
+  if (isPaintLabel(seg.label)) {
+    redrawSegments(seg);
+    document.querySelectorAll('.ds-seg-chip').forEach((c, i) =>
+      c.classList.toggle('selected', state.segments[i] === seg));
+    enterPaintMode(seg);
+    return;
+  }
+
+  state.renderMode = 'swap';
+  state.selectedPaintColor = null;
   // Restore any clarifications the user already picked for THIS segment, so
   // re-clicking a segment doesn't wipe their preferences.
   state.clarifications = { ...(state.clarificationsBySeg[seg.id] || {}) };
@@ -890,6 +911,108 @@ function inferProjectType(label) {
   if (kitchen.some((k) => l.includes(k))) return 'kitchen';
   if (bath.some((b) => l.includes(b)))    return 'bathroom';
   return 'other';
+}
+
+// ===== 3b. Paint / wall-color mode =====
+async function loadPaintColors() {
+  if (state.paintColors) return state.paintColors;
+  try {
+    const res = await fetch('data/paint-colors.json');
+    const data = await res.json();
+    state.paintColors = Array.isArray(data.colors) ? data.colors : [];
+  } catch (e) {
+    console.warn('paint colors load failed', e);
+    state.paintColors = [];
+  }
+  return state.paintColors;
+}
+
+async function enterPaintMode(seg) {
+  state.renderMode = 'recolor';
+  state.selectedProduct = null;
+  state.selectedPaintColor = null;
+  showStage('paint');
+  const grid = el('ds-paint-grid');
+  if (grid) grid.innerHTML = `<div class="ds-loader" style="margin:30px auto; grid-column:1/-1;"></div>`;
+  await loadPaintColors();
+  renderSwatches('');
+  updatePaintApplyState();
+  // Bind the filter + apply button once.
+  const filter = el('ds-paint-filter');
+  if (filter && !filter.dataset.bound) {
+    filter.dataset.bound = '1';
+    filter.addEventListener('input', () => renderSwatches(filter.value));
+  }
+  const apply = el('ds-paint-apply');
+  if (apply && !apply.dataset.bound) {
+    apply.dataset.bound = '1';
+    apply.addEventListener('click', applyPaintColor);
+  }
+  const custom = el('ds-paint-custom');
+  if (custom && !custom.dataset.bound) {
+    custom.dataset.bound = '1';
+    custom.addEventListener('input', () => setCustomPaintColor(custom.value));
+  }
+}
+
+function renderSwatches(filter) {
+  const grid = el('ds-paint-grid');
+  if (!grid) return;
+  const q = String(filter || '').toLowerCase().trim();
+  const colors = (state.paintColors || []).filter((c) =>
+    !q || c.name.toLowerCase().includes(q) || (c.family || '').toLowerCase().includes(q) || (c.code || '').toLowerCase().includes(q));
+  if (!colors.length) {
+    grid.innerHTML = `<div class="text-muted" style="grid-column:1/-1;">No colors match “${esc(filter)}”.</div>`;
+    return;
+  }
+  grid.innerHTML = colors.map((c) => {
+    const selected = state.selectedPaintColor && state.selectedPaintColor.hex === c.hex && state.selectedPaintColor.name === c.name;
+    return `
+    <button type="button" class="ds-swatch ${selected ? 'selected' : ''}" data-hex="${esc(c.hex)}" data-name="${esc(c.name)}" data-code="${esc(c.code || '')}" title="${esc(c.name)} ${esc(c.code || '')}">
+      <span class="ds-swatch-chip" style="background:${esc(c.hex)};"></span>
+      <span class="ds-swatch-name">${esc(c.name)}</span>
+      <span class="ds-swatch-code">${esc(c.code || '')}</span>
+    </button>`;
+  }).join('');
+  grid.querySelectorAll('.ds-swatch').forEach((b) => {
+    b.addEventListener('click', () => {
+      state.selectedPaintColor = { name: b.dataset.name, code: b.dataset.code, hex: b.dataset.hex };
+      grid.querySelectorAll('.ds-swatch').forEach((x) => x.classList.remove('selected'));
+      b.classList.add('selected');
+      updatePaintApplyState();
+    });
+  });
+}
+
+function updatePaintApplyState() {
+  const apply = el('ds-paint-apply');
+  const readout = el('ds-paint-selected');
+  const c = state.selectedPaintColor;
+  if (apply) apply.disabled = !c;
+  if (readout) {
+    readout.innerHTML = c
+      ? `<span class="ds-swatch-chip" style="background:${esc(c.hex)};"></span> Selected: <strong>${esc(c.name)}</strong> ${esc(c.code || '')}`
+      : 'Pick a color to preview it on your wall.';
+  }
+}
+
+// Custom color from the native picker.
+function setCustomPaintColor(hex) {
+  if (!hex) return;
+  state.selectedPaintColor = { name: 'Custom color', code: hex.toUpperCase(), hex };
+  const grid = el('ds-paint-grid');
+  if (grid) grid.querySelectorAll('.ds-swatch').forEach((x) => x.classList.remove('selected'));
+  updatePaintApplyState();
+}
+
+function applyPaintColor() {
+  if (!state.selectedPaintColor) { alert('Pick a paint color first.'); return; }
+  state.renderMode = 'recolor';
+  state.selectedProduct = null;
+  showStage('threeD');
+  setupCompositeView();
+  // No product floater for paint — recolor renders the whole scene.
+  runComposite(null);
 }
 
 function renderClarifyQuestions(questions) {
@@ -1145,7 +1268,10 @@ function fetchWithTimeout(url, opts = {}, ms = 120000) {
 }
 
 async function runComposite(product) {
-  if (!product || !state.imageDataUrl) return;
+  const recolor = state.renderMode === 'recolor';
+  // Object-swap needs a product; recolor needs a chosen paint color instead.
+  if (recolor ? !state.selectedPaintColor : !product) return;
+  if (!state.imageDataUrl) return;
 
   // Edits STACK: render onto whatever base the toggle selects — the running
   // working photo (keeps prior changes) or the pristine original.
@@ -1155,10 +1281,10 @@ async function runComposite(product) {
   // visible (somehow), fall back to the segment bbox.
   // Anchor a "precise replace" on the OLD fixture's detected location, so the new
   // one lands there and the old one is removed. Prefer the segment box over the
-  // dragged floater box.
+  // dragged floater box. (Recolor is a whole-scene edit — anchor is optional.)
   const anchor = segmentBboxInPhotoCoords(state.selectedSegment)
     || getFloaterBboxInPhotoCoords();
-  if (!anchor) {
+  if (!anchor && !recolor) {
     showCompositeError('Select the item you want to replace first, then try again.');
     return;
   }
@@ -1166,8 +1292,10 @@ async function runComposite(product) {
   // the product naturally (uses the product photo as a reference; best realism).
   // Precise: a GENEROUS mask over the old fixture forces its removal and keeps
   // the rest of the photo pixel-identical. Padded so the full fixture isn't cut.
-  const natural = state.renderStyle !== 'precise';
-  const padded = padBbox(anchor, 0.7);
+  // Recolor is always maskless — walls are large, irregular regions; a strong
+  // prompt preserves objects better than clipping to a box.
+  const natural = recolor || state.renderStyle !== 'precise';
+  const padded = anchor ? padBbox(anchor, 0.7) : null;
   const maskDataUrl = natural ? null : buildMaskDataUrl(padded);
 
   // Lock the button + show the full-screen spinner for the WHOLE render.
@@ -1181,21 +1309,32 @@ async function runComposite(product) {
 
   try {
     const seg = state.selectedSegment;
+    const body = recolor
+      ? {
+          photoUrl: base,
+          maskDataUrl: null,
+          segmentLabel: seg?.label || 'wall',
+          segmentPosition: anchor || null,
+          mode: 'recolor',
+          paintColor: state.selectedPaintColor,
+          photoSize: state.imageNaturalSize,
+        }
+      : {
+          photoUrl: base,
+          maskDataUrl,
+          segmentLabel: seg?.label || 'fixture',
+          segmentPosition: anchor, // {x,y,w,h} in natural photo pixels — old fixture location
+          product: {
+            title: product.title,
+            retailer: product.retailer,
+            thumbnail: product.thumbnail,
+          },
+          photoSize: state.imageNaturalSize,
+        };
     const res = await fetchWithTimeout(`${API}/api/ds-composite`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({
-        photoUrl: base,
-        maskDataUrl,
-        segmentLabel: seg?.label || 'fixture',
-        segmentPosition: anchor, // {x,y,w,h} in natural photo pixels — old fixture location
-        product: {
-          title: product.title,
-          retailer: product.retailer,
-          thumbnail: product.thumbnail,
-        },
-        photoSize: state.imageNaturalSize,
-      }),
+      body: JSON.stringify(body),
     }, 120000);
     const data = await res.json().catch(() => ({}));
     // A newer render started — let that one own the spinner/button. Don't

@@ -287,6 +287,11 @@ const CATEGORY_KEYWORDS = {
   fixture:     ['faucet', 'sink', 'toilet', 'vanity', 'countertop', 'backsplash', 'tile', 'shower', 'bathtub', 'mirror', 'cabinet'],
   furniture:   ['sofa', 'couch', 'sectional', 'armchair', 'chair', 'table', 'desk', 'bed', 'nightstand', 'dresser', 'wardrobe', 'bookshelf', 'bookcase', 'ottoman', 'stand'],
   decor:       ['rug', 'carpet', 'plant', 'curtain', 'artwork', 'poster'],
+  // Paint/wall color is a surface recolor, not a shoppable object. The Design
+  // Studio handles it with a color picker + recolor render and never hits
+  // product search; this route is a safety net so a stray "wall paint" query
+  // returns the honest "no live listings" block instead of palette posters.
+  paint:       ['paint', 'wall', 'walls', 'ceiling', 'accent wall', 'drywall'],
 };
 
 // Which sources to query per category (only the CONFIGURED ones actually run).
@@ -297,12 +302,13 @@ const SOURCE_ROUTES = {
   fixture:     ['serpapi', 'ebay'],            // faucets/toilets/vanities → HD/Lowe's via serpapi
   furniture:   ['ebay', 'serpapi'],            // not Best Buy
   decor:       ['ebay', 'serpapi'],
+  paint:       [],                             // not shoppable → no sources
   default:     ['bestbuy', 'ebay', 'serpapi'], // unknown → search everything
 };
 
 function classifyCategory(label) {
   const l = String(label || '').toLowerCase();
-  for (const cat of ['electronics', 'appliance', 'lighting', 'fixture', 'furniture', 'decor']) {
+  for (const cat of ['electronics', 'appliance', 'lighting', 'fixture', 'furniture', 'decor', 'paint']) {
     if (CATEGORY_KEYWORDS[cat].some((k) => l.includes(k))) return cat;
   }
   return 'default';

@@ -153,7 +153,20 @@ Output ONLY the instruction, one or two sentences, no preface or quotes. End wit
   }
 }
 
-async function writeEditPrompt({ segmentLabel, product, positionWords, locationAnchor, masked, photoUrl }) {
+// Recolor (paint) prompt. Paint is a SURFACE change, not an object swap — the
+// model must repaint only the wall/ceiling and leave every object untouched.
+function writeRecolorPrompt({ segmentLabel, paintColor }) {
+  const surface = /ceiling/i.test(segmentLabel || '') ? 'ceiling' : 'wall';
+  const name = paintColor?.name ? `${paintColor.name} (${paintColor.code || ''})`.trim() : '';
+  const swatch = [name, paintColor?.hex].filter(Boolean).join(' — ');
+  return `Repaint the ${surface} surfaces in this room the paint color ${swatch}. ` +
+    `Change ONLY the ${surface} paint color. Keep every object exactly as it is — all furniture, shelves, racks, bookshelves, cabinets, the desk, monitor, papers, boxes, wall art, outlets, trim, the floor and ${surface === 'wall' ? 'ceiling' : 'walls'} must stay identical in position, shape, and color. ` +
+    `Apply the new color evenly and realistically, matching the room's existing lighting, shadows, and perspective on the ${surface}. Do not move, remove, add, or distort anything. Photorealistic. No text, no watermarks.`;
+}
+
+async function writeEditPrompt({ segmentLabel, product, positionWords, locationAnchor, masked, photoUrl, mode, paintColor }) {
+  // Paint recolor is a different kind of edit — return its dedicated prompt.
+  if (mode === 'recolor') return writeRecolorPrompt({ segmentLabel, paintColor });
   // Prefer the vision-grounded writer (looks at the actual photo) — this is the
   // reasoning step that lets a maskless render match ChatGPT.
   if (!masked) {
@@ -362,18 +375,21 @@ async function callNanoBanana({ photoUrl, prompt, product }) {
   return { dataUrl: await urlToDataUrl(url) };
 }
 
-async function compositeProduct({ photoUrl, maskDataUrl, segmentLabel, segmentPosition, product, photoSize, quality }) {
-  if (!photoUrl)       { const e = new Error('photoUrl is required');      e.status = 400; throw e; }
-  if (!product?.title) { const e = new Error('product.title is required'); e.status = 400; throw e; }
+async function compositeProduct({ photoUrl, maskDataUrl, segmentLabel, segmentPosition, product, photoSize, quality, paintColor, mode }) {
+  if (!photoUrl) { const e = new Error('photoUrl is required'); e.status = 400; throw e; }
+  const recolor = mode === 'recolor';
+  // Object-swap needs a product; recolor (paint a surface) needs a color instead.
+  if (!recolor && !product?.title) { const e = new Error('product.title is required'); e.status = 400; throw e; }
+  if (recolor && !paintColor?.hex) { const e = new Error('paintColor.hex is required for recolor'); e.status = 400; throw e; }
 
-  // Cache by content fingerprint so re-picking the same product is free.
+  // Cache by content fingerprint so re-doing the same edit is free.
   const photoHash = crypto.createHash('sha256')
     .update(photoUrl.length > 200_000 ? photoUrl.slice(0, 200_000) : photoUrl)
     .digest('hex').slice(0, 16);
   const cacheKey  = crypto.createHash('sha256')
     .update([
       photoHash,
-      product.thumbnail || product.title,
+      recolor ? `recolor:${paintColor.hex}:${paintColor.name || ''}` : (product.thumbnail || product.title),
       segmentLabel || 'object',
       segmentPosition ? `${segmentPosition.x},${segmentPosition.y},${segmentPosition.w},${segmentPosition.h}` : '',
     ].join('|'))
@@ -383,7 +399,7 @@ async function compositeProduct({ photoUrl, maskDataUrl, segmentLabel, segmentPo
 
   const positionWords = describePosition(segmentPosition, photoSize);
   const locationAnchor = describeExactLocation(segmentPosition, photoSize);
-  const prompt = await writeEditPrompt({ segmentLabel, product, positionWords, locationAnchor, masked: false, photoUrl });
+  const prompt = await writeEditPrompt({ segmentLabel, product, positionWords, locationAnchor, masked: false, photoUrl, mode, paintColor });
 
   // Primary: Nano Banana 2 (fal). Fallback: gpt-image-1 (mask-based) if Nano
   // Banana errors and OpenAI is configured. The browser still clips the result
