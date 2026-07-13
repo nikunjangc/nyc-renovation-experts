@@ -449,15 +449,21 @@ function autoQueueCurrentEdit() {
   let added = false;
   if (state.renderMode === 'recolor' && state.selectedPaintColor) {
     const c = state.selectedPaintColor;
-    const label = state.selectedSegment?.label || 'wall';
-    const buy = `https://www.amazon.com/s?k=${encodeURIComponent(c.name + ' interior paint')}&tag=${AMAZON_TAG}`;
+    const surface = paintSurface();
+    const label = state.selectedSegment?.label || surface;
+    // A single gallon covers ~350-400 sq ft (~2 coats on one accent wall). A
+    // ceiling usually needs a bit more (harder coverage, whole overhead area).
+    const cans = surface === 'ceiling' ? 2 : 1;
+    const coverage = surface === 'ceiling'
+      ? '≈ 1–2 gallons (cans) for a ceiling, 2 coats'
+      : '≈ 1 gallon (1 can) for one accent wall, 2 coats';
     added = pushSelection({
       label,
-      paint: { name: c.name, code: c.code || '', hex: c.hex },
+      paint: { name: c.name, code: c.code || '', hex: c.hex, brand: c.brand || '', surface, cans, coverage },
       product: {
-        title: `${c.name}${c.code ? ' ' + c.code : ''} — wall paint`,
-        price: null, priceDisplay: null, retailer: 'Sherwin-Williams',
-        link: buy, thumbnail: '',
+        title: `${c.name}${c.code ? ' ' + c.code : ''} — ${surface} paint`,
+        price: null, priceDisplay: null, retailer: c.brand || 'Paint',
+        link: paintBuyLink(c), thumbnail: '',
       },
     });
   } else if (state.selectedProduct) {
@@ -570,6 +576,7 @@ function openDesignSummary() {
         <div class="flex-grow-1" style="min-width:0;">
           <div class="fw-semibold text-truncate" style="font-size:0.9rem;">${esc(p.title || 'Product')}</div>
           <div class="small text-muted">${esc(s.label || '')}${s.label ? ' · ' : ''}${esc(p.retailer || '')} · ${esc(priceLabel(p))}</div>
+          ${s.paint?.coverage ? `<div class="small text-muted"><i class="fas fa-fill-drip me-1"></i>${esc(s.paint.coverage)}</div>` : ''}
         </div>
         ${buy}
         <button type="button" class="btn btn-sm btn-outline-danger" data-remove="${esc(s.id)}" title="Remove">&times;</button>
@@ -724,6 +731,9 @@ async function downloadDesignPdf() {
       doc.setFont('helvetica', 'normal'); doc.setFontSize(9.5); doc.setTextColor(90);
       const meta = [s.label, p.retailer, priceLabel(p)].filter(Boolean).join('  ·  ');
       doc.text(meta, textX, ty); ty += 13;
+      if (s.paint?.coverage) {
+        doc.setFontSize(9); doc.text(s.paint.coverage, textX, ty); doc.setFontSize(9.5); ty += 12;
+      }
       if (p.link) {
         doc.setTextColor(20, 90, 200);
         doc.textWithLink('Buy / view product ↗', textX, ty, { url: p.link });
@@ -996,6 +1006,11 @@ function inferProjectType(label) {
 }
 
 // ===== 3b. Paint / wall-color mode =====
+// Which surface the current paint tag refers to (drives prompt, UI text, cans).
+function paintSurface() {
+  return /ceiling/i.test(state.selectedSegment?.label || '') ? 'ceiling' : 'wall';
+}
+
 async function loadPaintColors() {
   if (state.paintColors) return state.paintColors;
   try {
@@ -1014,6 +1029,10 @@ async function enterPaintMode(seg) {
   state.selectedProduct = null;
   state.selectedPaintColor = null;
   showStage('paint');
+  // Surface-aware wording (wall vs ceiling).
+  const surface = paintSurface();
+  const applyBtn = el('ds-paint-apply');
+  if (applyBtn) applyBtn.innerHTML = `<i class="fas fa-magic me-1"></i>Preview on my ${surface}`;
   const grid = el('ds-paint-grid');
   if (grid) grid.innerHTML = `<div class="ds-loader" style="margin:30px auto; grid-column:1/-1;"></div>`;
   await loadPaintColors();
@@ -1042,7 +1061,8 @@ function renderSwatches(filter) {
   if (!grid) return;
   const q = String(filter || '').toLowerCase().trim();
   const colors = (state.paintColors || []).filter((c) =>
-    !q || c.name.toLowerCase().includes(q) || (c.family || '').toLowerCase().includes(q) || (c.code || '').toLowerCase().includes(q));
+    !q || c.name.toLowerCase().includes(q) || (c.family || '').toLowerCase().includes(q)
+       || (c.code || '').toLowerCase().includes(q) || (c.brand || '').toLowerCase().includes(q));
   if (!colors.length) {
     grid.innerHTML = `<div class="text-muted" style="grid-column:1/-1;">No colors match “${esc(filter)}”.</div>`;
     return;
@@ -1050,15 +1070,15 @@ function renderSwatches(filter) {
   grid.innerHTML = colors.map((c) => {
     const selected = state.selectedPaintColor && state.selectedPaintColor.hex === c.hex && state.selectedPaintColor.name === c.name;
     return `
-    <button type="button" class="ds-swatch ${selected ? 'selected' : ''}" data-hex="${esc(c.hex)}" data-name="${esc(c.name)}" data-code="${esc(c.code || '')}" title="${esc(c.name)} ${esc(c.code || '')}">
+    <button type="button" class="ds-swatch ${selected ? 'selected' : ''}" data-hex="${esc(c.hex)}" data-name="${esc(c.name)}" data-code="${esc(c.code || '')}" data-brand="${esc(c.brand || '')}" title="${esc(c.name)} ${esc(c.code || '')} — ${esc(c.brand || '')}">
       <span class="ds-swatch-chip" style="background:${esc(c.hex)};"></span>
       <span class="ds-swatch-name">${esc(c.name)}</span>
-      <span class="ds-swatch-code">${esc(c.code || '')}</span>
+      <span class="ds-swatch-code">${esc(c.brand || '')}${c.code ? ' · ' + esc(c.code) : ''}</span>
     </button>`;
   }).join('');
   grid.querySelectorAll('.ds-swatch').forEach((b) => {
     b.addEventListener('click', () => {
-      state.selectedPaintColor = { name: b.dataset.name, code: b.dataset.code, hex: b.dataset.hex };
+      state.selectedPaintColor = { name: b.dataset.name, code: b.dataset.code, hex: b.dataset.hex, brand: b.dataset.brand };
       grid.querySelectorAll('.ds-swatch').forEach((x) => x.classList.remove('selected'));
       b.classList.add('selected');
       updatePaintApplyState();
@@ -1072,16 +1092,17 @@ function updatePaintApplyState() {
   const c = state.selectedPaintColor;
   if (apply) apply.disabled = !c;
   if (readout) {
+    const surface = paintSurface();
     readout.innerHTML = c
-      ? `<span class="ds-swatch-chip" style="background:${esc(c.hex)};"></span> Selected: <strong>${esc(c.name)}</strong> ${esc(c.code || '')}`
-      : 'Pick a color to preview it on your wall.';
+      ? `<span class="ds-swatch-chip" style="background:${esc(c.hex)};"></span> Selected: <strong>${esc(c.name)}</strong> ${esc([c.brand, c.code].filter(Boolean).join(' · '))}`
+      : `Pick a color to preview it on your ${surface}.`;
   }
 }
 
 // Custom color from the native picker.
 function setCustomPaintColor(hex) {
   if (!hex) return;
-  state.selectedPaintColor = { name: 'Custom color', code: hex.toUpperCase(), hex };
+  state.selectedPaintColor = { name: 'Custom color', code: hex.toUpperCase(), hex, brand: 'Custom' };
   const grid = el('ds-paint-grid');
   if (grid) grid.querySelectorAll('.ds-swatch').forEach((x) => x.classList.remove('selected'));
   updatePaintApplyState();
@@ -1183,6 +1204,19 @@ async function fetchProducts(label) {
 // Tagged retailer search links for the honest "no live listings" fallback, so
 // the page still earns affiliate credit without fake, image-less product cards.
 const AMAZON_TAG = 'nycrenovation-20';
+// Where to buy a given paint color — route to the brand's actual retailer so
+// "buy" lands on the real product (Behr→Home Depot, Valspar→Lowe's, etc.).
+function paintBuyLink(c) {
+  const q = encodeURIComponent(`${c.name} ${c.code || ''}`.trim());
+  switch ((c.brand || '').toLowerCase()) {
+    case 'behr':            return `https://www.homedepot.com/s/${q}%20Behr%20paint`;
+    case 'valspar':         return `https://www.lowes.com/search?searchTerm=${q}%20Valspar%20paint`;
+    case 'sherwin-williams':return `https://www.sherwin-williams.com/en-us/color/color-family/search?q=${q}`;
+    case 'benjamin moore':  return `https://www.benjaminmoore.com/en-us/paint-colors/color/search?q=${q}`;
+    default:                return `https://www.amazon.com/s?k=${encodeURIComponent((c.name || 'interior') + ' interior paint')}&tag=${AMAZON_TAG}`;
+  }
+}
+
 function retailerSearchLinks(query) {
   const q = encodeURIComponent(query || '');
   return [

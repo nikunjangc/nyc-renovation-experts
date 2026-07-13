@@ -157,11 +157,20 @@ Output ONLY the instruction, one or two sentences, no preface or quotes. End wit
 // model must repaint only the wall/ceiling and leave every object untouched.
 function writeRecolorPrompt({ segmentLabel, paintColor }) {
   const surface = /ceiling/i.test(segmentLabel || '') ? 'ceiling' : 'wall';
+  const other   = surface === 'ceiling' ? 'walls' : 'ceiling';
   const name = paintColor?.name ? `${paintColor.name} (${paintColor.code || ''})`.trim() : '';
   const swatch = [name, paintColor?.hex].filter(Boolean).join(' — ');
-  return `Repaint the ${surface} surfaces in this room the paint color ${swatch}. ` +
-    `Change ONLY the ${surface} paint color. Keep every object exactly as it is — all furniture, shelves, racks, bookshelves, cabinets, the desk, monitor, papers, boxes, wall art, outlets, trim, the floor and ${surface === 'wall' ? 'ceiling' : 'walls'} must stay identical in position, shape, and color. ` +
-    `Apply the new color evenly and realistically, matching the room's existing lighting, shadows, and perspective on the ${surface}. Do not move, remove, add, or distort anything. Photorealistic. No text, no watermarks.`;
+  // Lead with the surface, name it repeatedly, and add an explicit negative for
+  // the OTHER surface — the model otherwise defaults to repainting walls even
+  // when a ceiling was requested.
+  const surfaceDetail = surface === 'ceiling'
+    ? 'the overhead ceiling (the flat surface above, over your head)'
+    : 'the vertical wall surfaces (the flat upright surfaces behind the furniture)';
+  return `Repaint ONLY ${surfaceDetail} in this room the paint color ${swatch}. ` +
+    `This is a ${surface.toUpperCase()} repaint — recolor the ${surface} and nothing else. ` +
+    `CRITICAL: do NOT change the ${other} at all — the ${other} must keep the exact same color they have now. ` +
+    `Keep every object exactly as it is — all furniture, shelves, racks, bookshelves, cabinets, desk, monitor, TV, papers, boxes, wall art, light fixtures, outlets, trim, doors, windows, and the floor must stay identical in position, shape, and color. ` +
+    `Apply the new color evenly and realistically to the ${surface}, matching the room's existing lighting, shadows, and perspective. Do not move, remove, add, or distort anything. Photorealistic. No text, no watermarks.`;
 }
 
 async function writeEditPrompt({ segmentLabel, product, positionWords, locationAnchor, masked, photoUrl, mode, paintColor }) {
