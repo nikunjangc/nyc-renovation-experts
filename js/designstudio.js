@@ -581,11 +581,26 @@ function openDesignSummary() {
   body.querySelectorAll('[data-remove]').forEach((b) =>
     b.addEventListener('click', () => removeSelection(b.dataset.remove)));
 
-  // Show via Bootstrap (bundle is loaded on the page).
-  try {
-    const modalEl = el('ds-summary-modal');
-    if (window.bootstrap && modalEl) bootstrap.Modal.getOrCreateInstance(modalEl).show();
-  } catch (e) {}
+  // Show the modal. NOTE: this page loads Bootstrap 5.0.0, where
+  // `Modal.getOrCreateInstance` does NOT exist (added in 5.1) — using it threw
+  // and the modal silently never opened. Use the 5.0-safe getInstance/new path.
+  const modalEl = el('ds-summary-modal');
+  if (modalEl && window.bootstrap && bootstrap.Modal) {
+    try {
+      const inst = bootstrap.Modal.getInstance(modalEl) || new bootstrap.Modal(modalEl);
+      inst.show();
+      return;
+    } catch (e) {
+      console.warn('Bootstrap modal show failed; using fallback', e);
+    }
+  }
+  // Fallback if Bootstrap isn't available: show the modal manually.
+  if (modalEl) {
+    modalEl.classList.add('show');
+    modalEl.style.display = 'block';
+    modalEl.removeAttribute('aria-hidden');
+    document.body.classList.add('modal-open');
+  }
 }
 
 // Open every picked product's buy link. The first opens on the click gesture;
