@@ -707,6 +707,10 @@ function openDesignSummary() {
   body.querySelectorAll('[data-remove]').forEach((b) =>
     b.addEventListener('click', () => removeSelection(b.dataset.remove)));
 
+  // Pre-build the PDF and point the Download link at it (native-link download
+  // is the only reliable path on iOS).
+  refreshPdfDownloadLink();
+
   // Show the modal. NOTE: this page loads Bootstrap 5.0.0, where
   // `Modal.getOrCreateInstance` does NOT exist (added in 5.1) — using it threw
   // and the modal silently never opened. Use the 5.0-safe getInstance/new path.
@@ -744,12 +748,11 @@ function buyAllSelections() {
 // across an await, so any async image loading here would break the download.
 // The before/after (data URLs) embed synchronously; remote product thumbnails
 // are skipped (drawn as a placeholder) rather than fetched.
-function downloadDesignPdf() {
+function buildDesignPdfDoc() {
   const jsPDFctor = window.jspdf && window.jspdf.jsPDF;
-  if (!jsPDFctor) { alert('PDF tool is still loading — please try again in a moment.'); return; }
-  if (!state.selections.length) { alert('Add some items to your list first.'); return; }
+  if (!jsPDFctor || !state.selections.length) return null;
 
-  try {
+  {
     const doc = new jsPDFctor({ unit: 'pt', format: 'a4' });
     const pageW = doc.internal.pageSize.getWidth();
     const pageH = doc.internal.pageSize.getHeight();
@@ -835,32 +838,49 @@ function downloadDesignPdf() {
     const disc = (unpricedCount ? `${unpricedCount} item(s) show "See price" on the retailer. ` : '') +
       'Prices are estimates from retailer listings and may change. As an Amazon Associate and affiliate, NYC Renovation Experts may earn from qualifying purchases.';
     doc.text(doc.splitTextToSize(disc, contentW), margin, y);
-
-    // Output. iOS Safari does NOT support the <a download> trick jsPDF's
-    // doc.save() relies on — it fails silently. So on iOS open the PDF as a blob
-    // URL in a new tab (user taps Share → Save to Files / Print). Everywhere
-    // else, use an explicit <a download>.
-    const blob = doc.output('blob');
-    const url = URL.createObjectURL(blob);
-    const isIOS = /iP(hone|ad|od)/.test(navigator.userAgent)
-      || (navigator.platform === 'MacIntel' && navigator.maxTouchPoints > 1);
-    if (isIOS) {
-      const win = window.open(url, '_blank');
-      if (!win) { // popup blocked → navigate current tab to the PDF
-        window.location.href = url;
-      }
-    } else {
-      const a = document.createElement('a');
-      a.href = url;
-      a.download = 'my-design.pdf';
-      document.body.appendChild(a);
-      a.click();
-      a.remove();
-    }
-    setTimeout(() => URL.revokeObjectURL(url), 60000);
-  } catch (e) {
-    alert('Sorry — could not build the PDF. ' + (e?.message || ''));
+    return doc;
   }
+}
+
+// The "Download PDF" control is a real <a> whose href is a pre-built blob URL —
+// tapping a genuine link is the ONE thing iOS Safari reliably honors (unlike
+// doc.save() / programmatic window.open, which fail silently on iPhone). We
+// (re)build the PDF whenever the summary opens and point the link at it.
+let _pdfBlobUrl = null;
+function refreshPdfDownloadLink() {
+  const link = el('ds-download-pdf');
+  if (!link) return;
+  try {
+    const doc = buildDesignPdfDoc();
+    if (_pdfBlobUrl) { URL.revokeObjectURL(_pdfBlobUrl); _pdfBlobUrl = null; }
+    if (!doc) { link.removeAttribute('href'); link.dataset.ready = ''; return; }
+    _pdfBlobUrl = URL.createObjectURL(doc.output('blob'));
+    link.href = _pdfBlobUrl;
+    link.setAttribute('target', '_blank');
+    link.setAttribute('rel', 'noopener');
+    link.setAttribute('download', 'my-design.pdf'); // honored on desktop; ignored (but harmless) on iOS
+    link.dataset.ready = '1';
+  } catch (e) {
+    console.warn('PDF build failed', e);
+    link.removeAttribute('href');
+    link.dataset.ready = '';
+  }
+}
+
+// Fallback if the link somehow has no href yet (e.g. jsPDF loaded late): build
+// on tap and open. Kept for safety; the anchor href is the primary path.
+function downloadDesignPdf(e) {
+  const link = el('ds-download-pdf');
+  if (link && link.dataset.ready === '1' && link.getAttribute('href')) return; // native link handles it
+  if (e) e.preventDefault();
+  const jsPDFctor = window.jspdf && window.jspdf.jsPDF;
+  if (!jsPDFctor) { alert('PDF tool is still loading — tap Download PDF again in a moment.'); return; }
+  if (!state.selections.length) { alert('Add some items to your list first.'); return; }
+  const doc = buildDesignPdfDoc();
+  if (!doc) return;
+  const url = URL.createObjectURL(doc.output('blob'));
+  window.open(url, '_blank') || (window.location.href = url);
+  setTimeout(() => URL.revokeObjectURL(url), 60000);
 }
 
 function drawSegmentationOverlay() {
