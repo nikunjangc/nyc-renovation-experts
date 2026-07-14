@@ -728,14 +728,28 @@ function downloadDesignPdf() {
       'Prices are estimates from retailer listings and may change. As an Amazon Associate and affiliate, NYC Renovation Experts may earn from qualifying purchases.';
     doc.text(doc.splitTextToSize(disc, contentW), margin, y);
 
-    // On iOS Safari the <a download> path can be flaky inside a modal; open the
-    // PDF in a new tab as well so the user always gets it.
-    try {
-      doc.save('my-design.pdf');
-    } catch (e) {
-      const url = doc.output('bloburl');
-      window.open(url, '_blank');
+    // Output. iOS Safari does NOT support the <a download> trick jsPDF's
+    // doc.save() relies on — it fails silently. So on iOS open the PDF as a blob
+    // URL in a new tab (user taps Share → Save to Files / Print). Everywhere
+    // else, use an explicit <a download>.
+    const blob = doc.output('blob');
+    const url = URL.createObjectURL(blob);
+    const isIOS = /iP(hone|ad|od)/.test(navigator.userAgent)
+      || (navigator.platform === 'MacIntel' && navigator.maxTouchPoints > 1);
+    if (isIOS) {
+      const win = window.open(url, '_blank');
+      if (!win) { // popup blocked → navigate current tab to the PDF
+        window.location.href = url;
+      }
+    } else {
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = 'my-design.pdf';
+      document.body.appendChild(a);
+      a.click();
+      a.remove();
     }
+    setTimeout(() => URL.revokeObjectURL(url), 60000);
   } catch (e) {
     alert('Sorry — could not build the PDF. ' + (e?.message || ''));
   }
