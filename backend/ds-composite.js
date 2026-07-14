@@ -118,7 +118,8 @@ Then write the instruction so that:
 - The new ${segmentLabel} is sized to look natural in THIS room — reference the real objects near it (e.g. "about the width of the island below it") so it is not oversized or undersized.
 - If a product photo is given, the new ${segmentLabel} matches that product's design, shape, and finish.
 - Everything else in the room stays identical; match the existing perspective, lighting, and shadows.
-Output ONLY the instruction, one or two sentences, no preface or quotes. End with "Photorealistic. No text, no watermarks."`;
+- The instruction MUST say to return the SAME photograph with only that one change — do not regenerate, replace, or invent a different room/scene; keep the same camera angle and background.
+Output ONLY the instruction, one or two sentences, no preface or quotes. Begin with "Keep this exact photo and only" and end with "Photorealistic. No text, no watermarks."`;
 
   const content = [
     { type: 'text', text: `Room photo:` },
@@ -164,13 +165,13 @@ function writeRecolorPrompt({ segmentLabel, paintColor }) {
   // the OTHER surface — the model otherwise defaults to repainting walls even
   // when a ceiling was requested.
   const surfaceDetail = surface === 'ceiling'
-    ? 'the overhead ceiling (the flat surface above, over your head)'
-    : 'the vertical wall surfaces (the flat upright surfaces behind the furniture)';
-  return `Repaint ONLY ${surfaceDetail} in this room the paint color ${swatch}. ` +
-    `This is a ${surface.toUpperCase()} repaint — recolor the ${surface} and nothing else. ` +
-    `CRITICAL: do NOT change the ${other} at all — the ${other} must keep the exact same color they have now. ` +
-    `Keep every object exactly as it is — all furniture, shelves, racks, bookshelves, cabinets, desk, monitor, TV, papers, boxes, wall art, light fixtures, outlets, trim, doors, windows, and the floor must stay identical in position, shape, and color. ` +
-    `Apply the new color evenly and realistically to the ${surface}, matching the room's existing lighting, shadows, and perspective. Do not move, remove, add, or distort anything. Photorealistic. No text, no watermarks.`;
+    ? 'the overhead ceiling / soffit surfaces'
+    : 'the wall surfaces (interior wall or exterior siding — whichever is visible)';
+  return `You are given a PHOTOGRAPH. Return the EXACT SAME photograph, unchanged, except recolor ${surfaceDetail} to the paint color ${swatch}. ` +
+    `CRITICAL: do NOT invent, replace, or regenerate the scene. Keep the identical photo — same building/room, same camera angle, same objects, same background. If this is an outdoor/exterior photo, keep it outdoor; never turn it into an interior. ` +
+    `This is a ${surface.toUpperCase()} repaint only — recolor the ${surface} and nothing else. Do NOT change the ${other}; they keep their current color. ` +
+    `Keep every other element identical in position, shape, and color — furniture, shelves, cabinets, appliances, TV, art, fixtures, outlets, trim, doors, windows, roof, landscaping, sky, and the floor/ground. ` +
+    `Apply the new color evenly and realistically to the ${surface}, matching the existing lighting, shadows, and perspective. Do not move, remove, add, or distort anything. Photorealistic. No text, no watermarks.`;
 }
 
 async function writeEditPrompt({ segmentLabel, product, positionWords, locationAnchor, masked, photoUrl, mode, paintColor }) {
@@ -191,10 +192,11 @@ async function writeEditPrompt({ segmentLabel, product, positionWords, locationA
     ? `Paint only within the masked (transparent) area; the rest of the photo will be preserved automatically by the mask.`
     : `Keep all other elements (walls, floor, lighting, other appliances, cabinets) unchanged.`;
 
-  const canned = `Remove the existing ${segmentLabel} from the room and install the new ${segmentLabel}${product?.title ? ` (${product.title})` : ''} in the same spot where the old one was. ` +
-                 `Keep it a realistic, natural size and proportion for the space — do NOT make it oversized; it should look like a normal ${segmentLabel} for this room. ` +
+  const canned = `Keep this exact photograph and only make one change: remove the existing ${segmentLabel} and install the new ${segmentLabel}${product?.title ? ` (${product.title})` : ''} in the same spot where the old one was. ` +
+                 `Do NOT regenerate, replace, or invent a different room or scene — keep the same camera angle, background, and every other object identical. ` +
+                 `Keep it a realistic, natural size and proportion for the space — do NOT make it oversized. ` +
                  `${maskClause} ` +
-                 `Match the room's perspective, lighting, and shadows, and change nothing else. Photorealistic. No text, no watermarks.`;
+                 `Match the perspective, lighting, and shadows, and change nothing else. Photorealistic. No text, no watermarks.`;
   if (!dsKey) return canned;
 
   // Keep it SIMPLE — over-engineered prompts made the model oversize/mis-place
