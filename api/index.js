@@ -8,6 +8,7 @@ const { recommendProducts } = require('../backend/product-recommender');
 const { searchProducts } = require('../backend/product-search');
 const { clarifyProject } = require('../backend/project-clarifier');
 const { saveQuoteSubmission, listQuoteSubmissions, updateQuoteStatus } = require('./quote-store');
+const { saveDesignFeedback } = require('./feedback-store');
 const { segmentImage } = require('../backend/ds-segment');
 const { getObjectMask } = require('../backend/ds-mask');
 const { submitProductRender, getRenderStatus } = require('../backend/ds-render3d');
@@ -808,12 +809,12 @@ app.options('/api/ds-composite', (req, res) => { dsCors(req, res); res.status(20
 app.post('/api/ds-composite', rateLimiter, async (req, res) => {
   dsCors(req, res);
   try {
-    const { photoUrl, maskDataUrl, segmentLabel, segmentPosition, product, photoSize, quality, paintColor, mode } = req.body || {};
+    const { photoUrl, maskDataUrl, segmentLabel, segmentPosition, product, photoSize, quality, paintColor, mode, userPrompt } = req.body || {};
     if (!photoUrl) return res.status(400).json({ error: 'photoUrl is required' });
     // Object-swap needs a product; recolor (paint a surface) needs a color.
     if (mode !== 'recolor' && !product?.title) return res.status(400).json({ error: 'product.title is required' });
     if (mode === 'recolor' && !paintColor?.hex) return res.status(400).json({ error: 'paintColor.hex is required for recolor' });
-    const data = await compositeProduct({ photoUrl, maskDataUrl, segmentLabel, segmentPosition, product, photoSize, quality, paintColor, mode });
+    const data = await compositeProduct({ photoUrl, maskDataUrl, segmentLabel, segmentPosition, product, photoSize, quality, paintColor, mode, userPrompt });
     res.json(data);
   } catch (error) {
     console.error('ds-composite error:', error);
@@ -826,6 +827,28 @@ app.post('/api/ds-composite', rateLimiter, async (req, res) => {
       error: 'Composite failed',
       upstream_message: (error.detail || error.message || '').toString().slice(0, 500),
     });
+  }
+});
+
+// Feedback on an AI render (👍/👎 + the user's words). Best-effort: returns ok
+// even if Supabase isn't configured, so the UI's re-render flow never blocks.
+app.options('/api/design-feedback', (req, res) => { dsCors(req, res); res.status(200).send(); });
+app.post('/api/design-feedback', rateLimiter, async (req, res) => {
+  dsCors(req, res);
+  try {
+    const b = req.body || {};
+    const ip = (req.headers['x-forwarded-for'] || '').split(',')[0].trim() || req.socket?.remoteAddress;
+    const data = await saveDesignFeedback({
+      rating: b.rating, userText: b.userText, segmentLabel: b.segmentLabel,
+      mode: b.mode, engine: b.engine, beforeThumb: b.beforeThumb, afterThumb: b.afterThumb,
+      source: b.source || 'designstudio', userAgent: req.headers['user-agent'], ip,
+    });
+    res.json({ ok: true, id: data.id });
+  } catch (error) {
+    // Don't surface as an error to the user — feedback is best-effort.
+    if (error.code === 'NOT_CONFIGURED') return res.json({ ok: false, stored: false });
+    console.error('design-feedback error:', error.message);
+    res.json({ ok: false, stored: false });
   }
 });
 

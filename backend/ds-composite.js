@@ -386,12 +386,13 @@ async function callNanoBanana({ photoUrl, prompt, product }) {
   return { dataUrl: await urlToDataUrl(url) };
 }
 
-async function compositeProduct({ photoUrl, maskDataUrl, segmentLabel, segmentPosition, product, photoSize, quality, paintColor, mode }) {
+async function compositeProduct({ photoUrl, maskDataUrl, segmentLabel, segmentPosition, product, photoSize, quality, paintColor, mode, userPrompt }) {
   if (!photoUrl) { const e = new Error('photoUrl is required'); e.status = 400; throw e; }
   const recolor = mode === 'recolor';
   // Object-swap needs a product; recolor (paint a surface) needs a color instead.
   if (!recolor && !product?.title) { const e = new Error('product.title is required'); e.status = 400; throw e; }
   if (recolor && !paintColor?.hex) { const e = new Error('paintColor.hex is required for recolor'); e.status = 400; throw e; }
+  const steer = (userPrompt || '').toString().trim().slice(0, 400);
 
   // Cache by content fingerprint so re-doing the same edit is free.
   const photoHash = crypto.createHash('sha256')
@@ -403,6 +404,7 @@ async function compositeProduct({ photoUrl, maskDataUrl, segmentLabel, segmentPo
       recolor ? `recolor:${paintColor.hex}:${paintColor.name || ''}` : (product.thumbnail || product.title),
       segmentLabel || 'object',
       segmentPosition ? `${segmentPosition.x},${segmentPosition.y},${segmentPosition.w},${segmentPosition.h}` : '',
+      steer ? `steer:${steer}` : '',
     ].join('|'))
     .digest('hex').slice(0, 24);
   const hit = cacheGet(cacheKey);
@@ -410,7 +412,12 @@ async function compositeProduct({ photoUrl, maskDataUrl, segmentLabel, segmentPo
 
   const positionWords = describePosition(segmentPosition, photoSize);
   const locationAnchor = describeExactLocation(segmentPosition, photoSize);
-  const prompt = await writeEditPrompt({ segmentLabel, product, positionWords, locationAnchor, masked: false, photoUrl, mode, paintColor });
+  let prompt = await writeEditPrompt({ segmentLabel, product, positionWords, locationAnchor, masked: false, photoUrl, mode, paintColor });
+  // The user's own words take priority — this is how they steer/fix a render
+  // that missed. Appended so it overrides the generic instruction.
+  if (steer) {
+    prompt = `${prompt} IMPORTANT — the user specifically asked for this, follow it exactly: "${steer}". Still keep the same photograph and change nothing else they didn't mention.`;
+  }
 
   // Primary: Nano Banana 2 (fal). Fallback: gpt-image-1 (mask-based) if Nano
   // Banana errors and OpenAI is configured. The browser still clips the result

@@ -53,6 +53,8 @@ const state = {
   selectedProduct: null,      // chosen Product object
   renderMode: 'swap',         // 'swap' (place a product) | 'recolor' (paint a surface)
   selectedPaintColor: null,   // { name, code, hex } when recoloring
+  userPrompt: '',             // user's own steering words (from thumbs-down re-render)
+  lastEngine: '',             // engine that produced the last render (for feedback)
   paintColors: null,          // cached data/paint-colors.json
   selections: [],             // multi-item cart: [{id, label, product, addedAt}]
   workingPhoto: null,         // cumulative edited photo — edits stack onto this
@@ -528,6 +530,112 @@ function priceLabel(p) {
   if (p.priceDisplay) return p.priceDisplay;
   if (typeof p.price === 'number' && !isNaN(p.price)) return '$' + p.price.toFixed(2);
   return 'See price';
+}
+
+// ===== Render feedback (👍/👎) + steer/re-render =====
+// Downscale a data URL to a small JPEG for lightweight feedback storage.
+function downscaleDataUrl(dataUrl, maxEdge = 420) {
+  return new Promise((resolve) => {
+    if (!dataUrl) { resolve(null); return; }
+    const img = new Image();
+    img.onload = () => {
+      try {
+        const scale = Math.min(maxEdge / Math.max(img.naturalWidth, img.naturalHeight), 1);
+        const w = Math.max(1, Math.round(img.naturalWidth * scale));
+        const h = Math.max(1, Math.round(img.naturalHeight * scale));
+        const c = document.createElement('canvas'); c.width = w; c.height = h;
+        c.getContext('2d').drawImage(img, 0, 0, w, h);
+        resolve(c.toDataURL('image/jpeg', 0.7));
+      } catch (e) { resolve(null); }
+    };
+    img.onerror = () => resolve(null);
+    img.src = dataUrl;
+  });
+}
+
+// Reveal the 👍/👎 row under the just-rendered result.
+function showFeedbackPrompt() {
+  const row = el('ds-feedback-row');
+  if (!row) return;
+  row.innerHTML = `
+    <span class="me-2">How did we do?</span>
+    <button type="button" class="btn btn-sm btn-outline-success me-1" id="ds-fb-up"><i class="fas fa-thumbs-up me-1"></i>Looks good</button>
+    <button type="button" class="btn btn-sm btn-outline-danger" id="ds-fb-down"><i class="fas fa-thumbs-down me-1"></i>Not quite</button>`;
+  row.classList.remove('ds-hidden');
+  el('ds-fb-up')?.addEventListener('click', onThumbsUp);
+  el('ds-fb-down')?.addEventListener('click', onThumbsDown);
+}
+
+function onThumbsUp() {
+  sendRenderFeedback('up', '');
+  const row = el('ds-feedback-row');
+  if (row) row.innerHTML = `<span class="text-success"><i class="fas fa-check me-1"></i>Thanks for the feedback!</span>`;
+}
+
+// 👎 → ask what they wanted, then re-render with their words (and save it).
+function onThumbsDown() {
+  const ta = el('ds-fb-text');
+  if (ta) ta.value = '';
+  const modalEl = el('ds-feedback-modal');
+  if (modalEl && window.bootstrap && bootstrap.Modal) {
+    (bootstrap.Modal.getInstance(modalEl) || new bootstrap.Modal(modalEl)).show();
+  } else if (modalEl) {
+    modalEl.classList.add('show'); modalEl.style.display = 'block';
+  }
+}
+
+function hideFeedbackModal() {
+  const modalEl = el('ds-feedback-modal');
+  if (modalEl && window.bootstrap && bootstrap.Modal) {
+    (bootstrap.Modal.getInstance(modalEl) || new bootstrap.Modal(modalEl)).hide();
+  } else if (modalEl) {
+    modalEl.classList.remove('show'); modalEl.style.display = 'none';
+  }
+}
+
+// Re-run the render that just happened, honoring state.userPrompt.
+function rerunLastRender() {
+  if (state.renderMode === 'recolor') runComposite(null);
+  else runComposite(state.selectedProduct);
+}
+
+function feedbackRerender() {
+  const text = (el('ds-fb-text')?.value || '').trim();
+  if (!text) { alert('Please describe what you wanted so we can fix it.'); return; }
+  state.userPrompt = text;                 // steer the next render
+  sendRenderFeedback('down', text);        // save the miss for us to learn from
+  // Redo from the SAME base this render used, not the disappointing result.
+  if (state._lastRenderBase) { state.workingPhoto = state._lastRenderBase; state.baseMode = 'edited'; }
+  hideFeedbackModal();
+  rerunLastRender();
+}
+
+function feedbackSendOnly() {
+  const text = (el('ds-fb-text')?.value || '').trim();
+  sendRenderFeedback('down', text);
+  hideFeedbackModal();
+  const row = el('ds-feedback-row');
+  if (row) row.innerHTML = `<span class="text-success"><i class="fas fa-check me-1"></i>Thanks — we'll use this to improve.</span>`;
+}
+
+// Best-effort POST to /api/design-feedback (never blocks the UI).
+async function sendRenderFeedback(rating, userText) {
+  try {
+    const [beforeThumb, afterThumb] = await Promise.all([
+      downscaleDataUrl(state.imageDataUrl),
+      downscaleDataUrl(state.workingPhoto || state.imageDataUrl),
+    ]);
+    fetch(`${API}/api/design-feedback`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        rating, userText,
+        segmentLabel: state.selectedSegment?.label || (state.renderMode === 'recolor' ? 'wall' : ''),
+        mode: state.renderMode, engine: state.lastEngine,
+        beforeThumb, afterThumb, source: 'designstudio',
+      }),
+    }).catch(() => {});
+  } catch (e) { /* best-effort */ }
 }
 
 function hexToRgb(hex) {
@@ -1429,6 +1537,7 @@ async function runComposite(product) {
   // Edits STACK: render onto whatever base the toggle selects — the running
   // working photo (keeps prior changes) or the pristine original.
   const base = currentBasePhoto();
+  state._lastRenderBase = base; // so a thumbs-down re-render redoes from here, not the bad result
 
   // Build the mask from the floater's current position. If the floater isn't
   // visible (somehow), fall back to the segment bbox.
@@ -1453,6 +1562,7 @@ async function runComposite(product) {
 
   // Lock the button + show the full-screen spinner for the WHOLE render.
   setRenderBtnBusy(true);
+  el('ds-feedback-row')?.classList.add('ds-hidden'); // hide stale 👍/👎
   showSpinner('Rendering in your room… (~15–30s)');
   showCompositeStatus('Generating photoreal preview… (~15-30s)');
 
@@ -1462,6 +1572,7 @@ async function runComposite(product) {
 
   try {
     const seg = state.selectedSegment;
+    const steer = (state.userPrompt || '').trim() || undefined; // user's own words
     const body = recolor
       ? {
           photoUrl: base,
@@ -1471,6 +1582,7 @@ async function runComposite(product) {
           mode: 'recolor',
           paintColor: state.selectedPaintColor,
           photoSize: state.imageNaturalSize,
+          userPrompt: steer,
         }
       : {
           photoUrl: base,
@@ -1483,6 +1595,7 @@ async function runComposite(product) {
             thumbnail: product.thumbnail,
           },
           photoSize: state.imageNaturalSize,
+          userPrompt: steer,
         };
     const res = await fetchWithTimeout(`${API}/api/ds-composite`, {
       method: 'POST',
@@ -1526,10 +1639,13 @@ async function runComposite(product) {
       // Auto-add this finished edit (product or paint) to the design list so
       // the download always reflects everything the user rendered.
       autoQueueCurrentEdit();
+      state.lastEngine = data.engine || '';
+      state.userPrompt = ''; // steering applies to one render only
       // Keep the spinner up until the new image has actually painted.
       await showCompositeBackdrop(finalUrl);
       hideSpinner();
       setRenderBtnBusy(false);
+      showFeedbackPrompt(); // 👍/👎 on the result
     } else {
       hideSpinner();
       showCompositeError("AI returned no image.");
@@ -2370,5 +2486,15 @@ function bindCartButtons() {
   if (clearBtn && !clearBtn.dataset.bound) {
     clearBtn.dataset.bound = '1';
     clearBtn.addEventListener('click', clearSelections);
+  }
+  const fbRerender = el('ds-fb-rerender');
+  if (fbRerender && !fbRerender.dataset.bound) {
+    fbRerender.dataset.bound = '1';
+    fbRerender.addEventListener('click', feedbackRerender);
+  }
+  const fbSend = el('ds-fb-send');
+  if (fbSend && !fbSend.dataset.bound) {
+    fbSend.dataset.bound = '1';
+    fbSend.addEventListener('click', feedbackSendOnly);
   }
 }
