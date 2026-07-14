@@ -630,46 +630,17 @@ function buyAllSelections() {
   links.forEach((href) => window.open(href, '_blank', 'noopener'));
 }
 
-// Load an image URL into a data URL for embedding in the PDF. Data URLs pass
-// through; remote thumbnails are drawn via a CORS-enabled canvas (best-effort —
-// resolves null if the host blocks cross-origin reads).
-function imgToDataUrl(url) {
-  return new Promise((resolve) => {
-    if (!url) { resolve(null); return; }
-    if (url.startsWith('data:')) { resolve(url); return; }
-    const img = new Image();
-    img.crossOrigin = 'anonymous';
-    img.onload = () => {
-      try {
-        const c = document.createElement('canvas');
-        c.width = img.naturalWidth; c.height = img.naturalHeight;
-        c.getContext('2d').drawImage(img, 0, 0);
-        resolve(c.toDataURL('image/jpeg', 0.85));
-      } catch (e) { resolve(null); }
-    };
-    img.onerror = () => resolve(null);
-    img.src = url;
-  });
-}
-
-// Get pixel dimensions of a data-URL image (for aspect-correct PDF placement).
-function imgSize(dataUrl) {
-  return new Promise((resolve) => {
-    if (!dataUrl) { resolve(null); return; }
-    const img = new Image();
-    img.onload = () => resolve({ w: img.naturalWidth, h: img.naturalHeight });
-    img.onerror = () => resolve(null);
-    img.src = dataUrl;
-  });
-}
-
 // Build and download a PDF of the design (before/after + items + total).
-async function downloadDesignPdf() {
+// IMPORTANT: this is fully SYNCHRONOUS — no await between the button tap and
+// doc.save(). iOS Safari cancels a download if the user-gesture context is lost
+// across an await, so any async image loading here would break the download.
+// The before/after (data URLs) embed synchronously; remote product thumbnails
+// are skipped (drawn as a placeholder) rather than fetched.
+function downloadDesignPdf() {
   const jsPDFctor = window.jspdf && window.jspdf.jsPDF;
   if (!jsPDFctor) { alert('PDF tool is still loading — please try again in a moment.'); return; }
   if (!state.selections.length) { alert('Add some items to your list first.'); return; }
 
-  showSpinner('Building your PDF…');
   try {
     const doc = new jsPDFctor({ unit: 'pt', format: 'a4' });
     const pageW = doc.internal.pageSize.getWidth();
@@ -684,23 +655,23 @@ async function downloadDesignPdf() {
     doc.text(new Date().toLocaleDateString(), margin, y); y += 18;
     doc.setTextColor(0);
 
-    // Before / after images.
+    // Before / after images (data URLs — synchronous). Aspect from the source
+    // photo dims (before & after share the room's dimensions).
     const before = state.imageDataUrl;
     const after = state.workingPhoto || state.imageDataUrl;
     if (before) {
       const gap = 12;
       const cellW = (contentW - gap) / 2;
-      const [bs, as] = await Promise.all([imgSize(before), imgSize(after)]);
-      const bh = bs ? Math.min(cellW * (bs.h / bs.w), 210) : 120;
-      const ah = as ? Math.min(cellW * (as.h / as.w), 210) : 120;
-      const rowH = Math.max(bh, ah);
+      const nat = state.imageNaturalSize;
+      const aspect = nat && nat.width ? (nat.height / nat.width) : 0.75;
+      const h = Math.min(cellW * aspect, 220);
       doc.setFontSize(9); doc.setTextColor(120);
       doc.text('Before', margin, y); doc.text('After', margin + cellW + gap, y);
       doc.setTextColor(0);
       y += 6;
-      try { doc.addImage(before, 'JPEG', margin, y, cellW, bh); } catch (e) {}
-      try { doc.addImage(after, 'JPEG', margin + cellW + gap, y, cellW, ah); } catch (e) {}
-      y += rowH + 20;
+      try { doc.addImage(before, 'JPEG', margin, y, cellW, h); } catch (e) {}
+      try { doc.addImage(after, 'JPEG', margin + cellW + gap, y, cellW, h); } catch (e) {}
+      y += h + 20;
     }
 
     doc.setFont('helvetica', 'bold'); doc.setFontSize(13);
@@ -713,14 +684,15 @@ async function downloadDesignPdf() {
       const rowTop = y;
       const imgSz = 54;
       if (s.paint) {
-        // Paint item → draw a filled color swatch instead of a product photo.
+        // Paint item → filled color swatch.
         const rgb = hexToRgb(s.paint.hex) || { r: 200, g: 200, b: 200 };
-        doc.setFillColor(rgb.r, rgb.g, rgb.b);
-        doc.setDrawColor(180);
+        doc.setFillColor(rgb.r, rgb.g, rgb.b); doc.setDrawColor(180);
         doc.rect(margin, y, imgSz, imgSz, 'FD');
       } else {
-        const thumb = await imgToDataUrl(p.thumbnail);
-        if (thumb) { try { doc.addImage(thumb, 'JPEG', margin, y, imgSz, imgSz); } catch (e) {} }
+        // Product → light placeholder box (remote thumbnails can't be embedded
+        // synchronously; the item's buy link carries the real photo).
+        doc.setFillColor(241, 241, 241); doc.setDrawColor(220);
+        doc.rect(margin, y, imgSz, imgSz, 'FD');
       }
       const textX = margin + imgSz + 12;
       const textW = contentW - imgSz - 12;
@@ -736,7 +708,7 @@ async function downloadDesignPdf() {
       }
       if (p.link) {
         doc.setTextColor(20, 90, 200);
-        doc.textWithLink('Buy / view product ↗', textX, ty, { url: p.link });
+        doc.textWithLink('Buy / view product', textX, ty, { url: p.link });
         doc.setTextColor(0);
         ty += 13;
       }
@@ -756,11 +728,16 @@ async function downloadDesignPdf() {
       'Prices are estimates from retailer listings and may change. As an Amazon Associate and affiliate, NYC Renovation Experts may earn from qualifying purchases.';
     doc.text(doc.splitTextToSize(disc, contentW), margin, y);
 
-    doc.save('my-design.pdf');
+    // On iOS Safari the <a download> path can be flaky inside a modal; open the
+    // PDF in a new tab as well so the user always gets it.
+    try {
+      doc.save('my-design.pdf');
+    } catch (e) {
+      const url = doc.output('bloburl');
+      window.open(url, '_blank');
+    }
   } catch (e) {
     alert('Sorry — could not build the PDF. ' + (e?.message || ''));
-  } finally {
-    hideSpinner();
   }
 }
 
