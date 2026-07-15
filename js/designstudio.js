@@ -1131,14 +1131,20 @@ function removeSegment(i) {
 
 // A wall/ceiling/paint tag isn't a product to buy — it's a surface to recolor.
 function isPaintLabel(label) {
-  return /\b(wall|walls|paint|ceiling|accent wall|drywall)\b/i.test(String(label || ''));
+  // Includes common misspellings (celling/cieling) so a ceiling always opens the
+  // color picker instead of falling into product search for "paint" products.
+  return /\b(wall|walls|paint|painting|ceiling|ceilings|celling|cieling|cieling|accent wall|drywall|soffit)\b/i.test(String(label || ''));
 }
 
 // ===== 3. Clarify =====
 async function selectSegment(seg) {
   state.selectedSegment = seg;
+  // Starting a fresh item: hide the previous item's clarify/products/paint
+  // sections so stale cards (e.g. paint-can products) can't be clicked and the
+  // flow reads as one item at a time.
+  ['clarify', 'products', 'paint'].forEach((s) => stage[s]?.classList.add('ds-hidden'));
 
-  // Paint/wall tag → color picker + recolor, NOT clarifier + product search.
+  // Paint/wall/ceiling tag → color picker + recolor, NOT clarifier + product search.
   if (isPaintLabel(seg.label)) {
     redrawSegments(seg);
     document.querySelectorAll('.ds-seg-chip').forEach((c, i) =>
@@ -1197,7 +1203,7 @@ function inferProjectType(label) {
 // ===== 3b. Paint / wall-color mode =====
 // Which surface the current paint tag refers to (drives prompt, UI text, cans).
 function paintSurface() {
-  return /ceiling/i.test(state.selectedSegment?.label || '') ? 'ceiling' : 'wall';
+  return /(ceiling|celling|cieling|soffit)/i.test(state.selectedSegment?.label || '') ? 'ceiling' : 'wall';
 }
 
 async function loadPaintColors() {

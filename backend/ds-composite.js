@@ -157,7 +157,7 @@ Output ONLY the instruction, one or two sentences, no preface or quotes. Begin w
 // Recolor (paint) prompt. Paint is a SURFACE change, not an object swap — the
 // model must repaint only the wall/ceiling and leave every object untouched.
 function writeRecolorPrompt({ segmentLabel, paintColor }) {
-  const surface = /ceiling/i.test(segmentLabel || '') ? 'ceiling' : 'wall';
+  const surface = /(ceiling|celling|cieling|soffit)/i.test(segmentLabel || '') ? 'ceiling' : 'wall';
   const other   = surface === 'ceiling' ? 'walls' : 'ceiling';
   const name = paintColor?.name ? `${paintColor.name} (${paintColor.code || ''})`.trim() : '';
   const swatch = [name, paintColor?.hex].filter(Boolean).join(' — ');
