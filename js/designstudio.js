@@ -883,6 +883,76 @@ function downloadDesignPdf(e) {
   setTimeout(() => URL.revokeObjectURL(url), 60000);
 }
 
+// ===== Save-as-image (works in EVERY browser, incl. in-app webviews where PDF
+// downloads / blob URLs are blocked — the user long-presses to save to Photos).
+// (reuses loadImageEl defined above)
+async function buildSummaryImageDataUrl() {
+  const W = 820, pad = 24, lineH = 22;
+  const before = state.imageDataUrl, after = state.workingPhoto || state.imageDataUrl;
+  let bImg = null, aImg = null;
+  try { if (before) bImg = await loadImageEl(before); } catch (e) {}
+  try { if (after) aImg = await loadImageEl(after); } catch (e) {}
+  const cellW = (W - pad * 3) / 2;
+  const aspect = state.imageNaturalSize && state.imageNaturalSize.width
+    ? state.imageNaturalSize.height / state.imageNaturalSize.width : 0.75;
+  const imgH = Math.min(cellW * aspect, 300);
+  const items = state.selections;
+  const itemsH = items.length ? items.length * (lineH * 2 + 8) + 40 : 30;
+  const H = Math.round(pad + 40 + ((bImg || aImg) ? (30 + imgH + 24) : 0) + itemsH + 70);
+  const c = document.createElement('canvas'); c.width = W; c.height = H;
+  const ctx = c.getContext('2d');
+  ctx.fillStyle = '#fff'; ctx.fillRect(0, 0, W, H);
+  ctx.fillStyle = '#111'; ctx.font = 'bold 24px Arial';
+  ctx.fillText('NYC Renovation Experts — My Design', pad, pad + 22);
+  let y = pad + 52;
+  if (bImg || aImg) {
+    ctx.fillStyle = '#666'; ctx.font = '13px Arial';
+    ctx.fillText('Before', pad, y); ctx.fillText('After', pad * 2 + cellW, y);
+    y += 10;
+    try { if (bImg) ctx.drawImage(bImg, pad, y, cellW, imgH); } catch (e) {}
+    try { if (aImg) ctx.drawImage(aImg, pad * 2 + cellW, y, cellW, imgH); } catch (e) {}
+    y += imgH + 26;
+  }
+  ctx.fillStyle = '#111'; ctx.font = 'bold 18px Arial'; ctx.fillText('Your items', pad, y); y += 26;
+  for (const s of items) {
+    const p = s.product, off = s.paint ? 24 : 0;
+    if (s.paint) {
+      const rgb = hexToRgb(s.paint.hex) || { r: 200, g: 200, b: 200 };
+      ctx.fillStyle = `rgb(${rgb.r},${rgb.g},${rgb.b})`; ctx.fillRect(pad, y - 12, 16, 16);
+      ctx.strokeStyle = '#ccc'; ctx.strokeRect(pad, y - 12, 16, 16);
+    }
+    ctx.fillStyle = '#111'; ctx.font = 'bold 14px Arial';
+    ctx.fillText(String(p.title || 'Product').slice(0, 58), pad + off, y); y += lineH;
+    ctx.fillStyle = '#666'; ctx.font = '13px Arial';
+    ctx.fillText([s.label, p.retailer, priceLabel(p)].filter(Boolean).join('  ·  ').slice(0, 82), pad + off, y);
+    y += lineH + 8;
+  }
+  y += 6; ctx.strokeStyle = '#ddd'; ctx.beginPath(); ctx.moveTo(pad, y); ctx.lineTo(W - pad, y); ctx.stroke(); y += 26;
+  const { total } = cartTotal();
+  ctx.fillStyle = '#111'; ctx.font = 'bold 18px Arial';
+  ctx.fillText('Estimated total', pad, y);
+  ctx.textAlign = 'right'; ctx.fillText('$' + total.toFixed(2), W - pad, y); ctx.textAlign = 'left';
+  return c.toDataURL('image/png');
+}
+
+async function saveDesignAsImage() {
+  if (!state.selections.length) { alert('Add some items to your list first.'); return; }
+  const body = el('ds-summary-body');
+  if (!body) return;
+  let holder = el('ds-summary-image');
+  if (!holder) { holder = document.createElement('div'); holder.id = 'ds-summary-image'; holder.style.marginBottom = '12px'; body.prepend(holder); }
+  holder.innerHTML = '<div class="text-muted small py-2">Building image…</div>';
+  holder.scrollIntoView({ behavior: 'smooth', block: 'start' });
+  try {
+    const url = await buildSummaryImageDataUrl();
+    holder.innerHTML =
+      `<div class="alert alert-info py-2 small mb-2"><strong>Press &amp; hold</strong> the image below → <strong>Save to Photos</strong> (on a computer: right-click → Save image).</div>
+       <img src="${url}" alt="My design" style="width:100%;border:1px solid #eee;border-radius:8px;">`;
+  } catch (e) {
+    holder.innerHTML = `<div class="alert alert-warning py-2 small mb-2">Couldn't build the image. ${esc(e?.message || '')}</div>`;
+  }
+}
+
 function drawSegmentationOverlay() {
   const wrap = el('ds-canvas-wrap');
   const canvas = el('ds-canvas');
@@ -2506,6 +2576,11 @@ function bindCartButtons() {
   if (clearBtn && !clearBtn.dataset.bound) {
     clearBtn.dataset.bound = '1';
     clearBtn.addEventListener('click', clearSelections);
+  }
+  const saveImgBtn = el('ds-save-image');
+  if (saveImgBtn && !saveImgBtn.dataset.bound) {
+    saveImgBtn.dataset.bound = '1';
+    saveImgBtn.addEventListener('click', saveDesignAsImage);
   }
   const fbRerender = el('ds-fb-rerender');
   if (fbRerender && !fbRerender.dataset.bound) {
