@@ -25,6 +25,19 @@ const API = window.BACKEND_API_URL || 'http://localhost:3001';
 // crash the tab. On mobile we use the light detector + the server for masks.
 const IS_MOBILE = /Mobi|Android|iPhone|iPad|iPod/i.test(navigator.userAgent || '');
 
+// In-app browsers (opened from Messages / Facebook / Instagram / etc.) block
+// file downloads, blob URLs, and new tabs — so the PDF "download" silently does
+// nothing there. Detect them so we can steer the user to "Save image" (which
+// works everywhere) or to opening the page in real Safari/Chrome.
+function isInAppBrowser() {
+  const ua = navigator.userAgent || '';
+  if (/(FBAN|FBAV|FB_IAB|Instagram|Line|Twitter|Snapchat|Messenger|WhatsApp|LinkedIn|Pinterest|MicroMessenger|GSA)/i.test(ua)) return true;
+  // iOS WKWebView used by many apps drops the "Safari" token that real Safari has.
+  const iOS = /iPhone|iPad|iPod/i.test(ua);
+  if (iOS && !/Safari/i.test(ua) && !/CriOS|FxiOS|EdgiOS/i.test(ua)) return true;
+  return false;
+}
+
 // ===== Spinner overlay =====
 function showSpinner(message = 'Processing…') {
   const spinner = el('spinner');
@@ -711,6 +724,13 @@ function openDesignSummary() {
   // is the only reliable path on iOS).
   refreshPdfDownloadLink();
 
+  // In an in-app browser, PDF download is blocked by the OS — tell the user up
+  // front to use "Save image" (works here) so they don't tap PDF and get nothing.
+  if (isInAppBrowser()) {
+    body.insertAdjacentHTML('afterbegin',
+      `<div class="alert alert-warning py-2 small mb-3">You're viewing this inside an app. <strong>Tap "Save image"</strong> below (press &amp; hold → Save to Photos). For the PDF, open this page in <strong>Safari</strong> (share icon → Open in Safari).</div>`);
+  }
+
   // Show the modal. NOTE: this page loads Bootstrap 5.0.0, where
   // `Modal.getOrCreateInstance` does NOT exist (added in 5.1) — using it threw
   // and the modal silently never opened. Use the 5.0-safe getInstance/new path.
@@ -870,11 +890,21 @@ function refreshPdfDownloadLink() {
 // Fallback if the link somehow has no href yet (e.g. jsPDF loaded late): build
 // on tap and open. Kept for safety; the anchor href is the primary path.
 function downloadDesignPdf(e) {
+  // In-app browsers block PDF downloads entirely. Don't fail silently — give the
+  // user the "Save image" fallback (which works here) plus how to get the PDF.
+  if (isInAppBrowser()) {
+    if (e) e.preventDefault();
+    saveDesignAsImage();
+    const holder = el('ds-summary-image');
+    if (holder) holder.insertAdjacentHTML('afterbegin',
+      `<div class="alert alert-warning py-2 small mb-2">PDF download isn't supported in this in-app browser. Use the image below (press &amp; hold → Save), or open this page in <strong>Safari</strong> (tap the <strong>⋯</strong> or share icon → <strong>Open in Safari</strong>) to get the PDF.</div>`);
+    return;
+  }
   const link = el('ds-download-pdf');
   if (link && link.dataset.ready === '1' && link.getAttribute('href')) return; // native link handles it
   if (e) e.preventDefault();
   const jsPDFctor = window.jspdf && window.jspdf.jsPDF;
-  if (!jsPDFctor) { alert('PDF tool is still loading — tap Download PDF again in a moment.'); return; }
+  if (!jsPDFctor) { alert('PDF tool is still loading — tap PDF again in a moment.'); return; }
   if (!state.selections.length) { alert('Add some items to your list first.'); return; }
   const doc = buildDesignPdfDoc();
   if (!doc) return;
