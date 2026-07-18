@@ -234,7 +234,7 @@ async function ebaySearch(query, limit) {
       title: it.title || '', price, priceDisplay: price != null ? `$${price.toFixed(2)}` : null,
       retailer: 'ebay', rating: null, reviews: null,
       thumbnail: it.image?.imageUrl || it.thumbnailImages?.[0]?.imageUrl || null,
-      link: it.itemWebUrl || '', googleShoppingLink: '', productId: it.itemId || null,
+      link: applyAffiliate(it.itemWebUrl || '', 'ebay'), googleShoppingLink: '', productId: it.itemId || null,
       delivery: null, snippet: it.condition || '', source: 'ebay',
     };
   });

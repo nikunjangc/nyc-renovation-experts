@@ -64,6 +64,13 @@ AMAZON_ASSOCIATE_TAG=
 HOMEDEPOT_AFFILIATE_PREFIX=
 LOWES_AFFILIATE_PREFIX=
 WAYFAIR_AFFILIATE_PREFIX=
+# Universal affiliate network — earns on MOST retailers (Ashley, Bob's, Walmart,
+# Target, eBay, etc.) with ONE signup. Pick ONE provider (never both). Amazon is
+# never routed here (Associates forbids it) — it keeps AMAZON_ASSOCIATE_TAG.
+#   Skimlinks:  https://skimlinks.com     Sovrn Commerce: https://www.sovrn.com/commerce/
+UNIVERSAL_AFFILIATE_PROVIDER=   # 'skimlinks' or 'sovrn'
+SKIMLINKS_ID=                   # your Skimlinks publisher id (if provider=skimlinks)
+SOVRN_KEY=                      # your Sovrn/VigLink API key (if provider=sovrn)
 
 # ===== Supabase (quote submission storage) =====
 # Project URL and keys from your Supabase project: Settings -> API
