@@ -174,8 +174,27 @@ function writeRecolorPrompt({ segmentLabel, paintColor }) {
     `Apply the new color evenly and realistically to the ${surface}, matching the existing lighting, shadows, and perspective. Do not move, remove, add, or distort anything. Photorealistic. No text, no watermarks.`;
 }
 
-async function writeEditPrompt({ segmentLabel, product, positionWords, locationAnchor, masked, photoUrl, mode, paintColor }) {
-  // Paint recolor is a different kind of edit — return its dedicated prompt.
+// Photoreal "stylize" prompt (ArchSynth-style): the input is a low-poly 3D
+// room-planner screenshot; the output must be a photorealistic interior photo
+// of the SAME room — same camera angle, same layout, every furniture piece in
+// place. roomDescription (from the planner's own state: dims, room labels,
+// furniture list, materials) grounds the model so it knows what each block IS.
+function writeStylizePrompt({ styleName, roomDescription, userPrompt }) {
+  const style = (styleName || 'Modern').toString().slice(0, 60);
+  const desc = (roomDescription || '').toString().slice(0, 600);
+  return `This image is a screenshot of a simple low-poly 3D room planner. ` +
+    `Re-render it as a PHOTOREALISTIC interior photograph of the same room: keep the exact same camera angle, room layout, wall/window/door positions, and every furniture piece in the same position, size, and orientation. ` +
+    `Replace the flat colors and low-poly shapes with realistic materials, fabric and wood textures, natural lighting, and soft real-world shadows. ` +
+    (desc ? `Room details: ${desc}. ` : '') +
+    `Interior design style: ${style}. ` +
+    (userPrompt ? `The user also asked: "${userPrompt}" — follow it. ` : '') +
+    `Do not add, remove, or move furniture. Do not change the room's shape. Photorealistic, professional interior photography, high quality. No text, no watermarks.`;
+}
+
+async function writeEditPrompt({ segmentLabel, product, positionWords, locationAnchor, masked, photoUrl, mode, paintColor, styleName, roomDescription, userPrompt }) {
+  // Photoreal stylize and paint recolor are different kinds of edits — each
+  // returns its dedicated prompt instead of the object-swap machinery below.
+  if (mode === 'stylize') return writeStylizePrompt({ styleName, roomDescription, userPrompt });
   if (mode === 'recolor') return writeRecolorPrompt({ segmentLabel, paintColor });
   // Prefer the vision-grounded writer (looks at the actual photo) — this is the
   // reasoning step that lets a maskless render match ChatGPT.
@@ -386,11 +405,13 @@ async function callNanoBanana({ photoUrl, prompt, product }) {
   return { dataUrl: await urlToDataUrl(url) };
 }
 
-async function compositeProduct({ photoUrl, maskDataUrl, segmentLabel, segmentPosition, product, photoSize, quality, paintColor, mode, userPrompt }) {
+async function compositeProduct({ photoUrl, maskDataUrl, segmentLabel, segmentPosition, product, photoSize, quality, paintColor, mode, userPrompt, styleName, roomDescription }) {
   if (!photoUrl) { const e = new Error('photoUrl is required'); e.status = 400; throw e; }
   const recolor = mode === 'recolor';
-  // Object-swap needs a product; recolor (paint a surface) needs a color instead.
-  if (!recolor && !product?.title) { const e = new Error('product.title is required'); e.status = 400; throw e; }
+  const stylize = mode === 'stylize';
+  // Object-swap needs a product; recolor needs a color; stylize (photoreal
+  // re-render of a 3D-planner screenshot) needs only the image itself.
+  if (!recolor && !stylize && !product?.title) { const e = new Error('product.title is required'); e.status = 400; throw e; }
   if (recolor && !paintColor?.hex) { const e = new Error('paintColor.hex is required for recolor'); e.status = 400; throw e; }
   const steer = (userPrompt || '').toString().trim().slice(0, 400);
 
@@ -401,7 +422,9 @@ async function compositeProduct({ photoUrl, maskDataUrl, segmentLabel, segmentPo
   const cacheKey  = crypto.createHash('sha256')
     .update([
       photoHash,
-      recolor ? `recolor:${paintColor.hex}:${paintColor.name || ''}` : (product.thumbnail || product.title),
+      stylize ? `stylize:${styleName || ''}:${(roomDescription || '').slice(0, 120)}`
+        : recolor ? `recolor:${paintColor.hex}:${paintColor.name || ''}`
+        : (product.thumbnail || product.title),
       segmentLabel || 'object',
       segmentPosition ? `${segmentPosition.x},${segmentPosition.y},${segmentPosition.w},${segmentPosition.h}` : '',
       steer ? `steer:${steer}` : '',
@@ -412,10 +435,12 @@ async function compositeProduct({ photoUrl, maskDataUrl, segmentLabel, segmentPo
 
   const positionWords = describePosition(segmentPosition, photoSize);
   const locationAnchor = describeExactLocation(segmentPosition, photoSize);
-  let prompt = await writeEditPrompt({ segmentLabel, product, positionWords, locationAnchor, masked: false, photoUrl, mode, paintColor });
+  let prompt = await writeEditPrompt({ segmentLabel, product, positionWords, locationAnchor, masked: false, photoUrl, mode, paintColor, styleName, roomDescription, userPrompt: steer });
   // The user's own words take priority — this is how they steer/fix a render
-  // that missed. Appended so it overrides the generic instruction.
-  if (steer) {
+  // that missed. Appended so it overrides the generic instruction. (Stylize
+  // folds the user's words in inside its own prompt writer — the "keep the same
+  // photograph" phrasing here would fight the photoreal transformation.)
+  if (steer && !stylize) {
     prompt = `${prompt} IMPORTANT — the user specifically asked for this, follow it exactly: "${steer}". Still keep the same photograph and change nothing else they didn't mention.`;
   }
 

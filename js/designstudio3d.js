@@ -143,6 +143,7 @@ function loadTemplate(tpl, furnish = false) {
   });
   const w = maxX - minX, d = maxZ - minZ;
   const cx = (minX + maxX) / 2, cz = (minZ + maxZ) / 2;
+  state.dims = { w: Math.round(w), d: Math.round(d) }; // ft — used by the photoreal prompt
 
   // Floor
   const floorMat = new THREE.MeshStandardMaterial({ color: 0xd9c3a5, roughness: 0.95 });
@@ -614,6 +615,121 @@ function sendToQuote() {
   window.location.href = `quote.html?source=designstudio3d&note=${encodeURIComponent(note)}`;
 }
 
+/* ---------- "Make it real": AI photoreal render of the 3D view ----------- */
+// ArchSynth-style: screenshot the low-poly planner view and have the AI
+// re-render it as a photorealistic interior photo — same camera angle, same
+// layout. Our edge over generic tools: the planner KNOWS the room (dims, room
+// labels, every furniture piece by name + chosen materials), so we send that
+// as grounding text alongside the image.
+const API = () => window.BACKEND_API_URL || 'http://localhost:3001';
+
+function buildRoomDescription() {
+  const parts = [];
+  const dims = state.dims;
+  const tplName = state.template?.name || 'room';
+  parts.push(dims ? `${dims.w}×${dims.d} ft ${tplName}` : tplName);
+  const rooms = (state.template?.rooms || []).map((r) => r.label).filter(Boolean);
+  if (rooms.length) parts.push(`areas: ${rooms.join(', ')}`);
+  parts.push('off-white walls, tan wood-tone floor');
+  // Furniture with per-item restyle info ("marble Kitchen Island").
+  const counts = {};
+  state.items.forEach((o) => {
+    const st = o.userData.style;
+    const mat = st?.texture ? (MATERIALS.find((m) => m.key === st.texture)?.name || st.texture) : null;
+    const name = [mat, o.userData.entry.name].filter(Boolean).join(' ');
+    counts[name] = (counts[name] || 0) + 1;
+  });
+  const items = Object.entries(counts).map(([n, c]) => (c > 1 ? `${c}x ${n}` : n)).join(', ');
+  parts.push(items ? `furniture: ${items}` : 'empty room');
+  return parts.join('; ');
+}
+
+function photorealResultPanel(html) {
+  const panel = document.getElementById('ds3-photoreal-result');
+  if (!panel) return null;
+  panel.innerHTML = html;
+  panel.classList.remove('ds3-hidden');
+  return panel;
+}
+
+function setPhotorealBusy(busy) {
+  const btn = document.getElementById('ds3-photoreal');
+  if (!btn) return;
+  btn.disabled = busy;
+  btn.innerHTML = busy
+    ? '<i class="fas fa-spinner fa-spin me-2"></i>Rendering… ~30s'
+    : '<i class="fas fa-magic me-2"></i>Make it real (~30s)';
+}
+
+async function photorealRender() {
+  if (state._prBusy) return;
+  // A top-down plan view makes a confusing "dollhouse" render — capture in 3D.
+  if (state.mode === '2d') setMode('3d');
+  // Hide the gizmo + force a fresh frame, then grab the canvas.
+  select(null);
+  state.renderer.render(state.scene, state.active);
+  const before = state.renderer.domElement.toDataURL('image/jpeg', 0.9);
+  const canvas = state.renderer.domElement;
+  const styleName = document.getElementById('ds3-style')?.value || 'Modern';
+  const roomDescription = buildRoomDescription();
+
+  state._prBusy = true;
+  setPhotorealBusy(true);
+  photorealResultPanel(
+    `<div class="text-muted py-2"><i class="fas fa-spinner fa-spin me-2"></i>Turning your 3D layout into a photorealistic ${styleName.toLowerCase()} render… (~15–40s)</div>`);
+
+  const ctrl = new AbortController();
+  const timer = setTimeout(() => ctrl.abort(), 120000);
+  try {
+    const res = await fetch(`${API()}/api/ds-composite`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        photoUrl: before,
+        mode: 'stylize',
+        styleName,
+        roomDescription,
+        segmentLabel: 'room',
+        photoSize: { width: canvas.width, height: canvas.height },
+      }),
+      signal: ctrl.signal,
+    });
+    const data = await res.json().catch(() => ({}));
+    if (!res.ok || !data.imageDataUrl) {
+      throw new Error(data.upstream_message || data.hint || data.error || `HTTP ${res.status}`);
+    }
+    photorealResultPanel(`
+      <div class="fw-bold mb-2"><i class="fas fa-magic text-primary me-2"></i>Photoreal render — ${escapeHtml3(styleName)}</div>
+      <div class="row g-2">
+        <div class="col-6 text-center">
+          <div class="small text-muted mb-1">Your 3D layout</div>
+          <img src="${before}" alt="3D layout" style="width:100%;border-radius:8px;border:1px solid #eee;">
+        </div>
+        <div class="col-6 text-center">
+          <div class="small text-muted mb-1">Made real</div>
+          <img src="${data.imageDataUrl}" alt="Photoreal render" style="width:100%;border-radius:8px;border:1px solid #eee;">
+        </div>
+      </div>
+      <div class="small text-muted mt-2"><strong>Press &amp; hold</strong> the render to save it to Photos (right-click → Save on a computer). Try another style from the dropdown and hit Make it real again.</div>`);
+  } catch (err) {
+    const msg = err.name === 'AbortError' ? 'Render timed out after 2 minutes.' : (err.message || 'Render failed');
+    photorealResultPanel(`
+      <div class="alert alert-warning py-2 small mb-2">Couldn't create the photoreal render: ${escapeHtml3(msg)}</div>
+      <button type="button" class="btn btn-primary btn-sm" id="ds3-photoreal-retry"><i class="fas fa-redo me-1"></i>Try again</button>`);
+    document.getElementById('ds3-photoreal-retry')?.addEventListener('click', photorealRender);
+  } finally {
+    clearTimeout(timer);
+    state._prBusy = false;
+    setPhotorealBusy(false);
+  }
+}
+
+function escapeHtml3(s) {
+  return String(s == null ? '' : s)
+    .replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;')
+    .replace(/"/g, '&quot;').replace(/'/g, '&#39;');
+}
+
 /* ---------- UI wiring --------------------------------------------------- */
 function renderTemplatePicker() {
   const sel = document.getElementById('ds3-template-select');
@@ -668,6 +784,7 @@ function bindUI() {
   document.getElementById('ds3-furnish').addEventListener('click', () => { clearItems(); loadTemplate(state.template, true); });
   document.getElementById('ds3-export').addEventListener('click', exportImage);
   document.getElementById('ds3-quote').addEventListener('click', sendToQuote);
+  document.getElementById('ds3-photoreal')?.addEventListener('click', photorealRender);
 }
 
 /* ---------- loop / resize ---------------------------------------------- */

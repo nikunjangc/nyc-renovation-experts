@@ -809,12 +809,13 @@ app.options('/api/ds-composite', (req, res) => { dsCors(req, res); res.status(20
 app.post('/api/ds-composite', rateLimiter, async (req, res) => {
   dsCors(req, res);
   try {
-    const { photoUrl, maskDataUrl, segmentLabel, segmentPosition, product, photoSize, quality, paintColor, mode, userPrompt } = req.body || {};
+    const { photoUrl, maskDataUrl, segmentLabel, segmentPosition, product, photoSize, quality, paintColor, mode, userPrompt, styleName, roomDescription } = req.body || {};
     if (!photoUrl) return res.status(400).json({ error: 'photoUrl is required' });
-    // Object-swap needs a product; recolor (paint a surface) needs a color.
-    if (mode !== 'recolor' && !product?.title) return res.status(400).json({ error: 'product.title is required' });
+    // Object-swap needs a product; recolor needs a color; stylize (photoreal
+    // re-render of a 3D screenshot) needs only the image.
+    if (mode !== 'recolor' && mode !== 'stylize' && !product?.title) return res.status(400).json({ error: 'product.title is required' });
     if (mode === 'recolor' && !paintColor?.hex) return res.status(400).json({ error: 'paintColor.hex is required for recolor' });
-    const data = await compositeProduct({ photoUrl, maskDataUrl, segmentLabel, segmentPosition, product, photoSize, quality, paintColor, mode, userPrompt });
+    const data = await compositeProduct({ photoUrl, maskDataUrl, segmentLabel, segmentPosition, product, photoSize, quality, paintColor, mode, userPrompt, styleName, roomDescription });
     res.json(data);
   } catch (error) {
     console.error('ds-composite error:', error);
