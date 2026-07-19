@@ -15,7 +15,7 @@
     { "label": "Kitchen", "x": 18, "y": 5 },
     { "label": "Bath", "x": 18, "y": 13 }
   ],
-  "doors": [ { "wall": 2, "at": 0.2 } ],
+  "doors": [ { "wall": 2, "at": 0.72 } ],
   "windows": [ { "wall": 0, "at": 0.4 }, { "wall": 0, "at": 0.75 } ],
   "furniture": [
     { "id": "sofa",        "x": 5,    "z": 4 },

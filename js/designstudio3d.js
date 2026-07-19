@@ -119,6 +119,9 @@ async function init() {
 async function loadData() {
   const [cat, ...tpls] = await Promise.all([
     fetch('data/catalog.json').then((r) => r.json()),
+    fetch('data/templates/onebr-classic.json').then((r) => r.json()),
+    fetch('data/templates/twobr-hall.json').then((r) => r.json()),
+    fetch('data/templates/loft-open.json').then((r) => r.json()),
     fetch('data/templates/studio.json').then((r) => r.json()),
     fetch('data/templates/railroad-2br.json').then((r) => r.json()),
   ]);
@@ -157,16 +160,55 @@ function loadTemplate(tpl, furnish = false) {
   floor.name = 'floor';
   g.add(floor);
 
-  // Walls
-  const wallMat = new THREE.MeshStandardMaterial({ color: 0xf5f5f2, roughness: 0.9 });
-  tpl.walls.forEach((seg) => {
+  // Walls — with real DOOR openings (full-height gaps) and WINDOWS (sill +
+  // glass + header) cut in from the template's `doors` / `windows` arrays
+  // ({wall: index, at: fraction-along-wall}). Solid boxes are emitted for the
+  // spans between openings.
+  const wallMat  = new THREE.MeshStandardMaterial({ color: 0xf5f5f2, roughness: 0.9 });
+  const glassMat = new THREE.MeshStandardMaterial({ color: 0xbfe0f2, roughness: 0.1, transparent: true, opacity: 0.35 });
+  const DOOR_W = 3, WIN_W = 4, SILL_H = 2.7, HEAD_H = 7;
+  tpl.walls.forEach((seg, wi) => {
     const dx = seg.x2 - seg.x1, dz = seg.y2 - seg.y1;
-    const len = Math.hypot(dx, dz) + WALL_T;
-    const wall = new THREE.Mesh(new THREE.BoxGeometry(len, WALL_H, WALL_T), wallMat);
-    wall.position.set((seg.x1 + seg.x2) / 2, WALL_H / 2, (seg.y1 + seg.y2) / 2);
-    wall.rotation.y = -Math.atan2(dz, dx);
-    wall.castShadow = true; wall.receiveShadow = true;
-    g.add(wall);
+    const len = Math.hypot(dx, dz);
+    const ux = dx / len, uz = dz / len;
+    const rotY = -Math.atan2(dz, dx);
+    // Emit one box along [s, e] of this wall at vertical range [y0, y1].
+    const emit = (s, e, y0, y1, mat) => {
+      if (e - s < 0.05) return;
+      const L = (e - s) + (y0 === 0 && y1 === WALL_H ? WALL_T : 0); // overlap corners for solid spans
+      const m = new THREE.Mesh(new THREE.BoxGeometry(L, y1 - y0, WALL_T), mat);
+      const mid = (s + e) / 2;
+      m.position.set(seg.x1 + ux * mid, (y0 + y1) / 2, seg.y1 + uz * mid);
+      m.rotation.y = rotY;
+      if (mat === wallMat) { m.castShadow = true; m.receiveShadow = true; }
+      g.add(m);
+    };
+    // Collect this wall's openings, clamped inside the wall, sorted.
+    const feats = [];
+    (tpl.doors || []).forEach((d) => {
+      if (d.wall !== wi) return;
+      const c = Math.min(Math.max(d.at * len, DOOR_W / 2 + 0.3), len - DOOR_W / 2 - 0.3);
+      feats.push({ s: c - DOOR_W / 2, e: c + DOOR_W / 2, type: 'door' });
+    });
+    (tpl.windows || []).forEach((w) => {
+      if (w.wall !== wi) return;
+      const c = Math.min(Math.max(w.at * len, WIN_W / 2 + 0.5), len - WIN_W / 2 - 0.5);
+      feats.push({ s: c - WIN_W / 2, e: c + WIN_W / 2, type: 'window' });
+    });
+    feats.sort((a, b) => a.s - b.s);
+    let cursor = 0;
+    feats.forEach((f) => {
+      emit(cursor, f.s, 0, WALL_H, wallMat);            // solid span before the opening
+      if (f.type === 'door') {
+        emit(f.s, f.e, HEAD_H, WALL_H, wallMat);        // header above the doorway
+      } else {
+        emit(f.s, f.e, 0, SILL_H, wallMat);             // sill below the window
+        emit(f.s, f.e, SILL_H, HEAD_H, glassMat);       // glass
+        emit(f.s, f.e, HEAD_H, WALL_H, wallMat);        // header
+      }
+      cursor = f.e;
+    });
+    emit(cursor, len, 0, WALL_H, wallMat);              // remaining solid span
   });
 
   // Room labels as floating sprites
@@ -186,7 +228,7 @@ function loadTemplate(tpl, furnish = false) {
   document.getElementById('ds3-current-template').textContent = tpl.name;
 
   // Ready-to-go playground: drop in the template's pre-placed furniture.
-  if (furnish) furnishFromTemplate(tpl);
+  if (furnish) { furnishFromTemplate(tpl); select(null); } // deselect so no gizmo lingers
 }
 
 // Place every item listed in a template's "furniture" array.
