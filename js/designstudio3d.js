@@ -1021,19 +1021,34 @@ function imageFileToDataUrl(file, maxEdge = 1280) {
   });
 }
 
-// Grab up to `count` frames spread across a video file.
+// Grab up to `count` frames spread across a video file. Mobile webviews can
+// silently never fire loadedmetadata/seeked for a file-picked video, so the
+// whole grab runs under a hard timeout — the caller falls back to any photos
+// in the same selection (or asks the user to try photos).
 function framesFromVideo(file, count = 3, maxEdge = 1280) {
-  return new Promise((resolve, reject) => {
+  const grab = new Promise((resolve, reject) => {
     const url = URL.createObjectURL(file);
     const v = document.createElement('video');
     v.muted = true; v.playsInline = true; v.preload = 'auto';
     const frames = [];
-    v.onerror = () => { URL.revokeObjectURL(url); reject(new Error('could not read video')); };
-    v.onloadedmetadata = () => {
-      const times = [0.2, 0.5, 0.8].slice(0, Math.max(1, count))
-        .map((f) => Math.min(v.duration * f, Math.max(v.duration - 0.1, 0)));
+    let done = false;
+    const finish = (err) => {
+      if (done) return; done = true;
+      URL.revokeObjectURL(url);
+      if (err) reject(err); else resolve(frames);
+    };
+    v.onerror = () => finish(new Error('could not read the video'));
+    let started = false;
+    const start = () => {
+      if (started) return; started = true;
+      const dur = Number.isFinite(v.duration) && v.duration > 0 ? v.duration : 0;
+      const times = dur
+        ? [0.2, 0.5, 0.8].slice(0, Math.max(1, count)).map((f) => Math.min(dur * f, Math.max(dur - 0.1, 0)))
+        : [0]; // unknown duration (odd codec / live photo) -> single frame at start
       let i = 0;
       v.onseeked = () => {
+        if (done) return;
+        if (!v.videoWidth || !v.videoHeight) return finish(new Error('could not decode the video'));
         const scale = Math.min(maxEdge / Math.max(v.videoWidth, v.videoHeight), 1);
         const c = document.createElement('canvas');
         c.width = Math.round(v.videoWidth * scale);
@@ -1042,12 +1057,18 @@ function framesFromVideo(file, count = 3, maxEdge = 1280) {
         frames.push(c.toDataURL('image/jpeg', 0.85));
         i++;
         if (i < times.length) v.currentTime = times[i];
-        else { URL.revokeObjectURL(url); resolve(frames); }
+        else finish();
       };
       v.currentTime = times[0];
     };
+    v.onloadedmetadata = start;
+    v.onloadeddata = start;
     v.src = url;
+    try { v.load(); } catch (_) {}
   });
+  const timeout = new Promise((_, reject) =>
+    setTimeout(() => reject(new Error("couldn't read the video — try photos instead")), 15000));
+  return Promise.race([grab, timeout]);
 }
 
 // Sketch JSON → our template format. Rectangle room; door/window sides map to
@@ -1094,25 +1115,35 @@ function registerScannedTemplate(tpl, activate) {
 async function onScanFiles(files) {
   if (!files || !files.length) return;
   const btn = document.getElementById('ds3-scan');
-  const setBusy = (b) => {
+  const setBusy = (label) => {
     if (!btn) return;
-    btn.disabled = b;
-    btn.innerHTML = b
-      ? '<i class="fas fa-spinner fa-spin me-1"></i>Scanning your room… ~10s'
+    btn.disabled = !!label;
+    btn.innerHTML = label
+      ? `<i class="fas fa-spinner fa-spin me-1"></i>${label}`
       : '<i class="fas fa-camera me-1"></i>Scan my room (beta)';
   };
-  setBusy(true);
   try {
     let images = [];
+    let videoError = null;
     for (const f of files) {
       if (images.length >= 3) break;
-      if (f.type.startsWith('video/')) images = images.concat(await framesFromVideo(f, 3 - images.length));
-      else if (f.type.startsWith('image/')) images.push(await imageFileToDataUrl(f));
+      if (f.type.startsWith('video/')) {
+        setBusy('Reading your video…');
+        try {
+          images = images.concat(await framesFromVideo(f, 3 - images.length));
+        } catch (err) {
+          videoError = err; // photos in the same selection can still carry the scan
+        }
+      } else if (f.type.startsWith('image/')) {
+        setBusy('Reading your photos…');
+        images.push(await imageFileToDataUrl(f));
+      }
     }
     images = images.slice(0, 3);
-    if (!images.length) throw new Error('no usable photo or video in the selection');
+    if (!images.length) throw (videoError || new Error('no usable photo or video in the selection'));
+    setBusy('Sketching your room… ~10s');
     const ctrl = new AbortController();
-    const timer = setTimeout(() => ctrl.abort(), 120000);
+    const timer = setTimeout(() => ctrl.abort(), 60000);
     const res = await fetch(`${API()}/api/room-sketch`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
@@ -1125,9 +1156,9 @@ async function onScanFiles(files) {
     }
     registerScannedTemplate(buildScannedTemplate(data.sketch), true);
   } catch (err) {
-    alert("Couldn't scan the room: " + (err.name === 'AbortError' ? 'timed out after 2 minutes.' : err.message));
+    alert("Couldn't scan the room: " + (err.name === 'AbortError' ? 'the server took too long — please try again.' : err.message));
   } finally {
-    setBusy(false);
+    setBusy(null);
   }
 }
 
