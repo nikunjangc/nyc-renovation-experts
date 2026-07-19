@@ -179,9 +179,18 @@ function writeRecolorPrompt({ segmentLabel, paintColor }) {
 // of the SAME room — same camera angle, same layout, every furniture piece in
 // place. roomDescription (from the planner's own state: dims, room labels,
 // furniture list, materials) grounds the model so it knows what each block IS.
-function writeStylizePrompt({ styleName, roomDescription, userPrompt }) {
+function writeStylizePrompt({ styleName, roomDescription, userPrompt, pano }) {
   const style = (styleName || 'Modern').toString().slice(0, 60);
   const desc = (roomDescription || '').toString().slice(0, 600);
+  // 360° panorama variant: the input here is the finished photoreal render, and
+  // the output is a seamless equirectangular pano viewed from inside the room.
+  if (pano) {
+    return `Using this interior render as the exact reference for the room's style, furniture, materials, and colors, create a seamless 360-degree EQUIRECTANGULAR PANORAMA (2:1 aspect ratio) photograph taken from the CENTER of the same room at eye level. ` +
+      `The whole room wraps around the view: walls, windows, doors, and furniture placed consistently with the reference. ` +
+      (desc ? `Room details: ${desc}. ` : '') +
+      `Interior design style: ${style}. ` +
+      `The left and right edges of the image must connect seamlessly. Correct equirectangular distortion (straight verticals, curved horizontals). Photorealistic interior photography. No text, no watermarks.`;
+  }
   return `This image is a screenshot of a simple low-poly 3D room planner. ` +
     `Re-render it as a PHOTOREALISTIC interior photograph of the same room: keep the exact same camera angle, room layout, wall/window/door positions, and every furniture piece in the same position, size, and orientation. ` +
     `Replace the flat colors and low-poly shapes with realistic materials, fabric and wood textures, natural lighting, and soft real-world shadows. ` +
@@ -191,10 +200,10 @@ function writeStylizePrompt({ styleName, roomDescription, userPrompt }) {
     `Do not add, remove, or move furniture. Do not change the room's shape. Photorealistic, professional interior photography, high quality. No text, no watermarks.`;
 }
 
-async function writeEditPrompt({ segmentLabel, product, positionWords, locationAnchor, masked, photoUrl, mode, paintColor, styleName, roomDescription, userPrompt }) {
+async function writeEditPrompt({ segmentLabel, product, positionWords, locationAnchor, masked, photoUrl, mode, paintColor, styleName, roomDescription, userPrompt, pano }) {
   // Photoreal stylize and paint recolor are different kinds of edits — each
   // returns its dedicated prompt instead of the object-swap machinery below.
-  if (mode === 'stylize') return writeStylizePrompt({ styleName, roomDescription, userPrompt });
+  if (mode === 'stylize') return writeStylizePrompt({ styleName, roomDescription, userPrompt, pano });
   if (mode === 'recolor') return writeRecolorPrompt({ segmentLabel, paintColor });
   // Prefer the vision-grounded writer (looks at the actual photo) — this is the
   // reasoning step that lets a maskless render match ChatGPT.
@@ -405,7 +414,7 @@ async function callNanoBanana({ photoUrl, prompt, product }) {
   return { dataUrl: await urlToDataUrl(url) };
 }
 
-async function compositeProduct({ photoUrl, maskDataUrl, segmentLabel, segmentPosition, product, photoSize, quality, paintColor, mode, userPrompt, styleName, roomDescription }) {
+async function compositeProduct({ photoUrl, maskDataUrl, segmentLabel, segmentPosition, product, photoSize, quality, paintColor, mode, userPrompt, styleName, roomDescription, pano }) {
   if (!photoUrl) { const e = new Error('photoUrl is required'); e.status = 400; throw e; }
   const recolor = mode === 'recolor';
   const stylize = mode === 'stylize';
@@ -422,7 +431,7 @@ async function compositeProduct({ photoUrl, maskDataUrl, segmentLabel, segmentPo
   const cacheKey  = crypto.createHash('sha256')
     .update([
       photoHash,
-      stylize ? `stylize:${styleName || ''}:${(roomDescription || '').slice(0, 120)}`
+      stylize ? `stylize:${pano ? 'pano:' : ''}${styleName || ''}:${(roomDescription || '').slice(0, 120)}`
         : recolor ? `recolor:${paintColor.hex}:${paintColor.name || ''}`
         : (product.thumbnail || product.title),
       segmentLabel || 'object',
@@ -435,7 +444,7 @@ async function compositeProduct({ photoUrl, maskDataUrl, segmentLabel, segmentPo
 
   const positionWords = describePosition(segmentPosition, photoSize);
   const locationAnchor = describeExactLocation(segmentPosition, photoSize);
-  let prompt = await writeEditPrompt({ segmentLabel, product, positionWords, locationAnchor, masked: false, photoUrl, mode, paintColor, styleName, roomDescription, userPrompt: steer });
+  let prompt = await writeEditPrompt({ segmentLabel, product, positionWords, locationAnchor, masked: false, photoUrl, mode, paintColor, styleName, roomDescription, userPrompt: steer, pano });
   // The user's own words take priority — this is how they steer/fix a render
   // that missed. Appended so it overrides the generic instruction. (Stylize
   // folds the user's words in inside its own prompt writer — the "keep the same

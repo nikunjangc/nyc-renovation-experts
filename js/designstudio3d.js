@@ -781,6 +781,7 @@ async function photorealRender() {
     if (!res.ok || !data.imageDataUrl) {
       throw new Error(data.upstream_message || data.hint || data.error || `HTTP ${res.status}`);
     }
+    state._lastPhotoreal = { result: data.imageDataUrl, styleName, roomDescription };
     photorealResultPanel(`
       <div class="fw-bold mb-2"><i class="fas fa-magic text-primary me-2"></i>Photoreal render — ${escapeHtml3(styleName)}</div>
       <div class="row g-2">
@@ -793,7 +794,11 @@ async function photorealRender() {
           <img src="${data.imageDataUrl}" alt="Photoreal render" style="width:100%;border-radius:8px;border:1px solid #eee;">
         </div>
       </div>
+      <div class="mt-2">
+        <button type="button" id="ds3-pano" class="btn btn-outline-primary btn-sm"><i class="fas fa-vr-cardboard me-1"></i>Step inside — 360° view (beta, ~30s)</button>
+      </div>
       <div class="small text-muted mt-2"><strong>Press &amp; hold</strong> the render to save it to Photos (right-click → Save on a computer). Try another style from the dropdown and hit Make it real again.</div>`);
+    document.getElementById('ds3-pano')?.addEventListener('click', panoRender);
   } catch (err) {
     const msg = err.name === 'AbortError' ? 'Render timed out after 2 minutes.' : (err.message || 'Render failed');
     photorealResultPanel(`
@@ -805,6 +810,102 @@ async function photorealRender() {
     state._prBusy = false;
     setPhotorealBusy(false);
   }
+}
+
+// "Step inside" — turn the finished photoreal render into a 360° equirect
+// panorama of the same room, then view it from the inside (drag to look
+// around). Honest beta: the pano is AI-generated from the render + room
+// description, so areas behind the original camera are the AI's best guess.
+async function panoRender() {
+  const last = state._lastPhotoreal;
+  if (!last || state._prBusy) return;
+  const btn = document.getElementById('ds3-pano');
+  const setBtn = (busy) => {
+    if (!btn) return;
+    btn.disabled = busy;
+    btn.innerHTML = busy
+      ? '<i class="fas fa-spinner fa-spin me-1"></i>Building your 360° room… ~30s'
+      : '<i class="fas fa-vr-cardboard me-1"></i>Step inside — 360° view (beta, ~30s)';
+  };
+  state._prBusy = true;
+  setBtn(true);
+  const ctrl = new AbortController();
+  const timer = setTimeout(() => ctrl.abort(), 120000);
+  try {
+    const res = await fetch(`${API()}/api/ds-composite`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        photoUrl: last.result,
+        mode: 'stylize',
+        pano: true,
+        styleName: last.styleName,
+        roomDescription: last.roomDescription,
+        segmentLabel: 'room',
+      }),
+      signal: ctrl.signal,
+    });
+    const data = await res.json().catch(() => ({}));
+    if (!res.ok || !data.imageDataUrl) {
+      throw new Error(data.upstream_message || data.hint || data.error || `HTTP ${res.status}`);
+    }
+    state._lastPano = data.imageDataUrl;
+    openPanoViewer(data.imageDataUrl);
+  } catch (err) {
+    alert("Couldn't build the 360° view: " + (err.name === 'AbortError' ? 'timed out after 2 minutes.' : err.message));
+  } finally {
+    clearTimeout(timer);
+    state._prBusy = false;
+    setBtn(false);
+  }
+}
+
+// Fullscreen drag-to-look-around viewer: the pano is textured on the inside of
+// a sphere with its own renderer, so the planner scene is untouched.
+let _pano = null;
+function openPanoViewer(dataUrl) {
+  closePanoViewer();
+  const host = document.createElement('div');
+  host.id = 'ds3-pano-viewer';
+  host.style.cssText = 'position:fixed;inset:0;z-index:3000;background:#000;';
+  host.innerHTML =
+    '<button type="button" id="ds3-pano-close" class="btn btn-light" style="position:absolute;top:14px;right:14px;z-index:2;">✕ Close</button>' +
+    '<div style="position:absolute;bottom:16px;left:0;right:0;text-align:center;color:#fff;font-size:0.85rem;opacity:.85;z-index:2;">Drag to look around your finished room · press &amp; hold the image to save</div>';
+  document.body.appendChild(host);
+  const canvas = document.createElement('canvas');
+  canvas.style.cssText = 'width:100%;height:100%;display:block;';
+  host.prepend(canvas);
+
+  const renderer = new THREE.WebGLRenderer({ canvas, antialias: true });
+  renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
+  renderer.setSize(host.clientWidth, host.clientHeight, false);
+  const scene = new THREE.Scene();
+  const cam = new THREE.PerspectiveCamera(75, host.clientWidth / host.clientHeight, 0.1, 100);
+  cam.position.set(0, 0, 0.01);
+  new THREE.TextureLoader().load(dataUrl, (tex) => {
+    tex.colorSpace = THREE.SRGBColorSpace;
+    const geo = new THREE.SphereGeometry(10, 64, 42);
+    geo.scale(-1, 1, 1); // view from the inside
+    scene.add(new THREE.Mesh(geo, new THREE.MeshBasicMaterial({ map: tex })));
+  });
+  const ctl = new OrbitControls(cam, canvas);
+  ctl.enableZoom = false;
+  ctl.enablePan = false;
+  ctl.rotateSpeed = -0.35; // drag = look around, natural direction
+  ctl.enableDamping = true;
+  const onWinResize = () => {
+    renderer.setSize(host.clientWidth, host.clientHeight, false);
+    cam.aspect = host.clientWidth / host.clientHeight;
+    cam.updateProjectionMatrix();
+  };
+  window.addEventListener('resize', onWinResize);
+  let run = true;
+  (function loop() { if (!run) return; requestAnimationFrame(loop); ctl.update(); renderer.render(scene, cam); })();
+  _pano = { stop() { run = false; window.removeEventListener('resize', onWinResize); ctl.dispose(); renderer.dispose(); host.remove(); } };
+  document.getElementById('ds3-pano-close').addEventListener('click', closePanoViewer);
+}
+function closePanoViewer() {
+  if (_pano) { _pano.stop(); _pano = null; }
 }
 
 function escapeHtml3(s) {
