@@ -131,6 +131,12 @@ async function loadData() {
   ]);
   state.catalog = cat;
   state.templates = tpls;
+  // Re-register a previously scanned room so reloads (and saved designs that
+  // reference it) keep working.
+  try {
+    const saved = JSON.parse(localStorage.getItem('ds3_scanned_tpl') || 'null');
+    if (saved && saved.id === 'scanned-room' && Array.isArray(saved.walls)) state.templates.unshift(saved);
+  } catch (_) {}
   renderTemplatePicker();
   renderCatalog();
 }
@@ -992,6 +998,139 @@ function escapeHtml3(s) {
     .replace(/"/g, '&quot;').replace(/'/g, '&#39;');
 }
 
+/* ---------- "Scan my room": photos/video → editable room sketch ---------- */
+// Vision AI estimates the room's size + furniture from the user's photos (or
+// 3 frames auto-grabbed from a short video) and we build a live template from
+// it — every piece is a real catalog object, so it's fully editable/upgradable.
+
+function imageFileToDataUrl(file, maxEdge = 1280) {
+  return new Promise((resolve, reject) => {
+    const url = URL.createObjectURL(file);
+    const img = new Image();
+    img.onload = () => {
+      const scale = Math.min(maxEdge / Math.max(img.naturalWidth, img.naturalHeight), 1);
+      const c = document.createElement('canvas');
+      c.width = Math.round(img.naturalWidth * scale);
+      c.height = Math.round(img.naturalHeight * scale);
+      c.getContext('2d').drawImage(img, 0, 0, c.width, c.height);
+      URL.revokeObjectURL(url);
+      resolve(c.toDataURL('image/jpeg', 0.85));
+    };
+    img.onerror = () => { URL.revokeObjectURL(url); reject(new Error('could not read image')); };
+    img.src = url;
+  });
+}
+
+// Grab up to `count` frames spread across a video file.
+function framesFromVideo(file, count = 3, maxEdge = 1280) {
+  return new Promise((resolve, reject) => {
+    const url = URL.createObjectURL(file);
+    const v = document.createElement('video');
+    v.muted = true; v.playsInline = true; v.preload = 'auto';
+    const frames = [];
+    v.onerror = () => { URL.revokeObjectURL(url); reject(new Error('could not read video')); };
+    v.onloadedmetadata = () => {
+      const times = [0.2, 0.5, 0.8].slice(0, Math.max(1, count))
+        .map((f) => Math.min(v.duration * f, Math.max(v.duration - 0.1, 0)));
+      let i = 0;
+      v.onseeked = () => {
+        const scale = Math.min(maxEdge / Math.max(v.videoWidth, v.videoHeight), 1);
+        const c = document.createElement('canvas');
+        c.width = Math.round(v.videoWidth * scale);
+        c.height = Math.round(v.videoHeight * scale);
+        c.getContext('2d').drawImage(v, 0, 0, c.width, c.height);
+        frames.push(c.toDataURL('image/jpeg', 0.85));
+        i++;
+        if (i < times.length) v.currentTime = times[i];
+        else { URL.revokeObjectURL(url); resolve(frames); }
+      };
+      v.currentTime = times[0];
+    };
+    v.src = url;
+  });
+}
+
+// Sketch JSON → our template format. Rectangle room; door/window sides map to
+// wall indices (S & W walls run reversed, so their `at` fraction is flipped).
+function buildScannedTemplate(sk) {
+  const w = sk.room.w, d = sk.room.d;
+  const SIDE_WALL = { N: 0, E: 1, S: 2, W: 3 };
+  const at = (side, f) => (side === 'S' || side === 'W' ? 1 - f : f);
+  return {
+    id: 'scanned-room',
+    name: 'My Scanned Room 📷',
+    units: 'ft',
+    walls: [
+      { x1: 0, y1: 0, x2: w, y2: 0 },
+      { x1: w, y1: 0, x2: w, y2: d },
+      { x1: w, y1: d, x2: 0, y2: d },
+      { x1: 0, y1: d, x2: 0, y2: 0 },
+    ],
+    rooms: [{ label: sk.label || 'My Room', x: w / 2, y: d / 2 }],
+    doors: [{ wall: SIDE_WALL[sk.door.side] ?? 2, at: at(sk.door.side, sk.door.at) }],
+    windows: (sk.windows || []).map((wd) => ({ wall: SIDE_WALL[wd.side] ?? 0, at: at(wd.side, wd.at) })),
+    furniture: (sk.furniture || []).map((f) => ({
+      id: f.id,
+      x: Math.min(Math.max(f.x * w, 1.2), w - 1.2),
+      z: Math.min(Math.max(f.z * d, 1.2), d - 1.2),
+      rot: ((f.rot || 0) * Math.PI) / 180,
+    })),
+  };
+}
+
+function registerScannedTemplate(tpl, activate) {
+  state.templates = state.templates.filter((t) => t.id !== 'scanned-room');
+  state.templates.unshift(tpl);
+  renderTemplatePicker();
+  try { localStorage.setItem('ds3_scanned_tpl', JSON.stringify(tpl)); } catch (_) {}
+  if (activate) {
+    const sel = document.getElementById('ds3-template-select');
+    if (sel) sel.value = tpl.id;
+    clearItems();
+    loadTemplate(tpl, true);
+  }
+}
+
+async function onScanFiles(files) {
+  if (!files || !files.length) return;
+  const btn = document.getElementById('ds3-scan');
+  const setBusy = (b) => {
+    if (!btn) return;
+    btn.disabled = b;
+    btn.innerHTML = b
+      ? '<i class="fas fa-spinner fa-spin me-1"></i>Scanning your room… ~10s'
+      : '<i class="fas fa-camera me-1"></i>Scan my room (beta)';
+  };
+  setBusy(true);
+  try {
+    let images = [];
+    for (const f of files) {
+      if (images.length >= 3) break;
+      if (f.type.startsWith('video/')) images = images.concat(await framesFromVideo(f, 3 - images.length));
+      else if (f.type.startsWith('image/')) images.push(await imageFileToDataUrl(f));
+    }
+    images = images.slice(0, 3);
+    if (!images.length) throw new Error('no usable photo or video in the selection');
+    const ctrl = new AbortController();
+    const timer = setTimeout(() => ctrl.abort(), 120000);
+    const res = await fetch(`${API()}/api/room-sketch`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ images }),
+      signal: ctrl.signal,
+    }).finally(() => clearTimeout(timer));
+    const data = await res.json().catch(() => ({}));
+    if (!res.ok || !data.sketch) {
+      throw new Error(data.upstream_message || data.hint || data.error || `HTTP ${res.status}`);
+    }
+    registerScannedTemplate(buildScannedTemplate(data.sketch), true);
+  } catch (err) {
+    alert("Couldn't scan the room: " + (err.name === 'AbortError' ? 'timed out after 2 minutes.' : err.message));
+  } finally {
+    setBusy(false);
+  }
+}
+
 /* ---------- UI wiring --------------------------------------------------- */
 function renderTemplatePicker() {
   const sel = document.getElementById('ds3-template-select');
@@ -1001,11 +1140,15 @@ function renderTemplatePicker() {
     opt.value = t.id; opt.textContent = t.name;
     sel.appendChild(opt);
   });
-  sel.addEventListener('change', () => {
-    const tpl = state.templates.find((t) => t.id === sel.value);
-    clearItems();
-    loadTemplate(tpl, true);   // switch templates -> open furnished
-  });
+  // Bind once — this is re-called whenever a scanned template is registered.
+  if (!sel.dataset.bound) {
+    sel.dataset.bound = '1';
+    sel.addEventListener('change', () => {
+      const tpl = state.templates.find((t) => t.id === sel.value);
+      clearItems();
+      loadTemplate(tpl, true);   // switch templates -> open furnished
+    });
+  }
 }
 
 function clearItems() {
@@ -1062,6 +1205,16 @@ function bindUI() {
   document.getElementById('ds3-export').addEventListener('click', exportImage);
   document.getElementById('ds3-quote').addEventListener('click', sendToQuote);
   document.getElementById('ds3-photoreal')?.addEventListener('click', photorealRender);
+  // Scan my room: one input (image+video) — the mobile OS sheet offers camera.
+  const scanBtn = document.getElementById('ds3-scan');
+  const scanUpload = document.getElementById('ds3-scan-upload');
+  if (scanBtn && scanUpload) {
+    scanBtn.addEventListener('click', () => scanUpload.click());
+    scanUpload.addEventListener('change', () => {
+      onScanFiles(Array.from(scanUpload.files || []));
+      scanUpload.value = ''; // allow rescanning the same file
+    });
+  }
 }
 
 /* ---------- loop / resize ---------------------------------------------- */

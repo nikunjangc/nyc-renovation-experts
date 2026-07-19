@@ -125,8 +125,12 @@
       <div class="ds3-template-row">
         <label class="fw-bold mb-0"><i class="fas fa-vector-square text-primary me-2"></i>Template:</label>
         <select id="ds3-template-select" class="form-select form-select-sm"></select>
+        <button type="button" id="ds3-scan" class="btn btn-success btn-sm" title="Photograph or film your real room — we sketch it as an editable 3D room"><i class="fas fa-camera me-1"></i>Scan my room (beta)</button>
         <span class="text-muted" style="font-size:0.85rem;">Now editing: <strong id="ds3-current-template">—</strong></span>
+        <!-- accept image+video (no capture attr) → iOS/Android offer "Take Photo or Video / Photo Library / Files" -->
+        <input type="file" id="ds3-scan-upload" accept="image/*,video/*" multiple style="display:none;" />
       </div>
+      <div class="text-muted mb-2" style="font-size:0.82rem;">📷 <strong>Scan my room</strong>: take a photo or upload photos/a short video of your room — we sketch its size and furniture as an editable 3D room (beta: approximate — drag anything to fix it, then upgrade pieces from the catalog).</div>
 
       <div class="ds3-shell">
         <!-- Catalog sidebar -->

@@ -131,6 +131,10 @@
       "destination": "/api/index"
     },
     {
+      "source": "/api/room-sketch",
+      "destination": "/api/index"
+    },
+    {
       "source": "/api/self-fix",
       "destination": "/api/self-fix"
     },

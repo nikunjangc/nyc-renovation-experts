@@ -9,6 +9,7 @@ const { searchProducts } = require('../backend/product-search');
 const { clarifyProject } = require('../backend/project-clarifier');
 const { saveQuoteSubmission, listQuoteSubmissions, updateQuoteStatus } = require('./quote-store');
 const { saveDesignFeedback } = require('./feedback-store');
+const { sketchRoom } = require('../backend/room-sketch');
 const { segmentImage } = require('../backend/ds-segment');
 const { getObjectMask } = require('../backend/ds-mask');
 const { submitProductRender, getRenderStatus } = require('../backend/ds-render3d');
@@ -850,6 +851,28 @@ app.post('/api/design-feedback', rateLimiter, async (req, res) => {
     if (error.code === 'NOT_CONFIGURED') return res.json({ ok: false, stored: false });
     console.error('design-feedback error:', error.message);
     res.json({ ok: false, stored: false });
+  }
+});
+
+// Scan my room: 1-3 photos/video frames → approximate editable room sketch.
+app.options('/api/room-sketch', (req, res) => { dsCors(req, res); res.status(200).send(); });
+app.post('/api/room-sketch', rateLimiter, async (req, res) => {
+  dsCors(req, res);
+  try {
+    const { images } = req.body || {};
+    const sketch = await sketchRoom({ images });
+    res.json({ sketch });
+  } catch (error) {
+    console.error('room-sketch error:', error.message);
+    dsCors(req, res);
+    if (error.code === 'NOT_CONFIGURED') return res.status(503).json({
+      error: 'Room scan not configured',
+      hint: 'Set OPENAI_API_KEY in Vercel env vars and redeploy',
+    });
+    res.status(error.status || 500).json({
+      error: 'Room scan failed',
+      upstream_message: (error.detail || error.message || '').toString().slice(0, 400),
+    });
   }
 });
 
