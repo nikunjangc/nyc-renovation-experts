@@ -38,6 +38,18 @@
       .ds3-mode-btn { border: none; background: transparent; color: #555; padding: 7px 16px; border-radius: 24px; font-size: 0.85rem; font-weight: 600; cursor: pointer; }
       .ds3-mode-btn.active { background: #FDA12B; color: #fff; box-shadow: 0 2px 6px rgba(253,161,43,0.4); }
       .ds3-selinfo { font-size: 0.82rem; color: #666; margin-left: auto; min-height: 1em; }
+      /* Walk pad — shown only in Room view; hold to move. */
+      .ds3-walkpad {
+        position: absolute; bottom: 14px; left: 50%; transform: translateX(-50%);
+        display: grid; grid-template-columns: repeat(3, 52px); grid-template-rows: repeat(2, 52px);
+        gap: 6px; z-index: 5;
+      }
+      .ds3-walkpad button {
+        border: none; border-radius: 12px; background: rgba(255,255,255,0.82);
+        box-shadow: 0 2px 8px rgba(0,0,0,0.18); font-size: 1.2rem; color: #333;
+        touch-action: none; user-select: none; -webkit-user-select: none; cursor: pointer;
+      }
+      .ds3-walkpad button:active { background: #FDA12B; color: #fff; }
       .ds3-hint { font-size: 0.78rem; color: #888; margin-top: 10px; }
       .ds3-hidden { display: none !important; }
       .ds3-restyle { display: flex; align-items: center; flex-wrap: wrap; gap: 8px; margin-bottom: 12px; padding: 10px 12px; background: #fff8ef; border: 1px solid #ffe2bb; border-radius: 10px; }
@@ -151,6 +163,13 @@
 
           <div class="ds3-stage" id="ds3-stage">
             <canvas id="ds3-canvas"></canvas>
+            <!-- Room-view walk pad: hold to move (WASD/arrows on desktop) -->
+            <div id="ds3-walkpad" class="ds3-walkpad ds3-hidden">
+              <span></span><button type="button" data-mv="f" aria-label="Walk forward">▲</button><span></span>
+              <button type="button" data-mv="l" aria-label="Step left">◀</button>
+              <button type="button" data-mv="b" aria-label="Walk backward">▼</button>
+              <button type="button" data-mv="r" aria-label="Step right">▶</button>
+            </div>
           </div>
 
           <div class="d-flex flex-wrap gap-2 mt-3 align-items-center">
@@ -171,7 +190,7 @@
           <!-- Photoreal render result: before/after + save hint -->
           <div id="ds3-photoreal-result" class="ds3-hidden mt-3"></div>
 
-          <div class="ds3-hint">Opens as a furnished room — drag things around, or hit <strong>Furnish</strong> to reset the layout / <strong>Clear</strong> to empty it. <strong>Room view</strong> puts you inside at eye level (drag to look around) — the best angle for <strong>Make it real</strong>, which turns your view into a photorealistic render (~30s). Your design saves automatically in this browser.</div>
+          <div class="ds3-hint">Opens as a furnished room — drag things around, or hit <strong>Furnish</strong> to reset the layout / <strong>Clear</strong> to empty it. <strong>Room view</strong> puts you inside at eye level — drag to look around, and <strong>walk with the on-screen arrows</strong> (or WASD/arrow keys). It's the best angle for <strong>Make it real</strong>, which turns your view into a photorealistic render (~30s). Your design saves automatically in this browser.</div>
         </div>
       </div>
     </div>

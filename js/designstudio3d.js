@@ -43,6 +43,8 @@ const state = {
   templates: [],
   mode: '3d',
   gltf: new GLTFLoader(),
+  _move: { f: 0, r: 0 },         // room-view walking: forward/back, strafe
+  _clock: new THREE.Clock(),
 };
 
 /* ---------- boot ------------------------------------------------------- */
@@ -103,6 +105,8 @@ async function init() {
   window.addEventListener('resize', onResize);
   renderer.domElement.addEventListener('pointerdown', onPointerDown);
   window.addEventListener('keydown', onKey);
+  window.addEventListener('keydown', (e) => onWalkKey(e, true));
+  window.addEventListener('keyup', (e) => onWalkKey(e, false));
   bindUI();
   renderRestyleControls();
 
@@ -151,6 +155,8 @@ function loadTemplate(tpl, furnish = false) {
   const w = maxX - minX, d = maxZ - minZ;
   const cx = (minX + maxX) / 2, cz = (minZ + maxZ) / 2;
   state.dims = { w: Math.round(w), d: Math.round(d) }; // ft — used by the photoreal prompt
+  // Walkable envelope for room view (1ft inside the perimeter walls).
+  state.bounds = { minX: minX + 1, maxX: maxX - 1, minZ: minZ + 1, maxZ: maxZ - 1 };
 
   // Floor
   const floorMat = new THREE.MeshStandardMaterial({ color: 0xd9c3a5, roughness: 0.95 });
@@ -167,6 +173,7 @@ function loadTemplate(tpl, furnish = false) {
   const wallMat  = new THREE.MeshStandardMaterial({ color: 0xf5f5f2, roughness: 0.9 });
   const glassMat = new THREE.MeshStandardMaterial({ color: 0xbfe0f2, roughness: 0.1, transparent: true, opacity: 0.35 });
   const DOOR_W = 3, WIN_W = 4, SILL_H = 2.7, HEAD_H = 7;
+  state.colliders = []; // floor-level solid spans, for room-view walking collision
   tpl.walls.forEach((seg, wi) => {
     const dx = seg.x2 - seg.x1, dz = seg.y2 - seg.y1;
     const len = Math.hypot(dx, dz);
@@ -182,6 +189,11 @@ function loadTemplate(tpl, furnish = false) {
       m.rotation.y = rotY;
       if (mat === wallMat) { m.castShadow = true; m.receiveShadow = true; }
       g.add(m);
+      // Solid at floor level (walls + window sills) blocks walking; door
+      // openings and headers don't, so you can walk through doorways.
+      if (mat === wallMat && y0 === 0) {
+        state.colliders.push({ x1: seg.x1 + ux * s, z1: seg.y1 + uz * s, x2: seg.x1 + ux * e, z2: seg.y1 + uz * e });
+      }
     };
     // Collect this wall's openings, clamped inside the wall, sorted.
     const feats = [];
@@ -643,8 +655,74 @@ function setMode(mode) {
   if (mode === 'room') enterRoomView();
   else if (wasRoom) exitRoomView(mode === '3d');
   state.orbit.update();
+  state._move = { f: 0, r: 0 };
+  document.getElementById('ds3-walkpad')?.classList.toggle('ds3-hidden', mode !== 'room');
   ['2d', '3d', 'room'].forEach((m) =>
     document.getElementById('ds3-mode-' + m)?.classList.toggle('active', mode === m));
+}
+
+// Walk one frame in room view: move camera + look-target together on the floor
+// plane, relative to the current view heading, clamped inside the apartment.
+const WALK_SPEED = 8; // ft/s
+const UP3 = new THREE.Vector3(0, 1, 0);
+function stepWalk(dt) {
+  if (state.mode !== 'room') return;
+  const m = state._move;
+  if (!m.f && !m.r) return;
+  const cam = state.cam3d;
+  const fwd = new THREE.Vector3().subVectors(state.orbit.target, cam.position);
+  fwd.y = 0;
+  if (fwd.lengthSq() < 1e-6) return;
+  fwd.normalize();
+  const right = new THREE.Vector3().crossVectors(fwd, UP3); // camera-right on the floor
+  const delta = fwd.multiplyScalar(m.f).addScaledVector(right, m.r);
+  if (delta.lengthSq() < 1e-6) return;
+  delta.normalize().multiplyScalar(WALK_SPEED * dt);
+  const b = state.bounds;
+  const clampX = (x) => (b ? Math.min(Math.max(x, b.minX), b.maxX) : x);
+  const clampZ = (z) => (b ? Math.min(Math.max(z, b.minZ), b.maxZ) : z);
+  const px = cam.position.x, pz = cam.position.z;
+  // Try the full move; if a wall blocks it, slide along one axis instead.
+  let nx = clampX(px + delta.x), nz = clampZ(pz + delta.z);
+  if (hitsWall(nx, nz)) {
+    if (!hitsWall(clampX(px + delta.x), pz)) { nx = clampX(px + delta.x); nz = pz; }
+    else if (!hitsWall(px, clampZ(pz + delta.z))) { nx = px; nz = clampZ(pz + delta.z); }
+    else { nx = px; nz = pz; }
+  }
+  const dx = nx - px, dz = nz - pz;
+  cam.position.x += dx; cam.position.z += dz;
+  state.orbit.target.x += dx; state.orbit.target.z += dz;
+}
+
+// Is (x,z) within body-clearance of any floor-level wall span?
+const WALL_CLEAR = 0.55; // ft
+function hitsWall(x, z) {
+  const cs = state.colliders;
+  if (!cs) return false;
+  for (const c of cs) {
+    const vx = c.x2 - c.x1, vz = c.z2 - c.z1;
+    const wx = x - c.x1, wz = z - c.z1;
+    const L2 = vx * vx + vz * vz || 1e-9;
+    let t = (wx * vx + wz * vz) / L2;
+    t = Math.max(0, Math.min(1, t));
+    const ddx = wx - t * vx, ddz = wz - t * vz;
+    if (ddx * ddx + ddz * ddz < WALL_CLEAR * WALL_CLEAR) return true;
+  }
+  return false;
+}
+
+// Keyboard walking (desktop): WASD / arrow keys while in room view.
+function onWalkKey(e, down) {
+  if (state.mode !== 'room') return;
+  const m = state._move;
+  switch (e.code) {
+    case 'KeyW': case 'ArrowUp':    m.f = down ? 1 : 0; break;
+    case 'KeyS': case 'ArrowDown':  m.f = down ? -1 : 0; break;
+    case 'KeyA': case 'ArrowLeft':  m.r = down ? -1 : 0; break;
+    case 'KeyD': case 'ArrowRight': m.r = down ? 1 : 0; break;
+    default: return;
+  }
+  e.preventDefault();
 }
 
 /* ---------- save / load / export / quote ------------------------------- */
@@ -963,6 +1041,20 @@ function bindUI() {
   document.getElementById('ds3-mode-2d').addEventListener('click', () => setMode('2d'));
   document.getElementById('ds3-mode-3d').addEventListener('click', () => setMode('3d'));
   document.getElementById('ds3-mode-room')?.addEventListener('click', () => setMode('room'));
+  // Walk pad (room view): hold a button to move; releasing stops.
+  document.querySelectorAll('#ds3-walkpad [data-mv]').forEach((b) => {
+    const set = (on) => {
+      const m = state._move;
+      switch (b.dataset.mv) {
+        case 'f': m.f = on ? 1 : 0; break;
+        case 'b': m.f = on ? -1 : 0; break;
+        case 'l': m.r = on ? -1 : 0; break;
+        case 'r': m.r = on ? 1 : 0; break;
+      }
+    };
+    b.addEventListener('pointerdown', (e) => { e.preventDefault(); b.setPointerCapture?.(e.pointerId); set(true); });
+    ['pointerup', 'pointerleave', 'pointercancel'].forEach((ev) => b.addEventListener(ev, () => set(false)));
+  });
   document.getElementById('ds3-tool-rotate').addEventListener('click', () => state.gizmo.setMode(state.gizmo.mode === 'rotate' ? 'translate' : 'rotate'));
   document.getElementById('ds3-tool-delete').addEventListener('click', deleteSelected);
   document.getElementById('ds3-tool-clear').addEventListener('click', () => { clearItems(); save(); });
@@ -987,6 +1079,7 @@ function onResize() {
 
 function animate() {
   requestAnimationFrame(animate);
+  stepWalk(state._clock.getDelta());
   state.orbit.update();
   state.renderer.render(state.scene, state.active);
 }
