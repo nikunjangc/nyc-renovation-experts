@@ -87,8 +87,16 @@ Rules:
   if (!res.ok) {
     const detail = await res.text().catch(() => '');
     const e = new Error(`vision call failed: ${res.status}`);
-    e.detail = detail.slice(0, 400);
-    e.status = res.status === 401 ? 503 : 502;
+    // Key problems are a site-owner fix, not a user retry — say so plainly
+    // instead of dumping OpenAI's raw JSON into the visitor's alert.
+    if (/missing_scope|insufficient permissions/i.test(detail)) {
+      e.detail = 'The AI key on the server is restricted (missing model permissions). Site owner: give the OpenAI API key "Model capabilities" access, or use an unrestricted key.';
+    } else if (res.status === 401) {
+      e.detail = 'The AI key on the server is invalid or expired. Site owner: update OPENAI_API_KEY in Vercel.';
+    } else {
+      e.detail = detail.slice(0, 400);
+    }
+    e.status = res.status === 401 || res.status === 403 ? 503 : 502;
     throw e;
   }
   const json = await res.json().catch(() => ({}));
