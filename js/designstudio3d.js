@@ -218,11 +218,8 @@ function loadTemplate(tpl, furnish = false) {
   state.scene.add(g);
 
   // Frame the cameras to this plan
-  state.orbit.target.set(cx, 1.5, cz);
-  state.cam3d.position.set(cx + w * 0.6, Math.max(w, d) * 0.9, cz + d * 1.1);
-  state.cam2d.position.set(cx, Math.max(w, d) * 1.6, cz);
-  state.cam2d.lookAt(cx, 0, cz);
-  fit2dCamera(w, d);
+  state.center = { x: cx, z: cz };
+  frameDollhouse();
   state.orbit.update();
 
   document.getElementById('ds3-current-template').textContent = tpl.name;
@@ -235,7 +232,7 @@ function loadTemplate(tpl, furnish = false) {
 function furnishFromTemplate(tpl) {
   (tpl.furniture || []).forEach((f) => {
     const entry = state.catalog?.items.find((e) => e.id === f.id);
-    if (entry) addItem(entry, f.x, f.z, f.rot || 0, f.scale || 1);
+    if (entry) addItem(entry, f.x, f.z, f.rot || 0, f.scale || 1, null, false);
   });
   select(null);
   save();
@@ -371,7 +368,7 @@ function sphere(color, r) { const m = new THREE.Mesh(new THREE.SphereGeometry(r,
 function part(mesh, x, y, z) { mesh.position.set(x, y, z); return mesh; }
 
 /* ---------- placing items ---------------------------------------------- */
-function addItem(entry, atX, atZ, rotY = 0, scaleMul = 1, style = null) {
+function addItem(entry, atX, atZ, rotY = 0, scaleMul = 1, style = null, autoSelect = true) {
   const place = (obj) => {
     // obj already carries its real feet size (primitive: set in buildPrimitive;
     // GLB: set by fitToFeet). scaleMul is the user/saved resize factor.
@@ -387,7 +384,10 @@ function addItem(entry, atX, atZ, rotY = 0, scaleMul = 1, style = null) {
     obj.userData.style = style;
     state.scene.add(obj);
     state.items.push(obj);
-    select(obj);
+    // GLBs land in an async load callback — bulk placement (furnish/restore)
+    // must not steal the selection after the fact, so only user-initiated adds
+    // auto-select.
+    if (autoSelect) select(obj);
     save();
   };
 
@@ -599,15 +599,52 @@ function onKey(e) {
 }
 
 /* ---------- view toggle ------------------------------------------------ */
+// Dollhouse framing for the 3D orbit + 2D plan cameras (from template bounds).
+function frameDollhouse() {
+  const c = state.center;
+  if (!c || !state.dims) return;
+  const { w, d } = state.dims;
+  state.orbit.target.set(c.x, 1.5, c.z);
+  state.cam3d.position.set(c.x + w * 0.6, Math.max(w, d) * 0.9, c.z + d * 1.1);
+  state.cam2d.position.set(c.x, Math.max(w, d) * 1.6, c.z);
+  state.cam2d.lookAt(c.x, 0, c.z);
+  fit2dCamera(w, d);
+}
+
+// Eye-level "stand in the room" view. OrbitControls with the target pinned just
+// ahead of the camera approximates head-look; zoom/pan stay off so you keep
+// standing in place. Also the best angle for "Make it real" — the capture reads
+// like an interior photograph instead of a dollhouse.
+const EYE_H = 5.2; // ft
+function enterRoomView() {
+  const c = state.center || { x: 10, z: 8 };
+  const d = state.dims?.d || 16;
+  const pz = c.z + Math.max(2, d / 2 - 3); // stand near the south side, facing into the room
+  state.cam3d.position.set(c.x, EYE_H, pz);
+  state.orbit.target.set(c.x, EYE_H - 0.4, pz - 2);
+  state.orbit.enableZoom = false;
+  state.orbit.maxPolarAngle = Math.PI * 0.95; // allow looking up at the ceiling
+  state.orbit.rotateSpeed = -0.4;             // drag = look around, natural direction
+}
+function exitRoomView(reframe) {
+  state.orbit.enableZoom = true;
+  state.orbit.maxPolarAngle = Math.PI / 2.05;
+  state.orbit.rotateSpeed = 1;
+  if (reframe) frameDollhouse();
+}
+
 function setMode(mode) {
+  const wasRoom = state.mode === 'room';
   state.mode = mode;
   state.active = mode === '2d' ? state.cam2d : state.cam3d;
   state.orbit.object = state.active;
-  state.orbit.enableRotate = mode === '3d';
+  state.orbit.enableRotate = mode !== '2d';
   state.gizmo.camera = state.active;
+  if (mode === 'room') enterRoomView();
+  else if (wasRoom) exitRoomView(mode === '3d');
   state.orbit.update();
-  document.getElementById('ds3-mode-2d').classList.toggle('active', mode === '2d');
-  document.getElementById('ds3-mode-3d').classList.toggle('active', mode === '3d');
+  ['2d', '3d', 'room'].forEach((m) =>
+    document.getElementById('ds3-mode-' + m)?.classList.toggle('active', mode === m));
 }
 
 /* ---------- save / load / export / quote ------------------------------- */
@@ -636,7 +673,7 @@ function restore() {
   loadTemplate(tpl);
   (data.items || []).forEach((it) => {
     const entry = state.catalog.items.find((e) => e.id === it.id);
-    if (entry) addItem(entry, it.x, it.z, it.rot, it.scale || 1, it.style || null);
+    if (entry) addItem(entry, it.x, it.z, it.rot, it.scale || 1, it.style || null, false);
   });
   select(null);
   return true;
@@ -824,6 +861,7 @@ function renderCatalog() {
 function bindUI() {
   document.getElementById('ds3-mode-2d').addEventListener('click', () => setMode('2d'));
   document.getElementById('ds3-mode-3d').addEventListener('click', () => setMode('3d'));
+  document.getElementById('ds3-mode-room')?.addEventListener('click', () => setMode('room'));
   document.getElementById('ds3-tool-rotate').addEventListener('click', () => state.gizmo.setMode(state.gizmo.mode === 'rotate' ? 'translate' : 'rotate'));
   document.getElementById('ds3-tool-delete').addEventListener('click', deleteSelected);
   document.getElementById('ds3-tool-clear').addEventListener('click', () => { clearItems(); save(); });
