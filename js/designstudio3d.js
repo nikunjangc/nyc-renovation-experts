@@ -46,7 +46,11 @@ const state = {
 };
 
 /* ---------- boot ------------------------------------------------------- */
-init();
+// NOTE: init() is CALLED at the very END of this module (see last line).
+// Calling it here used to throw "Cannot access 'SWATCHES' before
+// initialization" — init synchronously reaches renderRestyleControls(), which
+// reads consts (SWATCHES/MATERIALS/FINISHES) declared further down the file —
+// killing the whole page before templates/catalog ever loaded.
 
 async function init() {
   const canvas = document.getElementById('ds3-canvas');
@@ -805,3 +809,6 @@ function animate() {
   state.orbit.update();
   state.renderer.render(state.scene, state.active);
 }
+
+// Boot — must run AFTER every const above is initialized (see note at top).
+init();
