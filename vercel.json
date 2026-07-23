@@ -140,6 +140,18 @@
       "destination": "/api/index"
     },
     {
+      "source": "/api/walkthrough-start",
+      "destination": "/api/index"
+    },
+    {
+      "source": "/api/walkthrough-status",
+      "destination": "/api/index"
+    },
+    {
+      "source": "/api/walkthrough-finish",
+      "destination": "/api/index"
+    },
+    {
       "source": "/api/self-fix",
       "destination": "/api/self-fix"
     },

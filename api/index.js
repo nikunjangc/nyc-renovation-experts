@@ -10,6 +10,7 @@ const { clarifyProject } = require('../backend/project-clarifier');
 const { saveQuoteSubmission, listQuoteSubmissions, updateQuoteStatus } = require('./quote-store');
 const { saveDesignFeedback } = require('./feedback-store');
 const { sketchRoom } = require('../backend/room-sketch');
+const { startWalkthrough, walkthroughStatus, finishWalkthrough } = require('../backend/walkthrough');
 const { segmentImage } = require('../backend/ds-segment');
 const { getObjectMask } = require('../backend/ds-mask');
 const { submitProductRender, getRenderStatus } = require('../backend/ds-render3d');
@@ -871,6 +872,83 @@ app.post('/api/room-sketch', rateLimiter, async (req, res) => {
     });
     res.status(error.status || 500).json({
       error: 'Room scan failed',
+      upstream_message: (error.detail || error.message || '').toString().slice(0, 400),
+    });
+  }
+});
+
+// ===== Photoreal walkthrough (KIRI Engine 3DGS) =====
+// start: frames -> KIRI job; status: poll (light limit — clients poll every
+// ~30s for up to ~20 min, the 5/min limiter would kick them out); finish:
+// relay the finished splat into Supabase Storage.
+
+const pollLimit = new Map();
+function pollLimiter(req, res, next) {
+  const ip = req.ip || req.connection.remoteAddress;
+  const now = Date.now();
+  const rec = pollLimit.get(ip);
+  if (!rec || now > rec.resetTime) {
+    pollLimit.set(ip, { count: 1, resetTime: now + 60000 });
+    return next();
+  }
+  if (rec.count >= 30) return res.status(429).json({ error: 'Too many requests. Please try again later.' });
+  rec.count++;
+  next();
+}
+
+app.options('/api/walkthrough-start', (req, res) => { dsCors(req, res); res.status(200).send(); });
+app.post('/api/walkthrough-start', rateLimiter, async (req, res) => {
+  dsCors(req, res);
+  try {
+    const { frames } = req.body || {};
+    const result = await startWalkthrough({ frames });
+    res.json(result);
+  } catch (error) {
+    console.error('walkthrough-start error:', error.message);
+    dsCors(req, res);
+    if (error.code === 'NOT_CONFIGURED') return res.status(503).json({
+      error: 'Walkthrough not configured',
+      hint: 'Set KIRI_API_KEY in Vercel env vars and redeploy',
+    });
+    res.status(error.status || 500).json({
+      error: 'Could not start the walkthrough scan',
+      upstream_message: (error.detail || error.message || '').toString().slice(0, 400),
+    });
+  }
+});
+
+app.options('/api/walkthrough-status', (req, res) => { dsCors(req, res); res.status(200).send(); });
+app.get('/api/walkthrough-status', pollLimiter, async (req, res) => {
+  dsCors(req, res);
+  try {
+    const result = await walkthroughStatus(req.query.serialize);
+    res.json(result);
+  } catch (error) {
+    console.error('walkthrough-status error:', error.message);
+    dsCors(req, res);
+    if (error.code === 'NOT_CONFIGURED') return res.status(503).json({ error: 'Walkthrough not configured' });
+    res.status(error.status || 500).json({
+      error: 'Status check failed',
+      upstream_message: (error.detail || error.message || '').toString().slice(0, 400),
+    });
+  }
+});
+
+app.options('/api/walkthrough-finish', (req, res) => { dsCors(req, res); res.status(200).send(); });
+app.post('/api/walkthrough-finish', rateLimiter, async (req, res) => {
+  dsCors(req, res);
+  try {
+    const result = await finishWalkthrough((req.body || {}).serialize);
+    res.json(result);
+  } catch (error) {
+    console.error('walkthrough-finish error:', error.message);
+    dsCors(req, res);
+    if (error.code === 'NOT_CONFIGURED') return res.status(503).json({
+      error: 'Walkthrough not configured',
+      hint: 'Set KIRI_API_KEY + SUPABASE_URL/SUPABASE_SERVICE_ROLE_KEY in Vercel and create the "room-scans" bucket',
+    });
+    res.status(error.status || 500).json({
+      error: 'Could not fetch the finished walkthrough',
       upstream_message: (error.detail || error.message || '').toString().slice(0, 400),
     });
   }

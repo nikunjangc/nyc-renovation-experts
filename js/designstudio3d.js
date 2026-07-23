@@ -1003,7 +1003,7 @@ function escapeHtml3(s) {
 // 3 frames auto-grabbed from a short video) and we build a live template from
 // it — every piece is a real catalog object, so it's fully editable/upgradable.
 
-function imageFileToDataUrl(file, maxEdge = 1280) {
+function imageFileToDataUrl(file, maxEdge = 1280, quality = 0.85) {
   return new Promise((resolve, reject) => {
     const url = URL.createObjectURL(file);
     const img = new Image();
@@ -1014,7 +1014,7 @@ function imageFileToDataUrl(file, maxEdge = 1280) {
       c.height = Math.round(img.naturalHeight * scale);
       c.getContext('2d').drawImage(img, 0, 0, c.width, c.height);
       URL.revokeObjectURL(url);
-      resolve(c.toDataURL('image/jpeg', 0.85));
+      resolve(c.toDataURL('image/jpeg', quality));
     };
     img.onerror = () => { URL.revokeObjectURL(url); reject(new Error('could not read image')); };
     img.src = url;
@@ -1025,7 +1025,7 @@ function imageFileToDataUrl(file, maxEdge = 1280) {
 // silently never fire loadedmetadata/seeked for a file-picked video, so the
 // whole grab runs under a hard timeout — the caller falls back to any photos
 // in the same selection (or asks the user to try photos).
-function framesFromVideo(file, count = 3, maxEdge = 1280) {
+function framesFromVideo(file, count = 3, maxEdge = 1280, quality = 0.85, onProgress = null) {
   const grab = new Promise((resolve, reject) => {
     const url = URL.createObjectURL(file);
     const v = document.createElement('video');
@@ -1042,8 +1042,11 @@ function framesFromVideo(file, count = 3, maxEdge = 1280) {
     const start = () => {
       if (started) return; started = true;
       const dur = Number.isFinite(v.duration) && v.duration > 0 ? v.duration : 0;
+      const n = Math.max(1, count);
+      // Even spread across the clip, nudged off the exact ends (first/last
+      // frames of phone videos are often black or mid-autofocus).
       const times = dur
-        ? [0.2, 0.5, 0.8].slice(0, Math.max(1, count)).map((f) => Math.min(dur * f, Math.max(dur - 0.1, 0)))
+        ? Array.from({ length: n }, (_, i) => Math.min(dur * (i + 0.5) / n, Math.max(dur - 0.1, 0)))
         : [0]; // unknown duration (odd codec / live photo) -> single frame at start
       let i = 0;
       v.onseeked = () => {
@@ -1054,7 +1057,8 @@ function framesFromVideo(file, count = 3, maxEdge = 1280) {
         c.width = Math.round(v.videoWidth * scale);
         c.height = Math.round(v.videoHeight * scale);
         c.getContext('2d').drawImage(v, 0, 0, c.width, c.height);
-        frames.push(c.toDataURL('image/jpeg', 0.85));
+        frames.push(c.toDataURL('image/jpeg', quality));
+        if (onProgress) onProgress(frames.length, times.length);
         i++;
         if (i < times.length) v.currentTime = times[i];
         else finish();
@@ -1067,7 +1071,8 @@ function framesFromVideo(file, count = 3, maxEdge = 1280) {
     try { v.load(); } catch (_) {}
   });
   const timeout = new Promise((_, reject) =>
-    setTimeout(() => reject(new Error("couldn't read the video — try photos instead")), 15000));
+    setTimeout(() => reject(new Error("couldn't read the video — try photos instead")),
+      15000 + Math.max(0, count - 3) * 1500));
   return Promise.race([grab, timeout]);
 }
 
