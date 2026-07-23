@@ -132,6 +132,14 @@
       </div>
       <div class="text-muted mb-2" style="font-size:0.82rem;">📷 <strong>Scan my room</strong>: take a photo or upload photos/a short video of your room — we sketch its size and furniture as an editable 3D room (beta: approximate — drag anything to fix it, then upgrade pieces from the catalog).</div>
 
+      <!-- Photoreal walkthrough: film a slow walk-around -> real 3D (Gaussian splat) scene -->
+      <div class="d-flex flex-wrap align-items-center gap-2 mb-1">
+        <button type="button" id="ds3-walkthrough" class="btn btn-dark btn-sm" title="Film a slow 20-60s walk around your room — we turn it into a photoreal 3D scene you can walk through"><i class="fas fa-film me-1"></i>Photoreal walkthrough (beta)</button>
+        <span id="ds3-wt-status" class="ds3-hidden text-muted" style="font-size:0.85rem;"></span>
+        <input type="file" id="ds3-wt-upload" accept="video/*,image/*" multiple style="display:none;" />
+      </div>
+      <div class="text-muted mb-2" style="font-size:0.82rem;">🎥 <strong>Photoreal walkthrough</strong>: slowly film a 20–60 second walk around your room (keep the camera moving sideways, good light). We build a true-to-life 3D copy you can step inside — takes ~7–20 minutes in the cloud; leave the page and come back whenever.</div>
+
       <div class="ds3-shell">
         <!-- Catalog sidebar -->
         <div class="ds3-panel">
@@ -249,7 +257,8 @@
       {
         "imports": {
           "three": "https://cdn.jsdelivr.net/npm/three@0.160.0/build/three.module.js",
-          "three/addons/": "https://cdn.jsdelivr.net/npm/three@0.160.0/examples/jsm/"
+          "three/addons/": "https://cdn.jsdelivr.net/npm/three@0.160.0/examples/jsm/",
+          "@mkkellogg/gaussian-splats-3d": "https://cdn.jsdelivr.net/npm/@mkkellogg/gaussian-splats-3d@0.4.7/build/gaussian-splats-3d.module.js"
         }
       }
     </script>
