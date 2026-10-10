@@ -15,6 +15,12 @@ same time as) `main` when releasing a new commit. Alternatively, set the
 Production Branch to `main` in Vercel → Project Settings → Git, and merges to
 `main` will go live on their own.
 
+**npm packages only resolve from `api/`.** On Vercel the API function gets
+`api/node_modules` (from `api/package.json`), not the repo-root or `backend/`
+installs. A module that `require`s an npm package must live in `api/`; files in
+`backend/` may only use Node built-ins (and global `fetch`), or the whole API
+fails to load with "Cannot find module".
+
 ## 🏗️ Deployment Strategy
 
 ### **Frontend: GitHub Pages** (Static HTML Files)
