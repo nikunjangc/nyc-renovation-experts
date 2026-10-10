@@ -33,6 +33,13 @@ const tests = [
     method: 'GET',
     expectedStatus: 401, // Should be unauthorized without auth
     expectJSON: true
+  },
+  {
+    name: 'Admin Permit Leads (should require auth)',
+    path: '/admin/permit-leads?days=30&segment=office',
+    method: 'GET',
+    expectedStatus: 401,
+    expectJSON: true
   }
 ];
 

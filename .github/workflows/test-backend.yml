@@ -17,7 +17,7 @@ jobs:
       - name: Setup Node.js
         uses: actions/setup-node@v4
         with:
-          node-version: '18'
+          node-version: '22'
           cache: 'npm'
           cache-dependency-path: api/package.json
       
@@ -36,11 +36,15 @@ jobs:
           ADMIN_PASSWORD: test-password
           NODE_ENV: test
         run: |
-          # Install root dependencies if needed
-          npm install express cors dotenv node-fetch 2>/dev/null || true
+          # Install root dependencies (backend/ modules resolve packages from the repo root)
+          npm install --no-audit --no-fund
           # Run tests with timeout
           timeout 30 node test-backend.js || exit 1
-      
+
+      - name: Run permit-leads unit tests
+        working-directory: ./
+        run: node --test api/permit-leads.test.js
+
       - name: Test Vercel deployment (if URL provided)
         if: env.VERCEL_URL != ''
         working-directory: ./

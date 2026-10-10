@@ -99,6 +99,7 @@ Only **2 pages need backend integration**:
 - `GET /admin/stats` - Admin statistics
 - `GET /admin/logs` - Admin logs
 - `POST /admin/clear-logs` - Clear logs
+- `GET /admin/permit-leads` - Renovation leads and market analytics from NYC DOB permit filings (see `PERMIT-LEADS.md`)
 
 ---
 
