@@ -4,7 +4,7 @@
     <base href="/">
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>API Usage Dashboard - NYC Renovation Experts</title>
+    <title>Admin Dashboard - NYC Renovation Experts</title>
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
     <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" rel="stylesheet">
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
@@ -76,6 +76,62 @@
             max-height: 500px;
             overflow-y: auto;
         }
+
+        /* ---- Tabs ---- */
+        .admin-tabs .nav-link { color: #52514e; font-weight: 500; }
+        .admin-tabs .nav-link.active { background: #667eea; color: #fff; }
+
+        /* ---- Permit leads ---- */
+        .pl-filters {
+            display: flex; flex-wrap: wrap; gap: 12px 16px; align-items: flex-end;
+            background: #fff; border-radius: 10px; padding: 1rem 1.25rem;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.06); margin-bottom: 1rem;
+        }
+        .pl-filters > div { min-width: 150px; }
+        .pl-filters .form-label { font-size: .75rem; color: #52514e; margin-bottom: .25rem; font-weight: 600; }
+        .pl-filter-actions { display: flex; align-items: center; gap: .75rem; }
+        #plResults { transition: opacity .2s; }
+        #plResults.pl-loading { opacity: .45; pointer-events: none; }
+        .pl-kpis { display: grid; grid-template-columns: repeat(auto-fit, minmax(170px, 1fr)); gap: 12px; margin-bottom: 1rem; }
+        .pl-kpi { background: #fff; border-radius: 10px; padding: 1rem 1.1rem; box-shadow: 0 2px 10px rgba(0,0,0,0.06); }
+        .pl-kpi-accent { box-shadow: inset 3px 0 0 #2a78d6, 0 2px 10px rgba(0,0,0,0.06); }
+        .pl-kpi-label { font-size: .8rem; color: #52514e; }
+        .pl-kpi-value { font-size: 1.75rem; font-weight: 600; color: #0b0b0b; line-height: 1.2; margin-top: .15rem; }
+        .pl-kpi-sub { font-size: .75rem; color: #898781; margin-top: .15rem; }
+        .pl-card { background: #fff; border-radius: 10px; padding: 1.25rem; box-shadow: 0 2px 10px rgba(0,0,0,0.06); }
+        .pl-card-title { font-size: 1rem; font-weight: 600; margin-bottom: .75rem; }
+        .pl-subtitle { font-size: .8rem; color: #52514e; font-weight: 600; margin: .25rem 0 .5rem; }
+        .pl-chart { position: relative; height: 260px; }
+        .pl-table-view summary { font-size: .8rem; color: #52514e; cursor: pointer; margin-top: .5rem; }
+        .pl-table-view .table-responsive { max-height: 260px; }
+        .pl-bar-table td, .pl-bar-table th { vertical-align: middle; font-size: .85rem; }
+        .pl-bar-table th, .pl-leads th, .pl-list th { color: #52514e; font-weight: 600; font-size: .75rem; white-space: nowrap; }
+        .pl-bar { display: flex; align-items: center; gap: 8px; min-width: 72px; }
+        .pl-scroll-x { overflow-x: auto; }
+        .pl-bar-num { font-variant-numeric: tabular-nums; min-width: 2.75em; text-align: right; color: #0b0b0b; }
+        .pl-bar-track { flex: 1; display: block; height: 8px; }
+        .pl-bar-fill { display: block; height: 8px; background: #2a78d6; border-radius: 0 4px 4px 0; }
+        .pl-num { font-variant-numeric: tabular-nums; white-space: nowrap; }
+        .pl-leads { font-size: .85rem; }
+        .pl-leads td { min-width: 110px; }
+        .pl-leads td:first-child { min-width: 56px; }
+        .pl-leads td.pl-desc { min-width: 240px; max-width: 360px; }
+        .pl-leads-wrap { max-height: 720px; }
+        .pl-leads-wrap thead th { position: sticky; top: 0; background: #fff; z-index: 1; box-shadow: inset 0 -1px 0 #dee2e6; }
+        .pl-clamp { display: -webkit-box; -webkit-line-clamp: 3; -webkit-box-orient: vertical; overflow: hidden; }
+        .pl-score {
+            display: inline-block; min-width: 2.4em; text-align: center; font-weight: 700; border-radius: 6px;
+            padding: .15rem .35rem; background: #eef3fb; color: #0b0b0b; font-variant-numeric: tabular-nums; cursor: help;
+        }
+        .pl-stage { display: inline-flex; align-items: center; gap: .35rem; font-size: .78rem; font-weight: 600; white-space: nowrap; }
+        .pl-stage-approved i { color: #0ca30c; }
+        .pl-stage-review i { color: #898781; }
+        .pl-stage-objections i { color: #fab219; }
+        .pl-muted { color: #898781; font-size: .75rem; }
+        .pl-links a { font-size: .75rem; margin-right: .6rem; white-space: nowrap; }
+        .pl-list td { font-size: .85rem; vertical-align: top; }
+        .pl-list a { white-space: nowrap; }
+        .pl-footnote { line-height: 1.5; }
     </style>
 </head>
 <body>
@@ -98,8 +154,8 @@
             <div class="container">
                 <div class="d-flex justify-content-between align-items-center">
                     <div>
-                        <h1><i class="fas fa-chart-line me-2"></i>API Usage Dashboard</h1>
-                        <p class="mb-0">Monitor your AI API usage and costs</p>
+                        <h1><i class="fas fa-chart-line me-2"></i>Admin Dashboard</h1>
+                        <p class="mb-0">Permit leads, quote requests and AI usage</p>
                     </div>
                     <button class="btn btn-light" onclick="logout()">
                         <i class="fas fa-sign-out-alt me-2"></i>Logout
@@ -109,6 +165,251 @@
         </div>
 
         <div class="container">
+            <ul class="nav nav-pills admin-tabs mb-4" role="tablist">
+                <li class="nav-item" role="presentation">
+                    <button class="nav-link active" type="button" role="tab" data-tab="leads" aria-selected="true">
+                        <i class="fas fa-hard-hat me-2"></i>Permit leads
+                    </button>
+                </li>
+                <li class="nav-item" role="presentation">
+                    <button class="nav-link" type="button" role="tab" data-tab="usage" aria-selected="false">
+                        <i class="fas fa-clipboard-list me-2"></i>Quotes &amp; AI usage
+                    </button>
+                </li>
+            </ul>
+
+            <!-- ===== Permit leads (NYC DOB filings) ===== -->
+            <section id="tab-leads" class="pl-root" role="tabpanel">
+                <div class="mb-3">
+                    <h4 class="mb-1">Renovation jobs filed with NYC DOB</h4>
+                    <p class="text-muted mb-0">
+                        Every alteration job filed in DOB NOW, narrowed to your market. Jobs with
+                        <strong>no work permit yet</strong> may still be picking a contractor &mdash; the architect or engineer on
+                        the filing is usually the fastest way in.
+                    </p>
+                </div>
+
+                <!-- Filters: one row, scopes everything below -->
+                <div class="pl-filters">
+                    <div>
+                        <label class="form-label" for="plSegment">Market</label>
+                        <select id="plSegment" class="form-select form-select-sm">
+                            <option value="office" selected>Office &amp; workplace</option>
+                            <option value="commercial">All commercial</option>
+                            <option value="residential">Apartments &amp; homes</option>
+                            <option value="all">All renovation work</option>
+                        </select>
+                    </div>
+                    <div>
+                        <label class="form-label" for="plBorough">Borough</label>
+                        <select id="plBorough" class="form-select form-select-sm">
+                            <option value="">All boroughs</option>
+                            <option>Manhattan</option>
+                            <option>Brooklyn</option>
+                            <option>Queens</option>
+                            <option>Bronx</option>
+                            <option>Staten Island</option>
+                        </select>
+                    </div>
+                    <div>
+                        <label class="form-label" for="plDays">Filed within</label>
+                        <select id="plDays" class="form-select form-select-sm">
+                            <option value="30">Last 30 days</option>
+                            <option value="60">Last 60 days</option>
+                            <option value="90" selected>Last 90 days</option>
+                            <option value="180">Last 180 days</option>
+                        </select>
+                    </div>
+                    <div>
+                        <label class="form-label" for="plMinCost">Job size</label>
+                        <select id="plMinCost" class="form-select form-select-sm">
+                            <option value="0" selected>Any size</option>
+                            <option value="25000">$25K and up</option>
+                            <option value="100000">$100K and up</option>
+                            <option value="500000">$500K and up</option>
+                            <option value="1000000">$1M and up</option>
+                        </select>
+                    </div>
+                    <div class="pl-filter-actions">
+                        <button class="btn btn-sm btn-primary" type="button" id="plRun">
+                            <i class="fas fa-sync-alt me-1"></i>Update
+                        </button>
+                        <span id="plStatus" class="small text-muted" aria-live="polite"></span>
+                    </div>
+                </div>
+
+                <div id="plError" class="alert alert-warning small d-none" role="alert"></div>
+                <div id="plEmpty" class="text-muted small mb-4">Loading NYC DOB filings&hellip;</div>
+
+                <div id="plResults" class="d-none">
+                    <div id="plTruncated" class="alert alert-info small d-none"></div>
+
+                    <!-- KPI row -->
+                    <div class="pl-kpis">
+                        <div class="pl-kpi">
+                            <div class="pl-kpi-label">Jobs filed</div>
+                            <div class="pl-kpi-value" id="plKpiProjects">0</div>
+                            <div class="pl-kpi-sub" id="plKpiProjectsSub"></div>
+                        </div>
+                        <div class="pl-kpi pl-kpi-accent">
+                            <div class="pl-kpi-label">No permit yet</div>
+                            <div class="pl-kpi-value" id="plKpiOpen">0</div>
+                            <div class="pl-kpi-sub" id="plKpiOpenSub"></div>
+                        </div>
+                        <div class="pl-kpi">
+                            <div class="pl-kpi-label">Approved, waiting on a contractor</div>
+                            <div class="pl-kpi-value" id="plKpiApproved">0</div>
+                            <div class="pl-kpi-sub" id="plKpiApprovedSub"></div>
+                        </div>
+                        <div class="pl-kpi">
+                            <div class="pl-kpi-label">Typical job size</div>
+                            <div class="pl-kpi-value" id="plKpiMedian">$0</div>
+                            <div class="pl-kpi-sub" id="plKpiMedianSub"></div>
+                        </div>
+                        <div class="pl-kpi">
+                            <div class="pl-kpi-label">Contractors pulling permits</div>
+                            <div class="pl-kpi-value" id="plKpiGcs">0</div>
+                            <div class="pl-kpi-sub" id="plKpiGcsSub"></div>
+                        </div>
+                    </div>
+
+                    <div class="row g-3 mb-3">
+                        <div class="col-lg-7">
+                            <div class="pl-card h-100">
+                                <h5 class="pl-card-title">Jobs filed per week</h5>
+                                <div class="pl-chart"><canvas id="plWeeklyChart" aria-label="Jobs filed per week" role="img"></canvas></div>
+                                <div class="pl-muted mt-1" id="plWeeklyNote"></div>
+                                <details class="pl-table-view">
+                                    <summary>View as table</summary>
+                                    <div class="table-responsive"><table class="table table-sm mb-0"><thead><tr><th>Week of</th><th class="text-end">Jobs</th><th class="text-end">Declared value</th></tr></thead><tbody id="plWeeklyTable"></tbody></table></div>
+                                </details>
+                            </div>
+                        </div>
+                        <div class="col-lg-5">
+                            <div class="pl-card h-100">
+                                <h5 class="pl-card-title">By borough</h5>
+                                <div class="pl-scroll-x">
+                                    <table class="table table-sm pl-bar-table mb-3">
+                                        <thead><tr><th>Borough</th><th>Jobs</th><th class="text-end">No permit</th><th class="text-end">Value</th></tr></thead>
+                                        <tbody id="plBoroughTable"></tbody>
+                                    </table>
+                                </div>
+                                <h6 class="pl-subtitle">Job size</h6>
+                                <div class="pl-scroll-x">
+                                    <table class="table table-sm pl-bar-table mb-0">
+                                        <tbody id="plSizeTable"></tbody>
+                                    </table>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Open projects -->
+                    <div class="pl-card mb-3">
+                        <div class="d-flex justify-content-between align-items-start flex-wrap gap-2 mb-2">
+                            <div>
+                                <h5 class="pl-card-title mb-1">Jobs with no permit yet</h5>
+                                <p class="small text-muted mb-0">Ranked by stage, size and how recently they were filed.</p>
+                            </div>
+                            <div class="d-flex gap-2 align-items-center flex-wrap">
+                                <div class="btn-group btn-group-sm" role="group" aria-label="Filter by stage" id="plStageFilter">
+                                    <button type="button" class="btn btn-outline-secondary active" data-stage="">All</button>
+                                    <button type="button" class="btn btn-outline-secondary" data-stage="approved">Approved</button>
+                                    <button type="button" class="btn btn-outline-secondary" data-stage="review">In review</button>
+                                    <button type="button" class="btn btn-outline-secondary" data-stage="objections">Objections</button>
+                                </div>
+                                <input type="search" id="plSearch" class="form-control form-control-sm" placeholder="Search address, owner, architect…" style="width: 230px;">
+                                <button type="button" class="btn btn-sm btn-outline-primary" data-csv="leads">
+                                    <i class="fas fa-download me-1"></i>CSV
+                                </button>
+                            </div>
+                        </div>
+                        <div class="table-responsive pl-leads-wrap">
+                            <table class="table table-hover align-top pl-leads mb-0">
+                                <thead>
+                                    <tr>
+                                        <th>Score</th>
+                                        <th>Job</th>
+                                        <th>Stage</th>
+                                        <th class="text-end">Cost</th>
+                                        <th>Owner</th>
+                                        <th>Architect / engineer</th>
+                                        <th>Work</th>
+                                    </tr>
+                                </thead>
+                                <tbody id="plLeadsBody"></tbody>
+                            </table>
+                        </div>
+                        <div class="d-flex justify-content-between align-items-center mt-2">
+                            <span class="small text-muted" id="plLeadsCount"></span>
+                            <button type="button" class="btn btn-sm btn-link" id="plMore">Show more</button>
+                        </div>
+                    </div>
+
+                    <!-- Who to call -->
+                    <div class="row g-3 mb-3">
+                        <div class="col-xl-6">
+                            <div class="pl-card h-100">
+                                <div class="d-flex justify-content-between align-items-start mb-1">
+                                    <h5 class="pl-card-title mb-0">Owners &amp; property managers</h5>
+                                    <button type="button" class="btn btn-sm btn-outline-primary" data-csv="owners"><i class="fas fa-download me-1"></i>CSV</button>
+                                </div>
+                                <p class="small text-muted">Who keeps filing jobs &mdash; pitch to be their go-to contractor for the next one.</p>
+                                <div class="table-responsive"><table class="table table-sm pl-list mb-0"><thead><tr><th>Owner</th><th class="text-end">Jobs</th><th class="text-end">No permit</th><th class="text-end">Value</th><th></th></tr></thead><tbody id="plOwners"></tbody></table></div>
+                            </div>
+                        </div>
+                        <div class="col-xl-6">
+                            <div class="pl-card h-100">
+                                <div class="d-flex justify-content-between align-items-start mb-1">
+                                    <h5 class="pl-card-title mb-0">Architects &amp; engineers</h5>
+                                    <button type="button" class="btn btn-sm btn-outline-primary" data-csv="designers"><i class="fas fa-download me-1"></i>CSV</button>
+                                </div>
+                                <p class="small text-muted">They design the job and often shortlist the contractors &mdash; ask to be on their bid list.</p>
+                                <div class="table-responsive"><table class="table table-sm pl-list mb-0"><thead><tr><th>Firm</th><th class="text-end">Jobs</th><th class="text-end">No permit</th><th class="text-end">Value</th><th></th></tr></thead><tbody id="plDesigners"></tbody></table></div>
+                            </div>
+                        </div>
+                        <div class="col-xl-6">
+                            <div class="pl-card h-100">
+                                <div class="d-flex justify-content-between align-items-start mb-1">
+                                    <h5 class="pl-card-title mb-0">Contractors winning permits</h5>
+                                    <button type="button" class="btn btn-sm btn-outline-primary" data-csv="contractors"><i class="fas fa-download me-1"></i>CSV</button>
+                                </div>
+                                <p class="small text-muted">General contractors pulling permits in this market &mdash; your competition, and the busiest ones may need sub capacity.</p>
+                                <div class="table-responsive"><table class="table table-sm pl-list mb-0"><thead><tr><th>Contractor</th><th class="text-end">Jobs</th><th class="text-end">Value</th><th>Last permit</th><th></th></tr></thead><tbody id="plContractors"></tbody></table></div>
+                            </div>
+                        </div>
+                        <div class="col-xl-6">
+                            <div class="pl-card h-100">
+                                <div class="d-flex justify-content-between align-items-start mb-1">
+                                    <h5 class="pl-card-title mb-0">Expediters</h5>
+                                    <button type="button" class="btn btn-sm btn-outline-primary" data-csv="expediters"><i class="fas fa-download me-1"></i>CSV</button>
+                                </div>
+                                <p class="small text-muted">They file the paperwork and see jobs before anyone else &mdash; a good referral relationship.</p>
+                                <div class="table-responsive"><table class="table table-sm pl-list mb-0"><thead><tr><th>Expediter</th><th class="text-end">Jobs</th><th class="text-end">No permit</th><th class="text-end">Value</th><th></th></tr></thead><tbody id="plExpediters"></tbody></table></div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="row g-3 mb-3">
+                        <div class="col-lg-7">
+                            <div class="pl-card h-100">
+                                <h5 class="pl-card-title">Biggest permits issued &mdash; who got the job</h5>
+                                <div class="table-responsive"><table class="table table-sm pl-list mb-0"><thead><tr><th>Issued</th><th>Job</th><th>Owner</th><th>Contractor</th><th class="text-end">Cost</th></tr></thead><tbody id="plWins"></tbody></table></div>
+                            </div>
+                        </div>
+                        <div class="col-lg-5">
+                            <div class="pl-card h-100">
+                                <h5 class="pl-card-title">Busiest neighborhoods</h5>
+                                <div class="pl-scroll-x"><table class="table table-sm pl-bar-table mb-0"><thead><tr><th>Neighborhood</th><th>Jobs</th><th class="text-end">Value</th></tr></thead><tbody id="plHoods"></tbody></table></div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <p class="small text-muted pl-footnote" id="plFootnote"></p>
+                </div>
+            </section>
+
+            <div id="tab-usage" class="d-none" role="tabpanel">
             <!-- Statistics Cards -->
             <div class="row">
                 <div class="col-md-3">
@@ -306,6 +607,7 @@
                     </table>
                 </div>
             </div>
+            </div><!-- /#tab-usage -->
         </div>
     </div>
 
@@ -338,6 +640,426 @@
             }
         })();
         
+        // ===== Tabs =====
+        function initAdminTabs() {
+            const buttons = document.querySelectorAll('.admin-tabs [data-tab]');
+            if (!buttons.length || buttons[0].dataset.bound) return;
+            buttons.forEach(btn => {
+                btn.dataset.bound = '1';
+                btn.addEventListener('click', () => showAdminTab(btn.dataset.tab));
+            });
+            let saved = 'leads';
+            try { saved = localStorage.getItem('adminTab') || 'leads'; } catch (e) { /* storage blocked */ }
+            showAdminTab(saved === 'usage' ? 'usage' : 'leads');
+        }
+
+        function showAdminTab(tab) {
+            document.querySelectorAll('.admin-tabs [data-tab]').forEach(btn => {
+                const on = btn.dataset.tab === tab;
+                btn.classList.toggle('active', on);
+                btn.setAttribute('aria-selected', on ? 'true' : 'false');
+            });
+            document.getElementById('tab-leads').classList.toggle('d-none', tab !== 'leads');
+            document.getElementById('tab-usage').classList.toggle('d-none', tab !== 'usage');
+            try { localStorage.setItem('adminTab', tab); } catch (e) { /* storage blocked */ }
+            if (tab === 'leads' && !PL.data && !PL.loading) loadPermitLeads(false);
+        }
+
+        // ===== Permit leads (NYC DOB filings via /admin/permit-leads) =====
+        const PL = { data: null, loading: false, reqId: 0, stage: '', search: '', shown: 50, chart: null, bound: false };
+        const PL_STAGE_ICON = { approved: 'fa-check-circle', review: 'fa-clock', objections: 'fa-exclamation-triangle' };
+
+        function plEsc(s) {
+            return String(s == null ? '' : s).replace(/[&<>"']/g, c =>
+                ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+        }
+        function plMoney(n) {
+            n = Number(n) || 0;
+            if (!n) return '—';
+            if (n >= 1e6) return '$' + (n / 1e6).toFixed(n >= 1e7 ? 0 : 1).replace(/\.0$/, '') + 'M';
+            if (n >= 1e3) return '$' + Math.round(n / 1e3).toLocaleString() + 'K';
+            return '$' + Math.round(n);
+        }
+        function plInt(n) { return Number(n || 0).toLocaleString(); }
+        function plDate(iso) {
+            if (!iso) return '';
+            const d = new Date(iso.slice(0, 10) + 'T12:00:00Z');
+            return isNaN(d) ? '' : d.toLocaleDateString(undefined, { month: 'short', day: 'numeric', timeZone: 'UTC' });
+        }
+        function plSearchUrl(q) { return 'https://www.google.com/search?q=' + encodeURIComponent(q); }
+        function plMapUrl(address, borough) {
+            return 'https://www.google.com/maps/search/?api=1&query=' + encodeURIComponent(`${address}, ${borough}, NY`);
+        }
+        function plBisUrl(bin) {
+            return 'https://a810-bisweb.nyc.gov/bisweb/PropertyProfileOverviewServlet?bin=' + encodeURIComponent(bin);
+        }
+        function plSetText(id, text) { const el = document.getElementById(id); if (el) el.textContent = text; }
+
+        function bindPermitLeadControls() {
+            if (PL.bound) return;
+            PL.bound = true;
+            document.getElementById('plRun').addEventListener('click', () => loadPermitLeads(true));
+            ['plSegment', 'plBorough', 'plDays', 'plMinCost'].forEach(id =>
+                document.getElementById(id).addEventListener('change', () => loadPermitLeads(false)));
+            document.querySelectorAll('#plStageFilter [data-stage]').forEach(btn => btn.addEventListener('click', () => {
+                PL.stage = btn.dataset.stage;
+                PL.shown = 50;
+                document.querySelectorAll('#plStageFilter [data-stage]').forEach(b => b.classList.toggle('active', b === btn));
+                renderPlLeads();
+            }));
+            let timer;
+            document.getElementById('plSearch').addEventListener('input', (e) => {
+                clearTimeout(timer);
+                timer = setTimeout(() => {
+                    PL.search = e.target.value.trim().toLowerCase();
+                    PL.shown = 50;
+                    renderPlLeads();
+                }, 150);
+            });
+            document.getElementById('plMore').addEventListener('click', () => { PL.shown += 50; renderPlLeads(); });
+            document.querySelectorAll('[data-csv]').forEach(btn =>
+                btn.addEventListener('click', () => downloadPlCsv(btn.dataset.csv)));
+        }
+
+        async function loadPermitLeads(refresh) {
+            bindPermitLeadControls();
+            const reqId = ++PL.reqId;
+            PL.loading = true;
+            const results = document.getElementById('plResults');
+            const errEl = document.getElementById('plError');
+            errEl.classList.add('d-none');
+            results.classList.add('pl-loading');
+            plSetText('plStatus', 'Loading DOB filings…');
+            const params = new URLSearchParams({
+                segment: document.getElementById('plSegment').value,
+                borough: document.getElementById('plBorough').value,
+                days: document.getElementById('plDays').value,
+                minCost: document.getElementById('plMinCost').value,
+            });
+            if (refresh) params.set('refresh', '1');
+            try {
+                const res = await fetch(`${BACKEND_API_URL}/admin/permit-leads?${params}`, {
+                    headers: { 'Authorization': `Bearer ${adminToken}` }
+                });
+                if (res.status === 401) {
+                    plSetText('plStatus', '');
+                    plSetText('plEmpty', 'Loading NYC DOB filings…');
+                    logout();
+                    return;
+                }
+                const body = await res.json().catch(() => ({}));
+                if (!res.ok) throw new Error(body.hint || body.error || ('HTTP ' + res.status));
+                if (reqId !== PL.reqId) return; // a newer request replaced this one
+                PL.data = body;
+                PL.shown = 50;
+                renderPermitLeads();
+                const when = new Date(body.meta.generatedAt);
+                plSetText('plStatus', 'Data as of ' +
+                    when.toLocaleString(undefined, { month: 'short', day: 'numeric', hour: 'numeric', minute: '2-digit' }) +
+                    (body.meta.cached ? ' · cached' : ''));
+            } catch (err) {
+                if (reqId !== PL.reqId) return;
+                console.error('loadPermitLeads failed', err);
+                let msg = 'Could not load permit data. ' + err.message;
+                if (PL.data) {
+                    // Put the filters back so they match what's still on screen.
+                    const m = PL.data.meta;
+                    document.getElementById('plSegment').value = m.segment;
+                    document.getElementById('plBorough').value = m.borough === 'All boroughs' ? '' : m.borough;
+                    document.getElementById('plDays').value = String(m.days);
+                    document.getElementById('plMinCost').value = String(m.minCost || 0);
+                    msg += ' Still showing the last view that loaded.';
+                } else {
+                    plSetText('plEmpty', 'No data yet — try Update.');
+                }
+                errEl.textContent = msg;
+                errEl.classList.remove('d-none');
+                plSetText('plStatus', '');
+            } finally {
+                if (reqId === PL.reqId) {
+                    PL.loading = false;
+                    results.classList.remove('pl-loading');
+                }
+            }
+        }
+
+        function renderPermitLeads() {
+            const d = PL.data;
+            if (!d) return;
+            document.getElementById('plEmpty').classList.add('d-none');
+            document.getElementById('plResults').classList.remove('d-none');
+            const s = d.summary, m = d.meta;
+
+            plSetText('plKpiProjects', plInt(s.projects));
+            plSetText('plKpiProjectsSub', `${plMoney(s.declaredValue)} declared · last ${m.days} days`);
+            plSetText('plKpiOpen', plInt(s.open));
+            plSetText('plKpiOpenSub', s.openValue ? `${plMoney(s.openValue)} of work` : 'no cost declared');
+            plSetText('plKpiApproved', plInt(s.approvedWaiting));
+            plSetText('plKpiApprovedSub', `${plInt(s.inReview)} in review · ${plInt(s.objections)} with objections`);
+            plSetText('plKpiMedian', plMoney(s.medianCost));
+            plSetText('plKpiMedianSub', 'median declared cost');
+            plSetText('plKpiGcs', plInt(s.contractors));
+            plSetText('plKpiGcsSub', `${plInt(s.permitsIssued)} permits · ${plMoney(s.permitValue)}`);
+
+            const trunc = document.getElementById('plTruncated');
+            if (m.truncated && (m.truncated.filings || m.truncated.permits)) {
+                trunc.textContent = `This view has more than ${plInt(m.maxRows || 20000)} records, so only the newest ones were analyzed: ` +
+                    'totals are understated and the oldest weeks of the chart are incomplete. Pick a borough or a shorter date range for complete numbers.';
+                trunc.classList.remove('d-none');
+            } else {
+                trunc.classList.add('d-none');
+            }
+
+            renderPlWeekly(d.weekly || []);
+            renderPlBoroughs(d.boroughs || [], d.costBuckets || []);
+            renderPlLeads();
+            renderPlLists(d);
+            renderPlHoods(d.neighborhoods || []);
+            renderPlWins(d.recentWins || []);
+
+            const sources = (m.sources || []).map(src =>
+                `<a href="${plEsc(src.url)}" target="_blank" rel="noopener">${plEsc(src.name)}</a>`).join(' and ');
+            document.getElementById('plFootnote').innerHTML =
+                `${plEsc(m.segmentLabel)} · ${plEsc(m.borough)} · filed since ${plEsc(plDate(m.since))}` +
+                `${m.minCost ? ' · ' + plEsc(plMoney(m.minCost)) + ' and up' : ''}. ` +
+                `A <strong>job</strong> is one initial DOB NOW filing for alteration work that includes general construction, ` +
+                `matched on keywords in the job description. <strong>No permit yet</strong> means no work permit has been issued; ` +
+                `<strong>Approved</strong> means the plans are approved and the job is waiting for a contractor to pull the permit. ` +
+                `Costs are what the applicant declared to DOB. Phone numbers aren't published in this data, so use the search links. ` +
+                `Source: NYC Open Data, ${sources} (updated daily by the city).`;
+        }
+
+        function renderPlWeekly(weekly) {
+            const labels = weekly.map(w => plDate(w.week));
+            const values = weekly.map(w => w.projects);
+            if (PL.chart) PL.chart.destroy();
+            const ctx = document.getElementById('plWeeklyChart').getContext('2d');
+            PL.chart = new Chart(ctx, {
+                type: 'bar',
+                data: {
+                    labels,
+                    datasets: [{
+                        label: 'Jobs filed',
+                        data: values,
+                        // Partial weeks (window edge, current week) in a lighter step of the same blue.
+                        backgroundColor: weekly.map(w => w.partial ? '#b7d3f6' : '#2a78d6'),
+                        hoverBackgroundColor: weekly.map(w => w.partial ? '#9ec5f4' : '#256abf'),
+                        borderRadius: { topLeft: 4, topRight: 4 },
+                        borderSkipped: 'bottom',
+                        maxBarThickness: 24,
+                        categoryPercentage: 0.85,
+                        barPercentage: 0.9
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    animation: false,
+                    interaction: { mode: 'index', intersect: false },
+                    plugins: {
+                        legend: { display: false },
+                        tooltip: {
+                            displayColors: false,
+                            callbacks: {
+                                title: (items) => 'Week of ' + items[0].label +
+                                    (weekly[items[0].dataIndex].partial ? ' (partial week)' : ''),
+                                label: (item) => `${item.raw} job${item.raw === 1 ? '' : 's'} · ${plMoney(weekly[item.dataIndex].value)} declared`
+                            }
+                        }
+                    },
+                    scales: {
+                        x: { grid: { display: false }, border: { color: '#c3c2b7' }, ticks: { color: '#898781', maxRotation: 0, autoSkipPadding: 12 } },
+                        y: { beginAtZero: true, grid: { color: '#e1e0d9' }, border: { display: false }, ticks: { color: '#898781', precision: 0 } }
+                    }
+                }
+            });
+            document.getElementById('plWeeklyTable').innerHTML = weekly.slice().reverse().map(w =>
+                `<tr><td>${plEsc(plDate(w.week))}${w.partial ? ' <span class="pl-muted">(partial)</span>' : ''}</td>` +
+                `<td class="text-end pl-num">${plInt(w.projects)}</td>` +
+                `<td class="text-end pl-num">${plMoney(w.value)}</td></tr>`).join('');
+            plSetText('plWeeklyNote', weekly.some(w => w.partial) ? 'Lighter bars are partial weeks.' : '');
+        }
+
+        function plBarCell(value, max, text) {
+            const pct = max > 0 && value > 0 ? Math.max(1.5, (value / max) * 100) : 0;
+            return `<div class="pl-bar"><span class="pl-bar-num">${text}</span>` +
+                `<span class="pl-bar-track"><span class="pl-bar-fill" style="width:${pct.toFixed(1)}%"></span></span></div>`;
+        }
+
+        function renderPlBoroughs(boroughs, buckets) {
+            const max = Math.max(0, ...boroughs.map(b => b.projects));
+            document.getElementById('plBoroughTable').innerHTML = boroughs.map(b =>
+                `<tr><td>${plEsc(b.borough)}</td><td>${plBarCell(b.projects, max, plInt(b.projects))}</td>` +
+                `<td class="text-end pl-num">${plInt(b.open)}</td><td class="text-end pl-num">${plMoney(b.value)}</td></tr>`).join('');
+            const bmax = Math.max(0, ...buckets.map(b => b.projects));
+            document.getElementById('plSizeTable').innerHTML = buckets.map(b =>
+                `<tr><td>${plEsc(b.label)}</td><td>${plBarCell(b.projects, bmax, plInt(b.projects))}</td></tr>`).join('');
+        }
+
+        function plFilteredLeads() {
+            if (!PL.data) return [];
+            return PL.data.leads.filter(l =>
+                (!PL.stage || l.stage === PL.stage) &&
+                (!PL.search || [l.address, l.owner, l.ownerPerson, l.designerFirm, l.designerName, l.expediter,
+                    l.description, l.nta, l.borough, l.zip, l.jobNumber].join(' ').toLowerCase().includes(PL.search)));
+        }
+
+        function renderPlLeads() {
+            const rows = plFilteredLeads();
+            const body = document.getElementById('plLeadsBody');
+            if (!rows.length) {
+                body.innerHTML = '<tr><td colspan="7" class="text-center text-muted py-4">No open jobs match these filters.</td></tr>';
+            } else {
+                body.innerHTML = rows.slice(0, PL.shown).map(l => {
+                    const where = [l.floor, l.apt ? 'Apt ' + l.apt : ''].filter(Boolean).join(' · ');
+                    const area = [l.borough, l.nta].filter(Boolean).join(' · ');
+                    const links = (l.bin ? `<a href="${plBisUrl(l.bin)}" target="_blank" rel="noopener">DOB property</a>` : '') +
+                        `<a href="${plMapUrl(l.address, l.borough)}" target="_blank" rel="noopener">Map</a>`;
+                    const ownerPerson = l.ownerPerson && l.ownerPerson !== l.owner ? `<div class="pl-muted">${plEsc(l.ownerPerson)}</div>` : '';
+                    const designerLine = [l.designerName && l.designerName !== l.designerFirm ? l.designerName : '', l.designerTitle]
+                        .filter(Boolean).join(', ');
+                    return `<tr>
+                        <td><span class="pl-score" title="${plEsc(l.reasons.join(' · '))}">${l.score}</span></td>
+                        <td>
+                            <div class="fw-semibold">${plEsc(l.address)}</div>
+                            ${where ? `<div class="pl-muted">${plEsc(where)}</div>` : ''}
+                            <div class="pl-muted">${plEsc(area)}</div>
+                            <div class="pl-links">${links}</div>
+                        </td>
+                        <td>
+                            <span class="pl-stage pl-stage-${plEsc(l.stage)}"><i class="fas ${PL_STAGE_ICON[l.stage] || 'fa-circle'}" aria-hidden="true"></i>${plEsc(l.stageLabel)}</span>
+                            <div class="pl-muted">Filed ${plEsc(plDate(l.filed))}${l.daysAgo != null ? ` (${l.daysAgo}d ago)` : ''}</div>
+                            ${l.approved ? `<div class="pl-muted">Approved ${plEsc(plDate(l.approved))}</div>` : ''}
+                            <div class="pl-muted">${plEsc(l.jobNumber)}</div>
+                        </td>
+                        <td class="text-end pl-num">${plMoney(l.cost)}</td>
+                        <td>
+                            <div>${plEsc(l.owner || '—')}</div>
+                            ${ownerPerson}
+                            <div class="pl-muted">${plEsc(l.ownerType)}${l.isPublicOwner ? ' · public bid' : ''}</div>
+                            ${l.owner ? `<div class="pl-links"><a href="${plSearchUrl(l.owner + ' New York phone')}" target="_blank" rel="noopener">Find phone</a></div>` : ''}
+                        </td>
+                        <td>
+                            <div>${plEsc(l.designerFirm || '—')}</div>
+                            ${designerLine ? `<div class="pl-muted">${plEsc(designerLine)}</div>` : ''}
+                            ${l.designerFirm ? `<div class="pl-links"><a href="${plSearchUrl(l.designerFirm + ' ' + (l.designerAddress || 'New York') + ' phone')}" target="_blank" rel="noopener">Find phone</a></div>` : ''}
+                        </td>
+                        <td class="pl-desc"><div class="pl-clamp" title="${plEsc(l.description)}">${plEsc(l.description)}</div></td>
+                    </tr>`;
+                }).join('');
+            }
+            const total = PL.data ? PL.data.leads.length : 0;
+            const capNote = PL.data && PL.data.summary.open > total
+                ? ` · top ${plInt(total)} of ${plInt(PL.data.summary.open)} loaded` : '';
+            plSetText('plLeadsCount', `Showing ${plInt(Math.min(PL.shown, rows.length))} of ${plInt(rows.length)} jobs${capNote}`);
+            document.getElementById('plMore').classList.toggle('d-none', rows.length <= PL.shown);
+        }
+
+        function renderPlLists(d) {
+            const findPhone = (name, extra) => name
+                ? `<a class="small" href="${plSearchUrl(name + ' ' + (extra || 'New York') + ' phone')}" target="_blank" rel="noopener">Find phone</a>` : '';
+            const empty = '<tr><td colspan="5" class="text-muted small">Nothing in this view.</td></tr>';
+            const top = (arr) => (arr || []).slice(0, 12);
+
+            document.getElementById('plOwners').innerHTML = top(d.owners).map(o => {
+                const sub = [o.type, o.isPublic ? 'public bid' : '', (o.contacts || []).join(', ')].filter(Boolean).join(' · ');
+                return `<tr><td><div>${plEsc(o.name)}</div><div class="pl-muted">${plEsc(sub)}</div></td>` +
+                    `<td class="text-end pl-num">${plInt(o.projects)}</td><td class="text-end pl-num">${plInt(o.open)}</td>` +
+                    `<td class="text-end pl-num">${plMoney(o.value)}</td><td class="text-end">${findPhone(o.name)}</td></tr>`;
+            }).join('') || empty;
+
+            document.getElementById('plDesigners').innerHTML = top(d.designers).map(g =>
+                `<tr><td><div>${plEsc(g.firm)}</div><div class="pl-muted">${plEsc([g.person, g.title].filter(Boolean).join(', '))}</div></td>` +
+                `<td class="text-end pl-num">${plInt(g.projects)}</td><td class="text-end pl-num">${plInt(g.open)}</td>` +
+                `<td class="text-end pl-num">${plMoney(g.value)}</td><td class="text-end">${findPhone(g.firm, g.address)}</td></tr>`).join('') || empty;
+
+            document.getElementById('plContractors').innerHTML = top(d.contractors).map(c =>
+                `<tr><td><div>${plEsc(c.firm)}</div><div class="pl-muted">${plEsc(c.license ? `${c.licenseType || ''} license ${c.license}`.trim() : '')}</div></td>` +
+                `<td class="text-end pl-num">${plInt(c.projects)}</td><td class="text-end pl-num">${plMoney(c.value)}</td>` +
+                `<td class="pl-num">${plEsc(plDate(c.lastIssued))}</td><td class="text-end">${findPhone(c.firm)}</td></tr>`).join('') || empty;
+
+            document.getElementById('plExpediters').innerHTML = top(d.expediters).map(x =>
+                `<tr><td><div>${plEsc(x.firm)}</div><div class="pl-muted">${plEsc((x.people || []).join(', '))}</div></td>` +
+                `<td class="text-end pl-num">${plInt(x.projects)}</td><td class="text-end pl-num">${plInt(x.open)}</td>` +
+                `<td class="text-end pl-num">${plMoney(x.value)}</td><td class="text-end">${findPhone(x.firm)}</td></tr>`).join('') || empty;
+        }
+
+        function renderPlHoods(hoods) {
+            const rows = hoods.slice(0, 10);
+            const max = Math.max(0, ...rows.map(h => h.projects));
+            document.getElementById('plHoods').innerHTML = rows.map(h =>
+                `<tr><td><div>${plEsc(h.nta)}</div><div class="pl-muted">${plEsc(h.borough)}</div></td>` +
+                `<td>${plBarCell(h.projects, max, plInt(h.projects))}</td><td class="text-end pl-num">${plMoney(h.value)}</td></tr>`).join('')
+                || '<tr><td colspan="3" class="text-muted small">Nothing in this view.</td></tr>';
+        }
+
+        function renderPlWins(wins) {
+            document.getElementById('plWins').innerHTML = wins.slice(0, 15).map(w =>
+                `<tr><td class="pl-num">${plEsc(plDate(w.issued))}</td>` +
+                `<td><div>${plEsc(w.address)}</div><div class="pl-muted">${plEsc([w.borough, w.floor].filter(Boolean).join(' · '))}</div></td>` +
+                `<td>${plEsc(w.owner || '—')}</td><td>${plEsc(w.contractor || '—')}</td>` +
+                `<td class="text-end pl-num">${plMoney(w.cost)}</td></tr>`).join('')
+                || '<tr><td colspan="5" class="text-muted small">No permits in this view.</td></tr>';
+        }
+
+        function plCsvCell(v) {
+            let s = v == null ? '' : String(v);
+            if (/^[=+\-@\t\r]/.test(s)) s = "'" + s; // stop spreadsheets from treating text as a formula
+            return /[",\n\r]/.test(s) ? `"${s.replace(/"/g, '""')}"` : s;
+        }
+
+        function downloadPlCsv(kind) {
+            const d = PL.data;
+            if (!d) return;
+            const list = (arr) => (arr || []).join('; ');
+            const specs = {
+                leads: { rows: plFilteredLeads(), cols: [
+                    ['Score', 'score'], ['Stage', 'stageLabel'], ['DOB status', 'status'], ['Filed', 'filed'], ['Approved', 'approved'],
+                    ['Address', 'address'], ['Floor', 'floor'], ['Apt', 'apt'], ['Borough', 'borough'], ['Neighborhood', 'nta'], ['ZIP', 'zip'],
+                    ['Declared cost', 'cost'], ['Floor area (sq ft)', 'floorArea'], ['Job type', 'jobType'], ['Building type', 'buildingType'],
+                    ['Owner', 'owner'], ['Owner contact', 'ownerPerson'], ['Owner type', 'ownerType'],
+                    ['Architect / engineer', 'designerFirm'], ['Design professional', 'designerName'], ['Title', 'designerTitle'],
+                    ['License', 'designerLicense'], ['Design firm address', 'designerAddress'], ['Expediter', 'expediter'],
+                    ['Work description', 'description'], ['Job number', 'jobNumber'], ['BIN', 'bin'], ['BBL', 'bbl'],
+                    ['Why it scored', r => list(r.reasons)]
+                ] },
+                owners: { rows: d.owners, cols: [
+                    ['Owner', 'name'], ['Owner type', 'type'], ['Jobs', 'projects'], ['No permit yet', 'open'], ['Declared value', 'value'],
+                    ['Boroughs', r => list(r.boroughs)], ['Last filed', 'lastFiled'], ['Example address', 'sampleAddress'],
+                    ['Contacts on filings', r => list(r.contacts)]
+                ] },
+                designers: { rows: d.designers, cols: [
+                    ['Firm', 'firm'], ['Professional', 'person'], ['Title', 'title'], ['License', 'license'], ['Address', 'address'],
+                    ['Jobs', 'projects'], ['No permit yet', 'open'], ['Declared value', 'value'], ['Boroughs', r => list(r.boroughs)],
+                    ['Last filed', 'lastFiled']
+                ] },
+                contractors: { rows: d.contractors, cols: [
+                    ['Contractor', 'firm'], ['Permittee', 'person'], ['License type', 'licenseType'], ['License', 'license'],
+                    ['Address', 'address'], ['Jobs', 'projects'], ['Declared value', 'value'], ['Boroughs', r => list(r.boroughs)],
+                    ['Last permit', 'lastIssued']
+                ] },
+                expediters: { rows: d.expediters, cols: [
+                    ['Expediter', 'firm'], ['People', r => list(r.people)], ['Jobs', 'projects'], ['No permit yet', 'open'],
+                    ['Declared value', 'value'], ['Last filed', 'lastFiled']
+                ] },
+            };
+            const spec = specs[kind];
+            if (!spec) return;
+            const lines = [spec.cols.map(c => plCsvCell(c[0])).join(',')];
+            spec.rows.forEach(r => lines.push(spec.cols.map(([, get]) =>
+                plCsvCell(typeof get === 'function' ? get(r) : r[get])).join(',')));
+            const blob = new Blob(['﻿' + lines.join('\r\n')], { type: 'text/csv;charset=utf-8' });
+            const m = d.meta;
+            const slug = [kind, m.segment, String(m.borough || 'all').toLowerCase().replace(/\s+/g, '-'),
+                String(m.generatedAt || '').slice(0, 10)].join('_');
+            const a = document.createElement('a');
+            a.href = URL.createObjectURL(blob);
+            a.download = `permit-${slug}.csv`;
+            document.body.appendChild(a);
+            a.click();
+            setTimeout(() => { URL.revokeObjectURL(a.href); a.remove(); }, 0);
+        }
+
         let adminToken = localStorage.getItem('adminToken');
 
         // Check if already logged in
@@ -456,6 +1178,11 @@ Next steps:
         function showDashboard() {
             document.getElementById('loginScreen').classList.add('d-none');
             document.getElementById('dashboard').classList.remove('d-none');
+            initAdminTabs();
+            // After a logout/login the tabs are already wired, so kick off the leads load here too.
+            if (!document.getElementById('tab-leads').classList.contains('d-none') && !PL.data && !PL.loading) {
+                loadPermitLeads(false);
+            }
             refreshData();
             loadQuoteSubmissions();
             // Hook the status filter once.
@@ -719,7 +1446,9 @@ Next steps:
             const callsData = dates.map(date => dateStats[date].calls);
             const costData = dates.map(date => dateStats[date].cost);
 
-            if (window.usageChart) {
+            // window.usageChart starts out as the <canvas> itself (browsers expose
+            // elements by id on window), so only destroy a real Chart instance.
+            if (window.usageChart && typeof window.usageChart.destroy === 'function') {
                 window.usageChart.destroy();
             }
 
@@ -747,7 +1476,7 @@ Next steps:
             const endpoints = Object.keys(endpointStats);
             const endpointData = endpoints.map(ep => endpointStats[ep].count);
 
-            if (window.endpointChart) {
+            if (window.endpointChart && typeof window.endpointChart.destroy === 'function') {
                 window.endpointChart.destroy();
             }
 

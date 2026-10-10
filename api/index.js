@@ -9,6 +9,7 @@ const { searchProducts } = require('../backend/product-search');
 const { clarifyProject } = require('../backend/project-clarifier');
 const { saveQuoteSubmission, listQuoteSubmissions, updateQuoteStatus } = require('./quote-store');
 const { saveDesignFeedback } = require('./feedback-store');
+const { getPermitLeads } = require('./permit-leads');
 const { sketchRoom } = require('../backend/room-sketch');
 const { startWalkthrough, walkthroughStatus, finishWalkthrough } = require('../backend/walkthrough');
 const { segmentImage } = require('../backend/ds-segment');
@@ -1045,6 +1046,31 @@ app.post('/admin/quotes/:id', adminAuth, async (req, res) => {
     console.error('admin/quotes update error:', error);
     setCORSHeaders(req, res);
     res.status(500).json({ error: 'Failed to update quote' });
+  }
+});
+
+// Admin: renovation leads + market analytics from NYC DOB permit filings
+// (NYC Open Data). Query: days=30|60|90|180, segment=office|commercial|
+// residential|all, borough=<name>, minCost=<dollars>, refresh=1 to skip cache.
+app.get('/admin/permit-leads', adminAuth, async (req, res) => {
+  setCORSHeaders(req, res);
+  res.set('Cache-Control', 'no-store');
+  try {
+    const data = await getPermitLeads(req.query);
+    res.json(data);
+  } catch (error) {
+    console.error('admin/permit-leads error:', error.message, error.detail || '');
+    setCORSHeaders(req, res);
+    const upstream = error.upstreamStatus;
+    const unreachable = error.name === 'FetchError';
+    let hint;
+    if (upstream === 429) hint = 'NYC Open Data is rate-limiting us. Wait a minute, or add a free SOCRATA_APP_TOKEN in Vercel env vars.';
+    else if (upstream === 504) hint = 'NYC Open Data was slow to answer. Try a shorter date range or a single borough.';
+    else if (upstream >= 400 && upstream < 500) hint = 'NYC Open Data rejected the query (the dataset may have changed). Details are in the Vercel logs.';
+    else if (upstream) hint = 'NYC Open Data is having trouble right now. Try again in a few minutes.';
+    else if (unreachable) hint = 'NYC Open Data could not be reached. Try again in a minute.';
+    else hint = 'Something went wrong while analyzing the permit data. Details are in the Vercel logs.';
+    res.status(upstream || unreachable ? 502 : 500).json({ error: 'Could not load permit data', upstream_status: upstream || null, hint });
   }
 });
 
