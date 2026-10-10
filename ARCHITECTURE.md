@@ -1,5 +1,20 @@
 # Architecture Overview
 
+## 🚀 Releasing to production
+
+Vercel's **production** deployment builds from the `gh-pages` branch. Merging a PR
+into `main` only creates a Vercel *preview*, so the live site and live API don't
+change until `gh-pages` catches up:
+
+```bash
+git push origin main:gh-pages   # fast-forward gh-pages to main -> production deploy
+```
+
+Vercel skips commits it has already built, so push to `gh-pages` before (or at the
+same time as) `main` when releasing a new commit. Alternatively, set the
+Production Branch to `main` in Vercel → Project Settings → Git, and merges to
+`main` will go live on their own.
+
 ## 🏗️ Deployment Strategy
 
 ### **Frontend: GitHub Pages** (Static HTML Files)
