@@ -42,6 +42,11 @@ const state = {
   catalog: null,
   templates: [],
   mode: '3d',
+  floorFinish: null,             // MATERIALS key, or null = original tan floor
+  wallFinish: null,              // { paint: PAINTS key } | { texture: MATERIALS key } | null
+  floorMesh: null,
+  floorSize: null,               // { w, d } in ft
+  wallMeshes: [],                // [{ mesh, L, h, y0 }] — wall spans that take a finish
   gltf: new GLTFLoader(),
   _move: { f: 0, r: 0 },         // room-view walking: forward/back, strafe
   _clock: new THREE.Clock(),
@@ -109,6 +114,7 @@ async function init() {
   window.addEventListener('keyup', (e) => onWalkKey(e, false));
   bindUI();
   renderRestyleControls();
+  renderRoomFinishControls();
 
   // Load data, then render
   await loadData();
@@ -171,6 +177,8 @@ function loadTemplate(tpl, furnish = false) {
   floor.receiveShadow = true;
   floor.name = 'floor';
   g.add(floor);
+  state.floorMesh = floor;
+  state.floorSize = { w: w + 1, d: d + 1 };
 
   // Walls — with real DOOR openings (full-height gaps) and WINDOWS (sill +
   // glass + header) cut in from the template's `doors` / `windows` arrays
@@ -180,6 +188,7 @@ function loadTemplate(tpl, furnish = false) {
   const glassMat = new THREE.MeshStandardMaterial({ color: 0xbfe0f2, roughness: 0.1, transparent: true, opacity: 0.35 });
   const DOOR_W = 3, WIN_W = 4, SILL_H = 2.7, HEAD_H = 7;
   state.colliders = []; // floor-level solid spans, for room-view walking collision
+  state.wallMeshes = []; // wall spans that take the wall finish
   tpl.walls.forEach((seg, wi) => {
     const dx = seg.x2 - seg.x1, dz = seg.y2 - seg.y1;
     const len = Math.hypot(dx, dz);
@@ -193,7 +202,10 @@ function loadTemplate(tpl, furnish = false) {
       const mid = (s + e) / 2;
       m.position.set(seg.x1 + ux * mid, (y0 + y1) / 2, seg.y1 + uz * mid);
       m.rotation.y = rotY;
-      if (mat === wallMat) { m.castShadow = true; m.receiveShadow = true; }
+      if (mat === wallMat) {
+        m.castShadow = true; m.receiveShadow = true;
+        state.wallMeshes.push({ mesh: m, L, h: y1 - y0, y0 });
+      }
       g.add(m);
       // Solid at floor level (walls + window sills) blocks walking; door
       // openings and headers don't, so you can walk through doorways.
@@ -228,6 +240,7 @@ function loadTemplate(tpl, furnish = false) {
     });
     emit(cursor, len, 0, WALL_H, wallMat);              // remaining solid span
   });
+  applyRoomFinishes();                                  // keep the chosen floor/wall finish across templates
 
   // Room labels as floating sprites
   (tpl.rooms || []).forEach((r) => g.add(makeLabel(r.label, r.x, 0.2, r.y)));
@@ -502,18 +515,65 @@ const FINISHES = {
   Gloss: { roughness: 0.14, metalness: 0.05 },
   Metal: { roughness: 0.3,  metalness: 0.9 },
 };
-// CC0 material textures (ambientCG via the open3dFloorplan project — see
-// textures/CREDITS.md). Applied as a tiling color map on the object.
+// Finish library: CC0 textures from ambientCG (a few are recolors or tile
+// patterns laid out from those same images) — see textures/CREDITS.md.
+//   sizeFt  real-world width one texture repeat covers (floors/walls)
+//   aspect  image height / width (1024x512 images are 0.5)
+//   rough   default surface sheen
+//   use     where it's offered: f = floor, w = walls, o = furniture/objects
+// The original eight keys (wood, walnut, oak, marble, tile, concrete, brick,
+// stone) are kept so saved designs still load with the same look.
 const MATERIALS = [
-  { key: 'wood',     name: 'Wood',     file: 'wood.jpg' },
-  { key: 'walnut',   name: 'Walnut',   file: 'walnut.jpg' },
-  { key: 'oak',      name: 'Oak',      file: 'oak.jpg' },
-  { key: 'marble',   name: 'Marble',   file: 'marble.jpg' },
-  { key: 'tile',     name: 'Tile',     file: 'tile.jpg' },
-  { key: 'concrete', name: 'Concrete', file: 'concrete.jpg' },
-  { key: 'brick',    name: 'Brick',    file: 'brick.jpg' },
-  { key: 'stone',    name: 'Stone',    file: 'stone.jpg' },
+  // Wood
+  { key: 'white-oak',         name: 'White oak',             file: 'wood-white-oak.webp',           sizeFt: 3,   rough: 0.6,  use: 'fo' },
+  { key: 'oak',               name: 'Honey oak',             file: 'wood-honey-oak.webp',           sizeFt: 3,   rough: 0.6,  use: 'fo' },
+  { key: 'graywash-oak',      name: 'Gray-wash oak',         file: 'wood-graywash-oak.webp',        sizeFt: 3,   rough: 0.65, use: 'fo' },
+  { key: 'herringbone-white', name: 'White oak herringbone', file: 'herringbone-white-oak.webp',    sizeFt: 3,   rough: 0.6,  use: 'fo' },
+  { key: 'herringbone-honey', name: 'Herringbone oak',       file: 'herringbone-honey-oak.webp',    sizeFt: 3,   rough: 0.6,  use: 'fo' },
+  { key: 'parquet',           name: 'Block parquet',         file: 'parquet-block.webp',            sizeFt: 4,   rough: 0.6,  use: 'fo' },
+  { key: 'espresso',          name: 'Espresso strip',        file: 'wood-espresso-strip.webp',      sizeFt: 2,   rough: 0.55, use: 'fo' },
+  { key: 'walnut',            name: 'Rustic walnut',         file: 'wood-rustic-walnut.webp',       sizeFt: 3.5, rough: 0.7,  use: 'fo', aspect: 0.5 },
+  { key: 'butcher-block',     name: 'Butcher block',         file: 'butcher-block.webp',            sizeFt: 2,   rough: 0.55, use: 'o' },
+  { key: 'wood',              name: 'Painted wood siding',   file: 'wood-siding.webp',              sizeFt: 6,   rough: 0.8,  use: 'wo', aspect: 0.5 },
+  // Tile
+  { key: 'subway-white',      name: 'White subway tile',     file: 'tile-subway-white.webp',        sizeFt: 2,   rough: 0.25, use: 'wo' },
+  { key: 'subway-sage',       name: 'Sage subway tile',      file: 'tile-subway-sage.webp',         sizeFt: 2,   rough: 0.25, use: 'wo' },
+  { key: 'hex-white',         name: 'White hex tile',        file: 'tile-hex-white.webp',           sizeFt: 1.75, rough: 0.35, use: 'fwo' },
+  { key: 'checker-bw',        name: 'Black & white checker', file: 'tile-checker-black-white.webp', sizeFt: 8,   rough: 0.3,  use: 'fo' },
+  { key: 'tile',              name: 'Black & beige checker', file: 'tile-checker-black-beige.webp', sizeFt: 6,   rough: 0.3,  use: 'fo' },
+  { key: 'delft',             name: 'Delft blue tile',       file: 'tile-delft-blue.webp',          sizeFt: 2,   rough: 0.3,  use: 'fwo' },
+  { key: 'marble',            name: 'Blue pattern tile',     file: 'tile-blue-pattern.webp',        sizeFt: 2.5, rough: 0.3,  use: 'fwo' },
+  // Stone & countertops
+  { key: 'carrara',           name: 'Carrara marble',        file: 'marble-carrara.webp',           sizeFt: 5,   rough: 0.2,  use: 'fwo' },
+  { key: 'calacatta',         name: 'Calacatta gold marble', file: 'marble-calacatta-gold.webp',    sizeFt: 5,   rough: 0.2,  use: 'fwo' },
+  { key: 'marble-black',      name: 'Black marble',          file: 'marble-black.webp',             sizeFt: 5,   rough: 0.2,  use: 'fwo' },
+  { key: 'quartz',            name: 'White quartz',          file: 'quartz-white.webp',             sizeFt: 5,   rough: 0.25, use: 'fo' },
+  { key: 'slate',             name: 'Slate',                 file: 'slate.webp',                    sizeFt: 4,   rough: 0.8,  use: 'fo' },
+  { key: 'pavers',            name: 'Stone pavers',          file: 'stone-pavers.webp',             sizeFt: 6,   rough: 0.85, use: 'fo' },
+  { key: 'stone',             name: 'Natural stone',         file: 'stone-natural.webp',            sizeFt: 6,   rough: 0.9,  use: 'wo' },
+  // Concrete, brick, carpet
+  { key: 'concrete-polished', name: 'Polished concrete',     file: 'concrete-polished.webp',        sizeFt: 8,   rough: 0.45, use: 'fo', aspect: 0.5 },
+  { key: 'concrete',          name: 'Textured concrete',     file: 'concrete-textured.webp',        sizeFt: 6,   rough: 0.9,  use: 'wo' },
+  { key: 'brick-red',         name: 'Red brick',             file: 'brick-red-white-mortar.webp',   sizeFt: 5.5, rough: 0.95, use: 'wo' },
+  { key: 'brick',             name: 'Dark red brick',        file: 'brick-dark-red.webp',           sizeFt: 7,   rough: 0.95, use: 'wo', aspect: 0.5 },
+  { key: 'carpet-beige',      name: 'Beige carpet',          file: 'carpet-beige.webp',             sizeFt: 4,   rough: 1.0,  use: 'fo' },
 ];
+const PAINTS = [
+  { key: 'white',      name: 'White',      hex: '#f5f5f2' },
+  { key: 'warm-white', name: 'Warm white', hex: '#efe8dc' },
+  { key: 'greige',     name: 'Greige',     hex: '#d5cdc1' },
+  { key: 'pale-gray',  name: 'Pale gray',  hex: '#d8dbde' },
+  { key: 'sage',       name: 'Sage',       hex: '#b7c2a8' },
+  { key: 'blush',      name: 'Blush',      hex: '#e8cfc4' },
+  { key: 'navy',       name: 'Navy',       hex: '#34435e' },
+  { key: 'charcoal',   name: 'Charcoal',   hex: '#4a4d52' },
+];
+const DEFAULT_FLOOR = { color: 0xd9c3a5, rough: 0.95, name: 'tan wood-tone' };
+const DEFAULT_PAINT = PAINTS[0];
+const matByKey = (k) => (k ? MATERIALS.find((m) => m.key === k) : undefined);
+const thumbUrl = (m) => 'textures/thumbs/' + m.file.replace(/\.webp$/, '.jpg');
+
+// Furniture: one shared texture per finish, repeated 2x2 over the model.
 const _texCache = new Map();
 function loadTexture(file) {
   if (_texCache.has(file)) return _texCache.get(file);
@@ -523,6 +583,175 @@ function loadTexture(file) {
   t.colorSpace = THREE.SRGBColorSpace;
   _texCache.set(file, t);
   return t;
+}
+
+// Floors and walls: load each image once, then clone it per surface with a
+// repeat that matches the surface's real size (so a 3x6" subway tile stays
+// 3x6" on a 20 ft wall).
+const _texBase = new Map();
+function baseTexture(file) {
+  if (!_texBase.has(file)) {
+    _texBase.set(file, new Promise((resolve, reject) => {
+      new THREE.TextureLoader().load('textures/' + file, (t) => {
+        t.wrapS = t.wrapT = THREE.RepeatWrapping;
+        t.colorSpace = THREE.SRGBColorSpace;
+        t.anisotropy = Math.min(8, state.renderer?.capabilities.getMaxAnisotropy() || 1);
+        resolve(t);
+      }, undefined, (err) => { _texBase.delete(file); reject(err); });
+    }));
+  }
+  return _texBase.get(file);
+}
+function tiledClone(base, m, widthFt, heightFt, offsetYFt = 0) {
+  const t = base.clone();
+  const tileH = m.sizeFt * (m.aspect || 1);
+  t.repeat.set(widthFt / m.sizeFt, heightFt / tileH);
+  t.offset.set(0, offsetYFt / tileH);
+  t.needsUpdate = true;
+  return t;
+}
+
+/* ---------- room finishes: floor + walls --------------------------------- */
+let _floorReq = 0;
+async function applyFloorFinish() {
+  const floor = state.floorMesh;
+  if (!floor) return;
+  const req = ++_floorReq;
+  const m = matByKey(state.floorFinish);
+  const mat = floor.material;
+  if (!m) {
+    if (mat.map) mat.map.dispose();
+    mat.map = null; mat.color.set(DEFAULT_FLOOR.color); mat.roughness = DEFAULT_FLOOR.rough; mat.needsUpdate = true;
+    return;
+  }
+  let base;
+  try { base = await baseTexture(m.file); } catch (_) { return; }
+  if (req !== _floorReq || floor !== state.floorMesh) return;   // superseded by a newer choice
+  if (mat.map) mat.map.dispose();
+  mat.map = tiledClone(base, m, state.floorSize.w, state.floorSize.d);
+  mat.color.set('#ffffff'); mat.roughness = m.rough; mat.needsUpdate = true;
+}
+
+let _wallReq = 0;
+let _wallMats = [];
+async function applyWallFinish() {
+  const req = ++_wallReq;
+  const fin = state.wallFinish || {};
+  const m = matByKey(fin.texture);
+  const paint = PAINTS.find((p) => p.key === fin.paint) || DEFAULT_PAINT;
+  let base = null;
+  if (m) { try { base = await baseTexture(m.file); } catch (_) { return; } }
+  if (req !== _wallReq) return;
+  _wallMats.forEach((x) => { x.map?.dispose(); x.dispose(); });
+  _wallMats = [];
+  // Ends and tops of the walls stay painted; with a texture, the two big faces
+  // of each span get it (BoxGeometry face order: +x, -x, +y, -y, +z, -z).
+  const plain = new THREE.MeshStandardMaterial({ color: m ? DEFAULT_PAINT.hex : paint.hex, roughness: 0.9 });
+  _wallMats.push(plain);
+  state.wallMeshes.forEach(({ mesh, L, h, y0 }) => {
+    if (!m) { mesh.material = plain; return; }
+    const face = new THREE.MeshStandardMaterial({ map: tiledClone(base, m, L, h, y0), roughness: m.rough });
+    _wallMats.push(face);
+    mesh.material = [plain, plain, plain, plain, face, face];
+  });
+}
+
+function applyRoomFinishes() {
+  applyFloorFinish();
+  applyWallFinish();
+  updateFinishUI();
+}
+
+function setFloorFinish(key) {
+  state.floorFinish = matByKey(key) ? key : null;
+  applyFloorFinish();
+  updateFinishUI();
+  save();
+}
+
+function setWallFinish(fin) {
+  state.wallFinish = fin && (matByKey(fin.texture) || PAINTS.some((p) => p.key === fin.paint)) ? fin : null;
+  applyWallFinish();
+  updateFinishUI();
+  save();
+}
+
+// Plain-English finish names for the photoreal prompt and the quote note.
+function finishSummary() {
+  const fm = matByKey(state.floorFinish);
+  const wf = state.wallFinish || {};
+  const wm = matByKey(wf.texture);
+  const paint = PAINTS.find((p) => p.key === wf.paint) || DEFAULT_PAINT;
+  return {
+    floor: fm ? `${fm.name.toLowerCase()} floor` : `${DEFAULT_FLOOR.name} floor`,
+    walls: wm ? `${wm.name.toLowerCase()} walls` : `${paint.name.toLowerCase()} painted walls`,
+    chosen: !!(fm || wf.texture || wf.paint),
+  };
+}
+
+function makeChip({ title, thumb, swatch, onClick, data }) {
+  const b = document.createElement('button');
+  b.type = 'button';
+  b.className = 'ds3-chip';
+  b.title = title;
+  b.setAttribute('aria-label', title);
+  if (thumb) b.style.backgroundImage = `url("${thumb}")`;
+  else b.style.background = swatch;
+  Object.entries(data || {}).forEach(([k, v]) => { b.dataset[k] = v; });
+  b.addEventListener('click', onClick);
+  return b;
+}
+
+function renderRoomFinishControls() {
+  const floorBox = document.getElementById('ds3-floor-finishes');
+  const wallBox = document.getElementById('ds3-wall-finishes');
+  if (!floorBox || !wallBox) return;
+  floorBox.appendChild(makeChip({ title: 'Original floor', swatch: '#d9c3a5', data: { floor: '' }, onClick: () => setFloorFinish(null) }));
+  MATERIALS.filter((m) => m.use.includes('f')).forEach((m) => {
+    floorBox.appendChild(makeChip({ title: m.name, thumb: thumbUrl(m), data: { floor: m.key }, onClick: () => setFloorFinish(m.key) }));
+  });
+  PAINTS.forEach((p) => {
+    wallBox.appendChild(makeChip({ title: `${p.name} paint`, swatch: p.hex, data: { paint: p.key }, onClick: () => setWallFinish({ paint: p.key }) }));
+  });
+  const sep = document.createElement('span');
+  sep.className = 'ds3-chip-sep';
+  wallBox.appendChild(sep);
+  MATERIALS.filter((m) => m.use.includes('w')).forEach((m) => {
+    wallBox.appendChild(makeChip({ title: m.name, thumb: thumbUrl(m), data: { wall: m.key }, onClick: () => setWallFinish({ texture: m.key }) }));
+  });
+  // Mouse wheel scrolls the chip rows sideways (only while there's more to see,
+  // so the page still scrolls normally at either end).
+  [floorBox, wallBox].forEach((row) => row.addEventListener('wheel', (e) => {
+    if (Math.abs(e.deltaY) <= Math.abs(e.deltaX)) return;
+    const max = row.scrollWidth - row.clientWidth;
+    if (max <= 0) return;
+    const next = Math.min(max, Math.max(0, row.scrollLeft + e.deltaY));
+    if (next === row.scrollLeft) return;
+    row.scrollLeft = next;
+    e.preventDefault();
+  }, { passive: false }));
+  updateFinishUI();
+}
+
+function updateFinishUI() {
+  const floorBox = document.getElementById('ds3-floor-finishes');
+  const wallBox = document.getElementById('ds3-wall-finishes');
+  if (!floorBox || !wallBox) return;
+  const fk = state.floorFinish || '';
+  floorBox.querySelectorAll('.ds3-chip').forEach((c) => c.classList.toggle('active', c.dataset.floor === fk));
+  const wf = state.wallFinish || {};
+  wallBox.querySelectorAll('.ds3-chip').forEach((c) => {
+    const on = wf.texture ? c.dataset.wall === wf.texture
+      : c.dataset.paint === (wf.paint || DEFAULT_PAINT.key);
+    c.classList.toggle('active', !!on);
+  });
+  const fm = matByKey(state.floorFinish);
+  const wm = matByKey(wf.texture);
+  const paint = PAINTS.find((p) => p.key === wf.paint) || DEFAULT_PAINT;
+  const fl = document.getElementById('ds3-floor-name');
+  const wl = document.getElementById('ds3-wall-name');
+  if (fl) fl.textContent = fm ? fm.name : 'Original';
+  if (wl) wl.textContent = wm ? wm.name : `${paint.name} paint`;
 }
 
 // Capture each material's original look once, so "Reset look" can restore it.
@@ -542,11 +771,13 @@ function snapshotMaterials(obj) {
 function applyStyle(obj, style) {
   snapshotMaterials(obj);
   const f = style.finish && FINISHES[style.finish];
-  const mat = style.texture && MATERIALS.find((m) => m.key === style.texture);
+  const mat = matByKey(style.texture);
   const tex = mat ? loadTexture(mat.file) : null;
   obj.userData._snap.forEach(({ m, map }) => {
-    if (tex) { m.map = tex; if (m.color) m.color.set('#ffffff'); }
-    else { m.map = map; if (style.color && m.color) m.color.set(style.color); }
+    if (tex) {
+      m.map = tex; if (m.color) m.color.set('#ffffff');
+      if (!f && 'roughness' in m) m.roughness = mat.rough;   // the finish's natural sheen unless one is picked
+    } else { m.map = map; if (style.color && m.color) m.color.set(style.color); }
     if (f) { if ('roughness' in m) m.roughness = f.roughness; if ('metalness' in m) m.metalness = f.metalness; }
     m.needsUpdate = true;
   });
@@ -583,11 +814,8 @@ function renderRestyleControls() {
     sw.appendChild(b);
   });
   const mats = document.getElementById('ds3-materials');
-  MATERIALS.forEach((mt) => {
-    const b = document.createElement('button');
-    b.type = 'button'; b.className = 'ds3-finish'; b.textContent = mt.name;
-    b.addEventListener('click', () => restyleSelected({ texture: mt.key }));
-    mats.appendChild(b);
+  MATERIALS.filter((mt) => mt.use.includes('o')).forEach((mt) => {
+    mats.appendChild(makeChip({ title: mt.name, thumb: thumbUrl(mt), onClick: () => restyleSelected({ texture: mt.key }) }));
   });
   const fin = document.getElementById('ds3-finishes');
   Object.keys(FINISHES).forEach((name) => {
@@ -737,6 +965,8 @@ const SAVE_KEY = 'ds3_design_v1';
 function serialize() {
   return {
     templateId: state.template?.id,
+    ...(state.floorFinish ? { floor: state.floorFinish } : {}),
+    ...(state.wallFinish ? { walls: state.wallFinish } : {}),
     items: state.items.map((o) => ({
       id: o.userData.entry.id,
       x: round(o.position.x), z: round(o.position.z),
@@ -754,6 +984,9 @@ function restore() {
   if (!data || !data.templateId) return false;
   const tpl = state.templates.find((t) => t.id === data.templateId);
   if (!tpl) return false;
+  state.floorFinish = matByKey(data.floor) ? data.floor : null;
+  const w = data.walls;
+  state.wallFinish = w && (matByKey(w.texture) || PAINTS.some((p) => p.key === w.paint)) ? w : null;
   loadTemplate(tpl);
   (data.items || []).forEach((it) => {
     const entry = state.catalog.items.find((e) => e.id === it.id);
@@ -777,7 +1010,9 @@ function sendToQuote() {
   const counts = {};
   state.items.forEach((o) => { const n = o.userData.entry.name; counts[n] = (counts[n] || 0) + 1; });
   const summary = Object.entries(counts).map(([n, c]) => `${c}x ${n}`).join(', ') || 'empty room';
-  const note = `3D Design Studio layout — Template: ${state.template?.name}. Items: ${summary}.`;
+  const fin = finishSummary();
+  const finishes = fin.chosen ? ` Finishes: ${fin.floor}, ${fin.walls}.` : '';
+  const note = `3D Design Studio layout — Template: ${state.template?.name}. Items: ${summary}.${finishes}`;
   try { localStorage.setItem('ds3_quote_handoff', JSON.stringify({ note, design: serialize(), at: Date.now() })); } catch (_) {}
   window.location.href = `quote.html?source=designstudio3d&note=${encodeURIComponent(note)}`;
 }
@@ -797,12 +1032,13 @@ function buildRoomDescription() {
   parts.push(dims ? `${dims.w}×${dims.d} ft ${tplName}` : tplName);
   const rooms = (state.template?.rooms || []).map((r) => r.label).filter(Boolean);
   if (rooms.length) parts.push(`areas: ${rooms.join(', ')}`);
-  parts.push('off-white walls, tan wood-tone floor');
-  // Furniture with per-item restyle info ("marble Kitchen Island").
+  const fin = finishSummary();
+  parts.push(`${fin.walls}, ${fin.floor}`);
+  // Furniture with per-item restyle info ("Carrara marble Kitchen Island").
   const counts = {};
   state.items.forEach((o) => {
     const st = o.userData.style;
-    const mat = st?.texture ? (MATERIALS.find((m) => m.key === st.texture)?.name || st.texture) : null;
+    const mat = st?.texture ? (matByKey(st.texture)?.name || st.texture) : null;
     const name = [mat, o.userData.entry.name].filter(Boolean).join(' ');
     counts[name] = (counts[name] || 0) + 1;
   });

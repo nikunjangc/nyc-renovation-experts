@@ -22,6 +22,7 @@
 
     <style>
       .ds3-shell { display: grid; grid-template-columns: 260px 1fr; gap: 18px; }
+      .ds3-shell > * { min-width: 0; } /* let the finish rows scroll instead of widening the page */
       @media (max-width: 900px) { .ds3-shell { grid-template-columns: 1fr; } }
       .ds3-panel { background: #fff; border-radius: 14px; box-shadow: 0 6px 24px rgba(0,0,0,0.05); padding: 16px; }
       .ds3-cat-title { font-weight: 700; font-size: 0.78rem; text-transform: uppercase; letter-spacing: 0.04em; color: #FDA12B; margin: 14px 0 8px; }
@@ -59,6 +60,21 @@
       .ds3-swatch:hover { transform: scale(1.12); }
       .ds3-finish { border: 1px solid #ddd; background: #fff; border-radius: 14px; font-size: 0.72rem; font-weight: 600; color: #555; padding: 4px 10px; cursor: pointer; }
       .ds3-finish:hover { border-color: #FDA12B; color: #FDA12B; }
+      /* Room finishes (floor + walls) and material thumbnails */
+      .ds3-room { background: #f8f9fb; border: 1px solid #e8ebef; border-radius: 10px; padding: 8px 12px; margin-bottom: 12px; }
+      .ds3-room-row { display: flex; align-items: center; gap: 10px; }
+      .ds3-room-row + .ds3-room-row { margin-top: 4px; }
+      .ds3-room-label { flex: 0 0 150px; font-size: 0.8rem; color: #555; line-height: 1.2; }
+      .ds3-room-label strong { display: block; color: #222; font-size: 0.82rem; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+      .ds3-thumbs { flex: 1; min-width: 0; display: flex; gap: 6px; overflow-x: auto; padding: 4px 2px 6px; scrollbar-width: thin; }
+      .ds3-chip { flex: 0 0 auto; width: 34px; height: 34px; border-radius: 8px; border: 2px solid #fff; box-shadow: 0 0 0 1px #d6d9de; background-size: cover; background-position: center; cursor: pointer; padding: 0; transition: transform 0.1s; }
+      .ds3-chip:hover { transform: translateY(-1px); box-shadow: 0 0 0 1px #FDA12B; }
+      .ds3-chip.active { box-shadow: 0 0 0 2px #FDA12B; }
+      .ds3-chip:focus-visible { outline: 2px solid #1f6f8b; outline-offset: 1px; }
+      .ds3-chip-sep { flex: 0 0 1px; align-self: stretch; background: #dde1e6; margin: 2px 4px; }
+      .ds3-restyle .ds3-finishes#ds3-materials { display: inline-flex; flex-wrap: wrap; gap: 5px; max-width: 100%; }
+      .ds3-restyle .ds3-chip { width: 28px; height: 28px; border-radius: 7px; }
+      @media (max-width: 576px) { .ds3-room-row { flex-direction: column; align-items: stretch; gap: 2px; } .ds3-room-label { flex-basis: auto; } }
       .ds3-template-row { display: flex; align-items: center; gap: 10px; margin-bottom: 14px; flex-wrap: wrap; }
       .ds3-template-row select { max-width: 240px; }
     </style>
@@ -119,7 +135,7 @@
       <p class="text-muted mb-4">
         Each layout opens as a <strong>ready-to-go furnished room</strong> — start playing right away, or click furniture and fixtures to add your own.
         <strong>Drag</strong> to move, press <strong>R</strong> (or the Rotate button) to spin a piece, <strong>Delete</strong> to remove it.
-        Select any piece to <strong>recolor, re-texture (wood, marble, tile…) or refinish</strong> it. Switch between a <strong>2D plan</strong> and a <strong>3D view</strong>, then turn your design into a free renovation quote.
+        Pick a <strong>floor and wall finish</strong> (white oak herringbone, Carrara marble, subway tile, hex tile and more), and select any piece to <strong>recolor, re-texture or refinish</strong> it. Switch between a <strong>2D plan</strong> and a <strong>3D view</strong>, then turn your design into a free renovation quote.
         <span class="d-block mt-2" style="font-size:0.85rem;">Furniture uses real low-poly 3D models (Kenney Furniture Kit, CC0). Add your own by dropping a .glb in /models/ — see DESIGN-STUDIO-3D-PLAN.md.</span>
       </p>
 
@@ -155,6 +171,18 @@
             <button type="button" id="ds3-furnish" class="btn btn-outline-primary btn-sm" title="Reset to the ready-made furnished layout"><i class="fas fa-magic me-1"></i>Furnish</button>
             <button type="button" id="ds3-tool-clear" class="btn btn-outline-secondary btn-sm"><i class="fas fa-broom me-1"></i>Clear</button>
             <span id="ds3-selinfo" class="ds3-selinfo"></span>
+          </div>
+
+          <!-- Room finishes: floor + walls, always available -->
+          <div class="ds3-room" id="ds3-room">
+            <div class="ds3-room-row">
+              <span class="ds3-room-label"><i class="fas fa-th-large text-primary me-1"></i>Floor<strong id="ds3-floor-name">Original</strong></span>
+              <div class="ds3-thumbs" id="ds3-floor-finishes" role="group" aria-label="Floor finish"></div>
+            </div>
+            <div class="ds3-room-row">
+              <span class="ds3-room-label"><i class="fas fa-paint-roller text-primary me-1"></i>Walls<strong id="ds3-wall-name">White paint</strong></span>
+              <div class="ds3-thumbs" id="ds3-wall-finishes" role="group" aria-label="Wall finish"></div>
+            </div>
           </div>
 
           <!-- Restyle panel: appears when an object is selected -->
