@@ -68,6 +68,9 @@ SWATCHES = {
     "cognac": "#9C5A2B", "taupe": "#A89C8C", "camel": "#B5875A", "charcoal": "#4B4B4D",
     "black": "#1F1F1F", "brass tone": "#B79A5B", "cane": "#CDAA6E",
     "dark brown marble-look": "linear-gradient(135deg,#3B271D 0%,#6B4A35 42%,#CBB592 48%,#4A3326 56%,#2F1F17 100%)",
+    "white marble-look": "linear-gradient(135deg,#F4F3F0 0%,#FFFFFF 40%,#B9B9B6 46%,#F2F1EE 54%,#E7E6E2 100%)",
+    "stone look": "#CDBFAE", "bronze tone": "#8C6A3F", "dark bronze tone": "#4A3F33",
+    "dark metal": "#3A3A3A", "glass": "linear-gradient(135deg,#E8F0F0 0%,#C9D8D8 100%)",
 }
 
 
@@ -123,8 +126,32 @@ def num(n):
     return f"{n:02d}"
 
 
+def singular(cat, model):
+    """What one piece is called: the collection's singular, or the model's own
+    (a desks catalog can hold Desk No. 01... and Bookcase No. 01...)."""
+    return model.get("singular", cat["singular"])
+
+
+def label(cat, model):
+    return f"{singular(cat, model)} No. {num(model['no'])}"
+
+
 def anchor(cat, model):
-    return f"{cat['singular'].lower().replace(' ', '-')}-{num(model['no'])}"
+    """The model's id on its page, its key in images.json and its file names."""
+    return f"{singular(cat, model).lower().replace(' ', '-')}-{num(model['no'])}"
+
+
+def photos_of(imgs, cat, model):
+    return imgs["models"].get(anchor(cat, model)) or imgs["models"][str(model["no"])]
+
+
+def is_mixed(cat):
+    return len({singular(cat, m) for m in cat["models"]}) > 1
+
+
+def noun(cat):
+    """How the page refers to one piece in general ("bed", "piece")."""
+    return cat.get("noun", cat["singular"].lower())
 
 
 def page_name(slug):
@@ -136,7 +163,7 @@ def quote_link(note):
 
 
 def model_note(cat, model):
-    return (f"Partner collection: {cat['singular']} No. {num(model['no'])} ({model['name']}). "
+    return (f"Partner collection: {label(cat, model)} ({model['name']}). "
             f"Please send sizes, finishes and pricing.")
 
 
@@ -212,22 +239,28 @@ def cmd_images(args):
         if name.endswith(".webp"):
             os.remove(os.path.join(out_dir, name))
 
-    prefix = cat["singular"].lower().replace(" ", "-")
+    keys = [anchor(cat, m) for m in cat["models"]]
+    dupes = sorted({k for k in keys if keys.count(k) > 1})
+    if dupes:
+        sys.exit("Two models share a number: " + ", ".join(dupes))
     stage_bg = measure_bg([os.path.join(man_dir, x["file"]) for m in cat["models"]
                            for x in man["models"][m["src"]]["cutouts"]])
     result = {"stage_bg": stage_bg, "models": {}, "editorial": []}
-    code_to_no, sheet = {}, []
+    code_to_key, sheet = {}, []
     for model in cat["models"]:
         mm = man["models"][model["src"]]
-        code_to_no[mm["code"]] = model["no"]
-        items = [("product", x) for x in mm["cutouts"]] + [("room", x) for x in mm["scenes"]]
+        code_to_key[mm["code"]] = anchor(cat, model)
+        forced = set(model.get("as_product", []))      # detail shots the classifier called rooms
+        items = ([("product", x) for x in mm["cutouts"]]
+                 + [("product" if len(mm["cutouts"]) + j in forced else "room", x)
+                    for j, x in enumerate(mm["scenes"])])
         skip = set(model.get("skip", []))
         hero = model.get("hero", 0)
         order = [hero] + [i for i in range(len(items)) if i != hero and i not in skip]
         imgs = []
         for k, i in enumerate(order, 1):
             kind, item = items[i]
-            base = f"{prefix}-{num(model['no'])}-{k}"
+            base = f"{anchor(cat, model)}-{k}"
             box, q = (PRODUCT_BOX, PRODUCT_Q) if kind == "product" else (ROOM_BOX, ROOM_Q)
             src = os.path.join(man_dir, item["file"])
             bg = stage_bg if kind == "product" else None
@@ -235,9 +268,9 @@ def cmd_images(args):
             to_webp(src, os.path.join(out_dir, base + "-t.webp"), THUMB_BOX, THUMB_Q, bg)
             imgs.append({"src": f"collection/{slug}/img/{base}.webp",
                          "thumb": f"collection/{slug}/img/{base}-t.webp",
-                         "w": w, "h": h, "kind": kind})
-        result["models"][str(model["no"])] = imgs
-        sheet.append([f"{cat['singular']} No. {num(model['no'])}", model["name"], mm["code"],
+                         "w": w, "h": h, "kind": kind, "i": i})
+        result["models"][anchor(cat, model)] = imgs
+        sheet.append([label(cat, model), model["name"], mm["code"],
                       " ".join(str(p) for p in mm["pages"]), len(imgs)])
 
     for j, ed in enumerate(man.get("editorial", []), 1):
@@ -245,7 +278,7 @@ def cmd_images(args):
         w, h = to_webp(os.path.join(man_dir, ed["image"]["file"]),
                        os.path.join(out_dir, base + ".webp"), EDITORIAL_BOX, EDITORIAL_Q)
         result["editorial"].append({"src": f"collection/{slug}/img/{base}.webp", "w": w, "h": h,
-                                    "before": code_to_no.get(ed.get("before"))})
+                                    "before": code_to_key.get(ed.get("before"))})
 
     dump(path("collection", slug, "images.json"), result)
     if args.codes_out:
@@ -364,12 +397,13 @@ def img_tag(src, w, h, alt, cls="", lazy=True, extra=""):
 def collection_page(slug):
     cat, imgs = live(slug)
     models = cat["models"]
-    singular = cat["singular"]
     plural = cat["title"].lower()
     page = page_name(slug)
     eds = imgs["editorial"]
-    hero = eds[cat.get("page_hero", 0)] if eds else imgs["models"][str(models[0]["no"])][0]
-    n_photos = sum(len(imgs["models"][str(m["no"])]) for m in models)
+    split = hero_photo(cat, imgs) if not eds else None
+    hero = split or (eds[cat.get("page_hero", 0)] if eds else photos_of(imgs, cat, models[0])[0])
+    n_photos = sum(len(photos_of(imgs, cat, m)) for m in models)
+    mixed = is_mixed(cat)
 
     counts = {f["tag"]: sum(1 for m in models if f["tag"] in m["tags"]) for f in cat.get("filters", [])}
     chips = [f'<button type="button" class="pc-chip is-on" data-filter="all" aria-pressed="true">All <span>{len(models)}</span></button>']
@@ -380,11 +414,12 @@ def collection_page(slug):
 
     tiles = []
     for m in models:
-        first = imgs["models"][str(m["no"])][0]
+        first = photos_of(imgs, cat, m)[0]
+        tile_no = label(cat, m) if mixed else f"No. {num(m['no'])}"
         tiles.append(f"""          <li class="pc-tile" data-tags="{esc(' '.join(m['tags']))}">
             <a href="{page}#{anchor(cat, m)}">
-              <span class="pc-tile-img">{img_tag(first['thumb'], *thumb_size(first), f"{singular} No. {num(m['no'])}, {m['name']}")}</span>
-              <span class="pc-tile-no">No. {num(m['no'])}</span>
+              <span class="pc-tile-img">{img_tag(first['thumb'], *thumb_size(first), f"{label(cat, m)}, {m['name']}")}</span>
+              <span class="pc-tile-no">{esc(tile_no)}</span>
               <span class="pc-tile-name">{esc(m['name'])}</span>
             </a>
           </li>""")
@@ -397,24 +432,14 @@ def collection_page(slug):
 
     sections = []
     for idx, m in enumerate(models):
-        for ed in breaks.get(m["no"], []):
+        for ed in breaks.get(anchor(cat, m), []) + breaks.get(m["no"], []):
             sections.append(f"""      <figure class="pc-break" data-break>
-        {img_tag(ed['src'], ed['w'], ed['h'], f"{singular} in a room setting, from the partner collection")}
+        {img_tag(ed['src'], ed['w'], ed['h'], f"{cat['title']} in a room setting, from the partner collection")}
       </figure>""")
-        sections.append(model_section(cat, m, imgs["models"][str(m["no"])], flip=idx % 2 == 1))
+        sections.append(model_section(cat, m, photos_of(imgs, cat, m), flip=idx % 2 == 1))
 
     main = f"""    <main class="pc pc-catalog" style="--pc-stage: {esc(imgs.get('stage_bg', STAGE_BG))}">
-      <header class="pc-hero">
-        {img_tag(hero['src'], hero['w'], hero['h'], f"{cat['title']} from the partner collection, in a room setting", 'pc-hero-img', lazy=False, extra=' fetchpriority="high"')}
-        <div class="pc-hero-inner">
-          <div class="pc-wrap">
-            <nav class="pc-crumbs" aria-label="Breadcrumb"><a href="collection.html">Partner Collection</a><span aria-hidden="true">/</span>{esc(cat['title'])}</nav>
-            <h1 class="pc-display">{esc(cat['title'])}</h1>
-            <p class="pc-lead">{esc(cat['lead'])}</p>
-            <p class="pc-meta">{len(models)} designs &middot; {n_photos} photos</p>
-          </div>
-        </div>
-      </header>
+{hero_block(cat, hero, len(models), n_photos, split is not None)}
 
       <section class="pc-intro" aria-labelledby="pc-index-title">
         <div class="pc-wrap">
@@ -441,8 +466,8 @@ def collection_page(slug):
         <div class="pc-wrap">
           <p class="pc-eyebrow">Found one you like?</p>
           <h2 class="pc-h2">Send us the number</h2>
-          <p>Tell us which {esc(singular.lower())} and the room it's for. We'll come back with sizes, finishes, pricing and lead time.</p>
-          <a class="pc-ask" href="{quote_link(f'Partner collection: {plural}. Please send sizes, finishes and pricing for: ')}">Ask about a {esc(singular.lower())} <i class="bi bi-arrow-right" aria-hidden="true"></i></a>
+          <p>Tell us which {esc(noun(cat))} and the room it's for. We'll come back with sizes, finishes, pricing and lead time.</p>
+          <a class="pc-ask" href="{quote_link(f'Partner collection: {plural}. Please send sizes, finishes and pricing for: ')}">Ask about a {esc(noun(cat))} <i class="bi bi-arrow-right" aria-hidden="true"></i></a>
           <a class="pc-link" href="collection.html">All partner collections</a>
         </div>
       </section>
@@ -457,6 +482,43 @@ def collection_page(slug):
     return page, document(title, description, page, hero["src"], main)
 
 
+def hero_photo(cat, imgs):
+    """A room photo from a model's gallery, for collections with no full-page
+    room photos: catalog "hero_photo": {"key": "desk-03", "i": <manifest index>}."""
+    hp = cat.get("hero_photo")
+    if not hp:
+        return None
+    for ph in imgs["models"].get(hp["key"], []):
+        if ph.get("i") == hp["i"]:
+            return ph
+    sys.exit(f"hero_photo {hp} is not in images.json; run build.py images again")
+
+
+def hero_block(cat, hero, n_models, n_photos, split):
+    alt = f"{cat['title']} from the partner collection, in a room setting"
+    text = f"""<nav class="pc-crumbs" aria-label="Breadcrumb"><a href="collection.html">Partner Collection</a><span aria-hidden="true">/</span>{esc(cat['title'])}</nav>
+            <h1 class="pc-display">{esc(cat['title'])}</h1>
+            <p class="pc-lead">{esc(cat['lead'])}</p>
+            <p class="pc-meta">{n_models} designs &middot; {n_photos} photos</p>"""
+    if split:
+        return f"""      <header class="pc-hero pc-hero--split">
+        <div class="pc-wrap pc-split">
+          <div class="pc-split-text">
+            {text}
+          </div>
+          <div class="pc-split-img">{img_tag(hero['src'], hero['w'], hero['h'], alt, lazy=False, extra=' fetchpriority="high"')}</div>
+        </div>
+      </header>"""
+    return f"""      <header class="pc-hero">
+        {img_tag(hero['src'], hero['w'], hero['h'], alt, 'pc-hero-img', lazy=False, extra=' fetchpriority="high"')}
+        <div class="pc-hero-inner">
+          <div class="pc-wrap">
+            {text}
+          </div>
+        </div>
+      </header>"""
+
+
 def thumb_size(img):
     w, h = img["w"], img["h"]
     s = min(THUMB_BOX[0] / w, THUMB_BOX[1] / h, 1)
@@ -464,12 +526,12 @@ def thumb_size(img):
 
 
 def model_section(cat, m, photos, flip):
-    singular = cat["singular"]
-    label = f"{singular} No. {num(m['no'])}"
+    lab = label(cat, m)
+    ask = lab if is_mixed(cat) else f"No. {num(m['no'])}"
     first = photos[0]
     thumbs = []
     for i, ph in enumerate(photos):
-        alt = f"{label}, {m['name']}, photo {i + 1} of {len(photos)}" + (", room setting" if ph["kind"] == "room" else "")
+        alt = f"{lab}, {m['name']}, photo {i + 1} of {len(photos)}" + (", room setting" if ph["kind"] == "room" else "")
         on = " is-on" if i == 0 else ""
         room = " is-room" if ph["kind"] == "room" else ""
         cur = ' aria-current="true"' if i == 0 else ""
@@ -480,8 +542,8 @@ def model_section(cat, m, photos, flip):
     details = "".join(f"<li>{esc(d)}</li>" for d in m["details"])
     shown = "".join(f'<li><i style="--sw:{swatch(s)}" aria-hidden="true"></i>{esc(s)}</li>' for s in m["shown"])
     stage_cls = "pc-stage is-room" if first["kind"] == "room" else "pc-stage"
-    first_alt = f"{label}, {m['name']}, photo 1 of {len(photos)}"
-    return f"""      <section class="pc-model{' is-flip' if flip else ''}" id="{anchor(cat, m)}" data-tags="{esc(' '.join(m['tags']))}" data-label="{esc(label)}" data-name="{esc(m['name'])}">
+    first_alt = f"{lab}, {m['name']}, photo 1 of {len(photos)}"
+    return f"""      <section class="pc-model{' is-flip' if flip else ''}" id="{anchor(cat, m)}" data-tags="{esc(' '.join(m['tags']))}" data-label="{esc(lab)}" data-name="{esc(m['name'])}">
         <div class="pc-wrap pc-model-inner">
           <div class="pc-gallery">
             <button type="button" class="{stage_cls}" data-index="0" aria-label="Enlarge photo">
@@ -491,12 +553,12 @@ def model_section(cat, m, photos, flip):
           </div>
           <div class="pc-info">
             <p class="pc-num" aria-hidden="true">{num(m['no'])}</p>
-            <p class="pc-eyebrow">{esc(label)}</p>
+            <p class="pc-eyebrow">{esc(lab)}</p>
             <h2 class="pc-name">{esc(m['name'])}</h2>
             <p class="pc-summary">{esc(m['summary'])}</p>
             <ul class="pc-details">{details}</ul>
             <div class="pc-shown"><span class="pc-shown-label">Shown in</span><ul>{shown}</ul></div>
-            <a class="pc-ask" href="{quote_link(model_note(cat, m))}">Ask about No. {num(m['no'])} <i class="bi bi-arrow-right" aria-hidden="true"></i></a>
+            <a class="pc-ask" href="{quote_link(model_note(cat, m))}">Ask about {esc(ask)} <i class="bi bi-arrow-right" aria-hidden="true"></i></a>
             <p class="pc-photos">{len(photos)} photos &middot; tap a photo to enlarge</p>
           </div>
         </div>
@@ -523,7 +585,8 @@ def landing_page():
     for c in lives:
         cat, imgs = live(c["slug"])
         eds = imgs["editorial"]
-        cover = eds[cat.get("card_cover", 0)] if eds else imgs["models"][str(cat["models"][0]["no"])][0]
+        cover = (eds[cat.get("card_cover", 0)] if eds
+                 else hero_photo(cat, imgs) or photos_of(imgs, cat, cat["models"][0])[0])
         if hero is None:
             hero = eds[cat.get("landing_hero", 0)] if eds else cover
         n = len(cat["models"])
@@ -598,7 +661,7 @@ def caption(cat, m):
         if t and t not in tags:
             tags.append(t)
     tags = tags[:5]
-    s = cat["singular"]
+    s = singular(cat, m)
     return (f"{m['summary']}\n\n"
             f"{s} No. {num(m['no'])}, the {m['name']}. {m['more']}\n\n"
             f"From our partner collection. DM us \"{s} {num(m['no'])}\" for sizes, finishes and pricing.\n\n"
@@ -632,7 +695,7 @@ body{{width:{POST_W}px;height:{POST_H}px;background:{bg};position:relative;overf
 <div class="sub"><i></i>Partner Collection<i></i></div>
 <div class="stage"><img src="file://{esc(photo_file)}" alt=""></div>
 <div class="foot">
-  <div class="no">No. {num(m['no'])}</div>
+  <div class="no">{esc(label(cat, m) if is_mixed(cat) else "No. " + num(m["no"]))}</div>
   <div class="name">{esc(m['name'])}</div>
   <div class="rule"></div>
   <div class="line">{esc(m['line'])}</div>
@@ -649,17 +712,20 @@ def cmd_posts(args):
     cat, imgs = live(slug)
     out_dir = path("collection", "posts", slug)
     os.makedirs(out_dir, exist_ok=True)
-    prefix = cat["singular"].lower().replace(" ", "-")
+    for name in os.listdir(out_dir):
+        if name.endswith(".jpg"):
+            os.remove(os.path.join(out_dir, name))
     posts, jobs = [], []
     with tempfile.TemporaryDirectory() as tmp:
         for m in cat["models"]:
-            hero = imgs["models"][str(m["no"])][0]
-            html_file = os.path.join(tmp, f"{prefix}-{num(m['no'])}.html")
+            hero = photos_of(imgs, cat, m)[0]
+            html_file = os.path.join(tmp, f"{anchor(cat, m)}.html")
             write_text(html_file, post_html(cat, m, path(hero["src"]), hero["w"], hero["h"],
                                             imgs.get("stage_bg", STAGE_BG)))
-            name = f"{prefix}-{num(m['no'])}.jpg"
+            name = f"{anchor(cat, m)}.jpg"
             jobs.append({"html": html_file, "out": os.path.join(out_dir, name), "w": POST_W, "h": POST_H})
-            posts.append({"no": m["no"], "name": m["name"], "image": f"collection/posts/{slug}/{name}",
+            posts.append({"key": anchor(cat, m), "label": label(cat, m), "no": m["no"], "name": m["name"],
+                          "image": f"collection/posts/{slug}/{name}",
                           "url": f"{SITE}/collection/posts/{slug}/{name}", "caption": caption(cat, m)})
         job_file = os.path.join(tmp, "jobs.json")
         dump(job_file, jobs)
@@ -678,11 +744,12 @@ def posts_page():
         cat = load(path("collection", c["slug"], "catalog.json"))
         cards = []
         for p in data["posts"]:
-            cid = f"cap-{c['slug']}-{num(p['no'])}"
+            cid = f"cap-{c['slug']}-{p.get('key') or num(p['no'])}"
+            plabel = p.get("label") or f"{cat['singular']} No. {num(p['no'])}"
             cards.append(f"""            <article class="pc-post">
-              <a class="pc-post-img" href="{esc(p['image'])}" target="_blank" rel="noopener">{img_tag(p['image'], 1080, 1350, f"Instagram post for {cat['singular']} No. {num(p['no'])}, {p['name']}")}</a>
+              <a class="pc-post-img" href="{esc(p['image'])}" target="_blank" rel="noopener">{img_tag(p['image'], 1080, 1350, f"Instagram post for {plabel}, {p['name']}")}</a>
               <div class="pc-post-body">
-                <p class="pc-post-title"><span>No. {num(p['no'])}</span> {esc(p['name'])}</p>
+                <p class="pc-post-title"><span>{esc(plabel)}</span> {esc(p['name'])}</p>
                 <div class="pc-post-actions">
                   <a class="pc-btn" href="{esc(p['image'])}" download>Download</a>
                   <button type="button" class="pc-btn" data-copy="#{cid}">Copy caption</button>

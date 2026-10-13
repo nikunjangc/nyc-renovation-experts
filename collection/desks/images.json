@@ -1,0 +1,538 @@
+{
+  "stage_bg": "#F8F7F3",
+  "models": {
+    "desk-01": [
+      {
+        "src": "collection/desks/img/desk-01-1.webp",
+        "thumb": "collection/desks/img/desk-01-1-t.webp",
+        "w": 1196,
+        "h": 615,
+        "kind": "product",
+        "i": 0
+      },
+      {
+        "src": "collection/desks/img/desk-01-2.webp",
+        "thumb": "collection/desks/img/desk-01-2-t.webp",
+        "w": 911,
+        "h": 452,
+        "kind": "product",
+        "i": 1
+      },
+      {
+        "src": "collection/desks/img/desk-01-3.webp",
+        "thumb": "collection/desks/img/desk-01-3-t.webp",
+        "w": 1077,
+        "h": 900,
+        "kind": "product",
+        "i": 2
+      }
+    ],
+    "desk-02": [
+      {
+        "src": "collection/desks/img/desk-02-1.webp",
+        "thumb": "collection/desks/img/desk-02-1-t.webp",
+        "w": 1080,
+        "h": 676,
+        "kind": "product",
+        "i": 0
+      },
+      {
+        "src": "collection/desks/img/desk-02-2.webp",
+        "thumb": "collection/desks/img/desk-02-2-t.webp",
+        "w": 919,
+        "h": 1046,
+        "kind": "room",
+        "i": 1
+      }
+    ],
+    "desk-03": [
+      {
+        "src": "collection/desks/img/desk-03-1.webp",
+        "thumb": "collection/desks/img/desk-03-1-t.webp",
+        "w": 973,
+        "h": 495,
+        "kind": "product",
+        "i": 1
+      },
+      {
+        "src": "collection/desks/img/desk-03-2.webp",
+        "thumb": "collection/desks/img/desk-03-2-t.webp",
+        "w": 790,
+        "h": 444,
+        "kind": "product",
+        "i": 0
+      },
+      {
+        "src": "collection/desks/img/desk-03-3.webp",
+        "thumb": "collection/desks/img/desk-03-3-t.webp",
+        "w": 1002,
+        "h": 955,
+        "kind": "room",
+        "i": 2
+      }
+    ],
+    "bookcase-01": [
+      {
+        "src": "collection/desks/img/bookcase-01-1.webp",
+        "thumb": "collection/desks/img/bookcase-01-1-t.webp",
+        "w": 671,
+        "h": 848,
+        "kind": "product",
+        "i": 1
+      },
+      {
+        "src": "collection/desks/img/bookcase-01-2.webp",
+        "thumb": "collection/desks/img/bookcase-01-2-t.webp",
+        "w": 580,
+        "h": 844,
+        "kind": "product",
+        "i": 0
+      }
+    ],
+    "desk-04": [
+      {
+        "src": "collection/desks/img/desk-04-1.webp",
+        "thumb": "collection/desks/img/desk-04-1-t.webp",
+        "w": 1000,
+        "h": 546,
+        "kind": "product",
+        "i": 1
+      },
+      {
+        "src": "collection/desks/img/desk-04-2.webp",
+        "thumb": "collection/desks/img/desk-04-2-t.webp",
+        "w": 777,
+        "h": 440,
+        "kind": "product",
+        "i": 0
+      },
+      {
+        "src": "collection/desks/img/desk-04-3.webp",
+        "thumb": "collection/desks/img/desk-04-3-t.webp",
+        "w": 504,
+        "h": 491,
+        "kind": "product",
+        "i": 2
+      }
+    ],
+    "bookcase-02": [
+      {
+        "src": "collection/desks/img/bookcase-02-1.webp",
+        "thumb": "collection/desks/img/bookcase-02-1-t.webp",
+        "w": 510,
+        "h": 845,
+        "kind": "product",
+        "i": 1
+      },
+      {
+        "src": "collection/desks/img/bookcase-02-2.webp",
+        "thumb": "collection/desks/img/bookcase-02-2-t.webp",
+        "w": 457,
+        "h": 827,
+        "kind": "product",
+        "i": 0
+      }
+    ],
+    "desk-05": [
+      {
+        "src": "collection/desks/img/desk-05-1.webp",
+        "thumb": "collection/desks/img/desk-05-1-t.webp",
+        "w": 980,
+        "h": 475,
+        "kind": "product",
+        "i": 0
+      },
+      {
+        "src": "collection/desks/img/desk-05-2.webp",
+        "thumb": "collection/desks/img/desk-05-2-t.webp",
+        "w": 905,
+        "h": 1048,
+        "kind": "room",
+        "i": 1
+      }
+    ],
+    "bookcase-03": [
+      {
+        "src": "collection/desks/img/bookcase-03-1.webp",
+        "thumb": "collection/desks/img/bookcase-03-1-t.webp",
+        "w": 796,
+        "h": 884,
+        "kind": "product",
+        "i": 2
+      },
+      {
+        "src": "collection/desks/img/bookcase-03-2.webp",
+        "thumb": "collection/desks/img/bookcase-03-2-t.webp",
+        "w": 651,
+        "h": 900,
+        "kind": "product",
+        "i": 0
+      },
+      {
+        "src": "collection/desks/img/bookcase-03-3.webp",
+        "thumb": "collection/desks/img/bookcase-03-3-t.webp",
+        "w": 637,
+        "h": 647,
+        "kind": "product",
+        "i": 1
+      }
+    ],
+    "desk-06": [
+      {
+        "src": "collection/desks/img/desk-06-1.webp",
+        "thumb": "collection/desks/img/desk-06-1-t.webp",
+        "w": 837,
+        "h": 473,
+        "kind": "product",
+        "i": 0
+      },
+      {
+        "src": "collection/desks/img/desk-06-2.webp",
+        "thumb": "collection/desks/img/desk-06-2-t.webp",
+        "w": 1030,
+        "h": 1044,
+        "kind": "room",
+        "i": 1
+      }
+    ],
+    "bookcase-04": [
+      {
+        "src": "collection/desks/img/bookcase-04-1.webp",
+        "thumb": "collection/desks/img/bookcase-04-1-t.webp",
+        "w": 529,
+        "h": 900,
+        "kind": "product",
+        "i": 0
+      },
+      {
+        "src": "collection/desks/img/bookcase-04-2.webp",
+        "thumb": "collection/desks/img/bookcase-04-2-t.webp",
+        "w": 538,
+        "h": 900,
+        "kind": "product",
+        "i": 1
+      }
+    ],
+    "desk-07": [
+      {
+        "src": "collection/desks/img/desk-07-1.webp",
+        "thumb": "collection/desks/img/desk-07-1-t.webp",
+        "w": 1177,
+        "h": 668,
+        "kind": "product",
+        "i": 1
+      },
+      {
+        "src": "collection/desks/img/desk-07-2.webp",
+        "thumb": "collection/desks/img/desk-07-2-t.webp",
+        "w": 960,
+        "h": 494,
+        "kind": "product",
+        "i": 0
+      },
+      {
+        "src": "collection/desks/img/desk-07-3.webp",
+        "thumb": "collection/desks/img/desk-07-3-t.webp",
+        "w": 909,
+        "h": 849,
+        "kind": "product",
+        "i": 2
+      }
+    ],
+    "bookcase-05": [
+      {
+        "src": "collection/desks/img/bookcase-05-1.webp",
+        "thumb": "collection/desks/img/bookcase-05-1-t.webp",
+        "w": 508,
+        "h": 900,
+        "kind": "product",
+        "i": 0
+      },
+      {
+        "src": "collection/desks/img/bookcase-05-2.webp",
+        "thumb": "collection/desks/img/bookcase-05-2-t.webp",
+        "w": 512,
+        "h": 897,
+        "kind": "product",
+        "i": 1
+      }
+    ],
+    "desk-08": [
+      {
+        "src": "collection/desks/img/desk-08-1.webp",
+        "thumb": "collection/desks/img/desk-08-1-t.webp",
+        "w": 1109,
+        "h": 572,
+        "kind": "product",
+        "i": 1
+      },
+      {
+        "src": "collection/desks/img/desk-08-2.webp",
+        "thumb": "collection/desks/img/desk-08-2-t.webp",
+        "w": 846,
+        "h": 479,
+        "kind": "product",
+        "i": 0
+      },
+      {
+        "src": "collection/desks/img/desk-08-3.webp",
+        "thumb": "collection/desks/img/desk-08-3-t.webp",
+        "w": 911,
+        "h": 883,
+        "kind": "product",
+        "i": 2
+      }
+    ],
+    "bookcase-06": [
+      {
+        "src": "collection/desks/img/bookcase-06-1.webp",
+        "thumb": "collection/desks/img/bookcase-06-1-t.webp",
+        "w": 586,
+        "h": 849,
+        "kind": "product",
+        "i": 2
+      },
+      {
+        "src": "collection/desks/img/bookcase-06-2.webp",
+        "thumb": "collection/desks/img/bookcase-06-2-t.webp",
+        "w": 487,
+        "h": 789,
+        "kind": "product",
+        "i": 0
+      },
+      {
+        "src": "collection/desks/img/bookcase-06-3.webp",
+        "thumb": "collection/desks/img/bookcase-06-3-t.webp",
+        "w": 540,
+        "h": 801,
+        "kind": "product",
+        "i": 1
+      },
+      {
+        "src": "collection/desks/img/bookcase-06-4.webp",
+        "thumb": "collection/desks/img/bookcase-06-4-t.webp",
+        "w": 507,
+        "h": 824,
+        "kind": "product",
+        "i": 3
+      }
+    ],
+    "desk-09": [
+      {
+        "src": "collection/desks/img/desk-09-1.webp",
+        "thumb": "collection/desks/img/desk-09-1-t.webp",
+        "w": 1200,
+        "h": 650,
+        "kind": "product",
+        "i": 1
+      },
+      {
+        "src": "collection/desks/img/desk-09-2.webp",
+        "thumb": "collection/desks/img/desk-09-2-t.webp",
+        "w": 860,
+        "h": 828,
+        "kind": "product",
+        "i": 0
+      },
+      {
+        "src": "collection/desks/img/desk-09-3.webp",
+        "thumb": "collection/desks/img/desk-09-3-t.webp",
+        "w": 871,
+        "h": 484,
+        "kind": "product",
+        "i": 2
+      }
+    ],
+    "bookcase-07": [
+      {
+        "src": "collection/desks/img/bookcase-07-1.webp",
+        "thumb": "collection/desks/img/bookcase-07-1-t.webp",
+        "w": 462,
+        "h": 752,
+        "kind": "product",
+        "i": 0
+      },
+      {
+        "src": "collection/desks/img/bookcase-07-2.webp",
+        "thumb": "collection/desks/img/bookcase-07-2-t.webp",
+        "w": 353,
+        "h": 577,
+        "kind": "product",
+        "i": 1
+      },
+      {
+        "src": "collection/desks/img/bookcase-07-3.webp",
+        "thumb": "collection/desks/img/bookcase-07-3-t.webp",
+        "w": 418,
+        "h": 632,
+        "kind": "product",
+        "i": 2
+      },
+      {
+        "src": "collection/desks/img/bookcase-07-4.webp",
+        "thumb": "collection/desks/img/bookcase-07-4-t.webp",
+        "w": 476,
+        "h": 765,
+        "kind": "product",
+        "i": 3
+      },
+      {
+        "src": "collection/desks/img/bookcase-07-5.webp",
+        "thumb": "collection/desks/img/bookcase-07-5-t.webp",
+        "w": 400,
+        "h": 639,
+        "kind": "product",
+        "i": 4
+      }
+    ],
+    "desk-10": [
+      {
+        "src": "collection/desks/img/desk-10-1.webp",
+        "thumb": "collection/desks/img/desk-10-1-t.webp",
+        "w": 1190,
+        "h": 560,
+        "kind": "product",
+        "i": 1
+      },
+      {
+        "src": "collection/desks/img/desk-10-2.webp",
+        "thumb": "collection/desks/img/desk-10-2-t.webp",
+        "w": 772,
+        "h": 712,
+        "kind": "product",
+        "i": 0
+      },
+      {
+        "src": "collection/desks/img/desk-10-3.webp",
+        "thumb": "collection/desks/img/desk-10-3-t.webp",
+        "w": 930,
+        "h": 489,
+        "kind": "product",
+        "i": 2
+      },
+      {
+        "src": "collection/desks/img/desk-10-4.webp",
+        "thumb": "collection/desks/img/desk-10-4-t.webp",
+        "w": 454,
+        "h": 413,
+        "kind": "product",
+        "i": 3
+      }
+    ],
+    "bookcase-08": [
+      {
+        "src": "collection/desks/img/bookcase-08-1.webp",
+        "thumb": "collection/desks/img/bookcase-08-1-t.webp",
+        "w": 589,
+        "h": 900,
+        "kind": "product",
+        "i": 1
+      },
+      {
+        "src": "collection/desks/img/bookcase-08-2.webp",
+        "thumb": "collection/desks/img/bookcase-08-2-t.webp",
+        "w": 602,
+        "h": 900,
+        "kind": "product",
+        "i": 0
+      }
+    ],
+    "desk-11": [
+      {
+        "src": "collection/desks/img/desk-11-1.webp",
+        "thumb": "collection/desks/img/desk-11-1-t.webp",
+        "w": 1052,
+        "h": 562,
+        "kind": "product",
+        "i": 0
+      },
+      {
+        "src": "collection/desks/img/desk-11-2.webp",
+        "thumb": "collection/desks/img/desk-11-2-t.webp",
+        "w": 846,
+        "h": 410,
+        "kind": "product",
+        "i": 1
+      },
+      {
+        "src": "collection/desks/img/desk-11-3.webp",
+        "thumb": "collection/desks/img/desk-11-3-t.webp",
+        "w": 845,
+        "h": 810,
+        "kind": "product",
+        "i": 2
+      }
+    ],
+    "desk-12": [
+      {
+        "src": "collection/desks/img/desk-12-1.webp",
+        "thumb": "collection/desks/img/desk-12-1-t.webp",
+        "w": 837,
+        "h": 586,
+        "kind": "product",
+        "i": 0
+      },
+      {
+        "src": "collection/desks/img/desk-12-2.webp",
+        "thumb": "collection/desks/img/desk-12-2-t.webp",
+        "w": 1120,
+        "h": 1044,
+        "kind": "room",
+        "i": 1
+      }
+    ],
+    "desk-13": [
+      {
+        "src": "collection/desks/img/desk-13-1.webp",
+        "thumb": "collection/desks/img/desk-13-1-t.webp",
+        "w": 1200,
+        "h": 678,
+        "kind": "product",
+        "i": 1
+      },
+      {
+        "src": "collection/desks/img/desk-13-2.webp",
+        "thumb": "collection/desks/img/desk-13-2-t.webp",
+        "w": 855,
+        "h": 805,
+        "kind": "product",
+        "i": 0
+      },
+      {
+        "src": "collection/desks/img/desk-13-3.webp",
+        "thumb": "collection/desks/img/desk-13-3-t.webp",
+        "w": 915,
+        "h": 469,
+        "kind": "product",
+        "i": 2
+      }
+    ],
+    "desk-14": [
+      {
+        "src": "collection/desks/img/desk-14-1.webp",
+        "thumb": "collection/desks/img/desk-14-1-t.webp",
+        "w": 1128,
+        "h": 621,
+        "kind": "product",
+        "i": 1
+      },
+      {
+        "src": "collection/desks/img/desk-14-2.webp",
+        "thumb": "collection/desks/img/desk-14-2-t.webp",
+        "w": 909,
+        "h": 515,
+        "kind": "product",
+        "i": 0
+      },
+      {
+        "src": "collection/desks/img/desk-14-3.webp",
+        "thumb": "collection/desks/img/desk-14-3-t.webp",
+        "w": 911,
+        "h": 840,
+        "kind": "product",
+        "i": 2
+      }
+    ]
+  },
+  "editorial": []
+}

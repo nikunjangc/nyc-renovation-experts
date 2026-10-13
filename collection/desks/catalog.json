@@ -1,0 +1,261 @@
+{
+  "slug": "desks",
+  "title": "Desks & Bookcases",
+  "singular": "Desk",
+  "noun": "piece",
+  "lead": "Writing desks, pedestal desks and bookcases for a home office or study, in wood, stone-look and metal.",
+  "intro": "Every piece has a number, like Desk No. 05 or Bookcase No. 02. Ask about it by number and we will come back with sizes, finishes, pricing and lead time.",
+  "hero_photo": {"key": "desk-03", "i": 2},
+  "hashtags": ["#homeoffice", "#nycinteriors", "#officedesign"],
+  "filters": [
+    {"tag": "desk", "label": "Desks"},
+    {"tag": "bookcase", "label": "Bookcases"},
+    {"tag": "wood", "label": "Wood"},
+    {"tag": "stoneglass", "label": "Stone & glass"},
+    {"tag": "metal", "label": "Metal"}
+  ],
+  "models": [
+    {
+      "no": 1, "src": 0, "hero": 0, "as_product": [2],
+      "name": "Ribbon-Leg Oval Desk",
+      "line": "Oval top, curved panel legs",
+      "summary": "An oval top on legs that curve down from it like folded ribbon.",
+      "details": ["Oval top with a deep rounded edge", "Curved panel legs that wrap down from the top", "Dark wood finish"],
+      "shown": ["Dark wood"],
+      "tags": ["desk", "wood"],
+      "more": "The legs are flat panels that curve down from the top, finished in dark wood.",
+      "hashtag": "#deskdesign"
+    },
+    {
+      "no": 2, "src": 1, "hero": 0,
+      "name": "Marble-Look Oval Desk",
+      "line": "Oval top, rounded slab legs",
+      "summary": "An oval desk in white marble-look stone, on two rounded slab legs.",
+      "details": ["Oval top", "Two thick slab legs with rounded ends", "White with gray veining"],
+      "shown": ["White marble-look"],
+      "tags": ["desk", "stoneglass"],
+      "more": "The top and both legs share the same white, gray-veined marble look.",
+      "hashtag": "#deskdesign"
+    },
+    {
+      "no": 3, "src": 2, "hero": 1,
+      "name": "Reeded Waterfall Desk",
+      "line": "Waterfall edges, reeded drawers",
+      "summary": "A natural wood desk whose top flows down into the legs, with reeded drawer fronts.",
+      "details": ["Waterfall edges: the top turns down to form the legs", "Reeded drawer fronts", "Natural wood finish"],
+      "shown": ["Natural wood"],
+      "tags": ["desk", "wood"],
+      "more": "The top turns down at each end to form the legs, and the drawer fronts are reeded.",
+      "hashtag": "#deskdesign"
+    },
+    {
+      "no": 1, "singular": "Bookcase", "src": 3, "hero": 1,
+      "name": "Reeded-Door Bookcase",
+      "line": "Open shelves over reeded doors",
+      "summary": "Open shelves above a cabinet with reeded doors, in natural wood.",
+      "details": ["Open shelves above", "Two reeded cabinet doors below", "Rounded top corners", "Natural wood finish"],
+      "shown": ["Natural wood"],
+      "tags": ["bookcase", "wood"],
+      "more": "Open shelves sit above a two-door cabinet with reeded fronts.",
+      "hashtag": "#bookcase"
+    },
+    {
+      "no": 4, "src": 4, "hero": 1, "as_product": [2],
+      "name": "Reeded Pedestal Desk",
+      "line": "Two reeded drawer pedestals",
+      "summary": "A double-pedestal desk wrapped in vertical reeding, with rounded corners.",
+      "details": ["Two drawer pedestals", "Reeded fronts and sides", "Rounded corners", "Natural wood finish"],
+      "shown": ["Natural wood"],
+      "tags": ["desk", "wood"],
+      "more": "Both pedestals hold drawers, and the reeding wraps around the rounded corners.",
+      "hashtag": "#deskdesign"
+    },
+    {
+      "no": 2, "singular": "Bookcase", "src": 5, "hero": 1, "skip": [2],
+      "name": "Tall Open Bookcase",
+      "line": "Tall open shelving, natural wood",
+      "summary": "A tall, open bookcase with a slim natural wood frame.",
+      "details": ["Open shelves", "Slim frame", "Natural wood finish"],
+      "shown": ["Natural wood"],
+      "tags": ["bookcase", "wood"],
+      "more": "Open shelving on a slim natural wood frame.",
+      "hashtag": "#bookcase"
+    },
+    {
+      "no": 5, "src": 6, "hero": 0,
+      "name": "Brass-Pull Writing Desk",
+      "line": "Two drawers, brass-tone pulls",
+      "summary": "A dark wood writing desk on slim legs, with a drawer at each end and brass-tone pulls.",
+      "details": ["A drawer at each end, open space between", "Brass-tone bar pulls", "Slim tapered legs", "Dark wood finish"],
+      "shown": ["Dark wood", "Brass tone"],
+      "tags": ["desk", "wood"],
+      "more": "Two drawers with brass-tone pulls frame an open center, on slim tapered legs.",
+      "hashtag": "#writingdesk"
+    },
+    {
+      "no": 3, "singular": "Bookcase", "src": 7, "hero": 2,
+      "name": "Brass-Frame Shelving Cabinet",
+      "line": "Brass shelving over a dark cabinet",
+      "summary": "Brass-tone open shelving over a dark wood cabinet, plus a dark wood étagère.",
+      "details": ["Brass-tone shelving frame", "Dark wood cabinet base with doors", "Dark wood étagère version"],
+      "shown": ["Brass tone", "Dark wood"],
+      "tags": ["bookcase", "metal", "wood"],
+      "more": "The shelving frame is brass-tone over a dark wood cabinet, and there's an all-wood étagère version too.",
+      "hashtag": "#bookcase"
+    },
+    {
+      "no": 6, "src": 8, "hero": 0,
+      "name": "Slim Writing Desk",
+      "line": "Slim drawer, rounded edges",
+      "summary": "A slim dark wood desk with a single drawer and softly rounded edges.",
+      "details": ["Slim apron with one drawer", "Softly rounded edges and legs", "Dark wood finish"],
+      "shown": ["Dark wood"],
+      "tags": ["desk", "wood"],
+      "more": "One slim drawer under the top, softly rounded edges, all in dark wood.",
+      "hashtag": "#writingdesk"
+    },
+    {
+      "no": 4, "singular": "Bookcase", "src": 9, "hero": 0,
+      "name": "Slim-Frame Étagère",
+      "line": "Open étagère, dark wood",
+      "summary": "Open étagère shelving with a slim dark wood frame.",
+      "details": ["Open shelves", "Slim frame", "Dark wood finish", "Shown in two versions"],
+      "shown": ["Dark wood"],
+      "tags": ["bookcase", "wood"],
+      "more": "Open shelving on a slim dark wood frame, shown in two versions.",
+      "hashtag": "#bookcase"
+    },
+    {
+      "no": 7, "src": 10, "hero": 1, "as_product": [2],
+      "name": "Rounded Pedestal Desk",
+      "line": "Rounded pedestals, textured pulls",
+      "summary": "A dark wood double-pedestal desk with rounded corners and textured brass-tone pulls.",
+      "details": ["Two drawer pedestals", "Textured brass-tone pulls", "Rounded corners", "Dark wood finish"],
+      "shown": ["Dark wood", "Brass tone"],
+      "tags": ["desk", "wood"],
+      "more": "Both pedestals hold drawers with textured brass-tone pulls, and every corner is rounded.",
+      "hashtag": "#deskdesign"
+    },
+    {
+      "no": 5, "singular": "Bookcase", "src": 11, "hero": 0,
+      "name": "Deep-Frame Bookcase",
+      "line": "Deep frame, rounded base",
+      "summary": "A tall open bookcase in dark wood, with deep side panels and a rounded base.",
+      "details": ["Open shelves", "Deep side panels", "Rounded plinth base", "Dark wood finish"],
+      "shown": ["Dark wood"],
+      "tags": ["bookcase", "wood"],
+      "more": "Deep side panels and a rounded base, all in dark wood.",
+      "hashtag": "#bookcase"
+    },
+    {
+      "no": 8, "src": 12, "hero": 1, "as_product": [2],
+      "name": "Carved-Pull Writing Desk",
+      "line": "Carved pull, slim tapered legs",
+      "summary": "A light wood writing desk on slim tapered legs, with a drawer that has a carved pull.",
+      "details": ["Center drawer with a carved finger pull", "Slim tapered legs", "Light wood finish"],
+      "shown": ["Light wood"],
+      "tags": ["desk", "wood"],
+      "more": "The drawer opens with a carved finger pull, and the legs taper down slim.",
+      "hashtag": "#writingdesk"
+    },
+    {
+      "no": 6, "singular": "Bookcase", "src": 13, "hero": 2,
+      "name": "Light Wood Storage Cabinet",
+      "line": "Glass, solid or open fronts",
+      "summary": "Light wood storage in four versions: glass doors, solid doors, glass over drawers, and open shelves.",
+      "details": ["Glass-door cabinet", "Solid-door cabinet", "Glass doors over drawers", "Open shelving"],
+      "shown": ["Light wood", "Glass"],
+      "tags": ["bookcase", "wood", "stoneglass"],
+      "more": "It comes with glass doors, solid doors, glass doors over drawers, or open shelves.",
+      "hashtag": "#bookcase"
+    },
+    {
+      "no": 9, "src": 14, "hero": 1,
+      "name": "Stone-Top Pedestal Desk",
+      "line": "Stone-look top, rounded pedestals",
+      "summary": "A stone-look top on two rounded wood pedestals.",
+      "details": ["Stone-look top", "Two rounded drawer pedestals", "Natural wood finish"],
+      "shown": ["Stone look", "Natural wood"],
+      "tags": ["desk", "wood", "stoneglass"],
+      "more": "A stone-look top sits on two rounded natural wood drawer pedestals.",
+      "hashtag": "#deskdesign"
+    },
+    {
+      "no": 7, "singular": "Bookcase", "src": 15, "hero": 0,
+      "name": "Glass-Door Bookcase",
+      "line": "Glass or solid doors",
+      "summary": "Tall light wood cabinets with glass or solid doors.",
+      "details": ["Glass doors or solid doors", "A version with glass above and solid doors below", "Light wood finish"],
+      "shown": ["Light wood", "Glass"],
+      "tags": ["bookcase", "wood", "stoneglass"],
+      "more": "Choose glass doors, solid doors, or glass above with solid doors below.",
+      "hashtag": "#bookcase"
+    },
+    {
+      "no": 10, "src": 16, "hero": 1,
+      "name": "Cast-Metal Frame Desk",
+      "line": "Cast-metal frame, marble or glass top",
+      "summary": "A slim cast-metal frame with a marble-look or glass top.",
+      "details": ["Brass-tone frame with a white marble-look top", "Dark bronze-tone frame with a glass top", "Slim cross stretcher"],
+      "shown": ["Brass tone", "Dark bronze tone", "White marble-look", "Glass"],
+      "tags": ["desk", "metal", "stoneglass"],
+      "more": "Shown with a brass-tone frame and white marble-look top, or a dark bronze-tone frame with glass.",
+      "hashtag": "#deskdesign"
+    },
+    {
+      "no": 8, "singular": "Bookcase", "src": 17, "hero": 1,
+      "name": "Metal Étagère",
+      "line": "Slim metal frame, open shelves",
+      "summary": "Open shelving on a slim metal frame, in a dark or brass-tone finish.",
+      "details": ["Slim metal frame", "Open shelves", "Dark or brass-tone finish"],
+      "shown": ["Dark metal", "Brass tone"],
+      "tags": ["bookcase", "metal"],
+      "more": "The frame comes in a dark finish or in brass-tone.",
+      "hashtag": "#bookcase"
+    },
+    {
+      "no": 11, "src": 18, "hero": 0,
+      "name": "Arched-End Desk",
+      "line": "Arched end panels, low stretcher",
+      "summary": "A natural wood desk with arched cut-outs in its end panels and a low stretcher.",
+      "details": ["End panels with arched cut-outs", "Low stretcher between the ends", "Natural wood finish"],
+      "shown": ["Natural wood"],
+      "tags": ["desk", "wood"],
+      "more": "Each end panel has an arched cut-out, joined by a low stretcher.",
+      "hashtag": "#deskdesign"
+    },
+    {
+      "no": 12, "src": 19, "hero": 0,
+      "name": "Column-Leg Desk",
+      "line": "Textured top, column legs",
+      "summary": "A bronze-tone desk with a textured top and a cluster of column legs.",
+      "details": ["Textured top with rounded corners", "Column legs with darker feet", "Bronze-tone finish"],
+      "shown": ["Bronze tone"],
+      "tags": ["desk", "metal"],
+      "more": "The top has a textured surface and rounded corners, carried on a cluster of column legs.",
+      "hashtag": "#deskdesign"
+    },
+    {
+      "no": 13, "src": 20, "hero": 1,
+      "name": "Brass T-Leg Desk",
+      "line": "Dark top, brass-tone T legs",
+      "summary": "A dark wood top on brass-tone trestle legs with a T-shaped top.",
+      "details": ["Dark wood top", "Brass-tone trestle legs", "Low stretcher"],
+      "shown": ["Dark wood", "Brass tone"],
+      "tags": ["desk", "metal", "wood"],
+      "more": "Brass-tone trestle legs, joined by a low stretcher, carry a dark wood top.",
+      "hashtag": "#deskdesign"
+    },
+    {
+      "no": 14, "src": 21, "hero": 1, "as_product": [2],
+      "name": "Column-Base Dark Desk",
+      "line": "Rounded top, grouped column legs",
+      "summary": "A dark wood desk with a rounded-end top on chunky grouped column legs.",
+      "details": ["Rounded-end top", "Grouped column legs", "Dark wood finish"],
+      "shown": ["Dark wood"],
+      "tags": ["desk", "wood"],
+      "more": "Chunky grouped column legs hold a rounded-end top, all in dark wood.",
+      "hashtag": "#deskdesign"
+    }
+  ]
+}
