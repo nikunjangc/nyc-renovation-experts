@@ -48,12 +48,19 @@ def list_images(pdf):
 
 
 def page_codes(pdf):
-    pages = run(["pdftotext", "-layout", pdf, "-"]).split("\f")
+    """{page: code} for pages that name one model; {page: None} for index pages
+    that list many models (their images are thumbnails of the others).
+
+    Uses the raw text order, where a code split over two lines in the layout
+    ("MI-" above "S2501") comes out as one run."""
+    pages = run(["pdftotext", "-raw", pdf, "-"]).split("\f")
     out = {}
     for i, text in enumerate(pages, 1):
-        codes = CODE_RE.findall(text)
-        if codes:
-            out[i] = "-".join(codes[0])
+        codes = list(dict.fromkeys("-".join(c) for c in CODE_RE.findall(text)))
+        if len(codes) > 3:
+            out[i] = None
+        elif codes:
+            out[i] = codes[0]
     return out
 
 
@@ -115,12 +122,14 @@ def main(pdf, out_dir):
     order = sorted(pages)
     models, editorial, current = {}, [], None
     for p in order:
+        if p in codes and codes[p] is None:       # an index page
+            continue
         imgs = pages[p]
         code = codes.get(p)
         full_page_scene = (code is None and len(imgs) == 1 and imgs[0]["kind"] == "scene"
                            and imgs[0]["w"] >= 1100)
         if full_page_scene:
-            nxt = next((codes[q] for q in order if q > p and q in codes), current)
+            nxt = next((codes[q] for q in order if q > p and codes.get(q)), current)
             editorial.append({"page": p, "image": imgs[0], "before": nxt})
             continue
         if code:
