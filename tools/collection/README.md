@@ -80,7 +80,8 @@ hold the partner's name and codes).
    must report 0 problems. It also flags anything shaped like a model code
    and any image metadata. (The deny list stays out of this repo: it would
    put the partner's name in a public file.) Then look at the pages at desktop
-   and phone widths, and at a few posts.
+   and phone widths, and at a few posts. `preview.js` takes the screenshots
+   when the CDNs the site uses can't be reached (setup in its header).
 
 7. **Publish**: commit, push `gh-pages` first (production builds from it),
    then `main`.
