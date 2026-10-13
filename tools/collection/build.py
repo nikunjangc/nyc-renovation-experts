@@ -71,6 +71,8 @@ SWATCHES = {
     "white marble-look": "linear-gradient(135deg,#F4F3F0 0%,#FFFFFF 40%,#B9B9B6 46%,#F2F1EE 54%,#E7E6E2 100%)",
     "stone look": "#CDBFAE", "bronze tone": "#8C6A3F", "dark bronze tone": "#4A3F33",
     "dark metal": "#3A3A3A", "glass": "linear-gradient(135deg,#E8F0F0 0%,#C9D8D8 100%)",
+    "oatmeal": "#D9CFC0", "gray": "#8E8E8C", "light gray": "#C9C7C2", "brown": "#7A5A45",
+    "natural": "#D8C3A0",
 }
 
 

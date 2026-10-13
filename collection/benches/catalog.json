@@ -1,0 +1,228 @@
+{
+  "slug": "benches",
+  "title": "Benches & Daybeds",
+  "singular": "Bench",
+  "noun": "piece",
+  "lead": "Upholstered and storage benches for the end of a bed or an entry, and deep daybeds with cushions and pillows.",
+  "intro": "Every piece has a number, like Bench No. 07 or Daybed No. 02. Ask about it by number and we will come back with sizes, finishes, pricing and lead time.",
+  "hero_photo": {"key": "bench-06", "i": 1},
+  "hashtags": ["#nycinteriors", "#interiordesign", "#benchdesign"],
+  "filters": [
+    {"tag": "bench", "label": "Benches"},
+    {"tag": "daybed", "label": "Daybeds"},
+    {"tag": "storage", "label": "Storage"},
+    {"tag": "leather", "label": "Leather look"},
+    {"tag": "metal", "label": "Metal frame"}
+  ],
+  "models": [
+    {
+      "no": 1, "src": 0, "hero": 2,
+      "name": "Lift-Top Storage Bench",
+      "line": "Lift-up top, storage inside",
+      "summary": "A cream upholstered bench with a lift-up top and storage inside, on a slim wood plinth.",
+      "details": ["Lift-up top with storage inside", "Fully upholstered", "Slim wood plinth"],
+      "shown": ["Cream", "Natural wood"],
+      "tags": ["bench", "storage"],
+      "more": "The top lifts up for storage, and the upholstered box sits on a slim wood plinth.",
+      "hashtag": "#storagebench"
+    },
+    {
+      "no": 2, "src": 1, "hero": 1,
+      "name": "Tapered-Leg Upholstered Bench",
+      "line": "Tapered legs, storage option",
+      "summary": "An upholstered bench on tapered wood legs, as an open bench or with a lift-top storage box.",
+      "details": ["Open bench or lift-top storage version", "Tapered wood legs", "Oatmeal-tone fabric"],
+      "shown": ["Oatmeal", "Dark wood"],
+      "tags": ["bench", "storage"],
+      "more": "Choose the open bench or the storage version with a lift-up top, both on tapered wood legs.",
+      "hashtag": "#upholsteredbench"
+    },
+    {
+      "no": 3, "src": 2, "hero": 2,
+      "name": "Wood-Frame Cushion Bench",
+      "line": "Cushion top, light wood frame",
+      "summary": "A cream cushion on a light wood frame with tapered legs; also as a storage bench.",
+      "details": ["Cream upholstered cushion top", "Light wood frame with tapered legs", "Storage version with a closed base"],
+      "shown": ["Cream", "Light wood"],
+      "tags": ["bench", "storage"],
+      "more": "A cream cushion sits on a light wood frame, and there's a storage version with a closed base.",
+      "hashtag": "#upholsteredbench"
+    },
+    {
+      "no": 4, "src": 3, "hero": 0,
+      "name": "Shelf-Base Bench",
+      "line": "Upholstered top, shelf below",
+      "summary": "An upholstered bench on a light wood frame with a shelf below; also as a storage bench.",
+      "details": ["Upholstered top", "Open shelf below the seat", "Light wood frame", "Storage version in textured fabric"],
+      "shown": ["Cream", "Light wood"],
+      "tags": ["bench", "storage"],
+      "more": "There's an open shelf below the seat, and a storage version in textured fabric.",
+      "hashtag": "#upholsteredbench"
+    },
+    {
+      "no": 5, "src": 4, "hero": 0,
+      "name": "Channel-Tufted Storage Bench",
+      "line": "Channel tufting, storage inside",
+      "summary": "A channel-tufted storage bench in cream on dark block feet, plus a white bench with low arms.",
+      "details": ["Channel-tufted upholstery", "Lift-up top with storage", "Dark block feet", "White low-arm version"],
+      "shown": ["Cream", "White", "Dark wood"],
+      "tags": ["bench", "storage"],
+      "more": "The tufted top lifts for storage, and a white version with low arms is shown too.",
+      "hashtag": "#storagebench"
+    },
+    {
+      "no": 6, "src": 5, "hero": 0,
+      "name": "Bolster-End Bench",
+      "line": "Round end cushions, brass-tone frame",
+      "summary": "An upholstered bench on a slim brass-tone frame, with round cushions at each end.",
+      "details": ["Round end cushions", "Slim brass-tone frame", "Cream upholstery"],
+      "shown": ["Cream", "Brass tone"],
+      "tags": ["bench", "metal"],
+      "more": "Round cushions cap each end of the seat, on a slim brass-tone frame.",
+      "hashtag": "#upholsteredbench"
+    },
+    {
+      "no": 7, "src": 6, "hero": 2,
+      "name": "Cast-Metal Bench",
+      "line": "Brass-tone frame, X-leg option",
+      "summary": "An upholstered top on a cast brass-tone frame, with straight or crossed legs.",
+      "details": ["Upholstered top in white or gray", "Cast brass-tone frame", "Straight legs or curved X legs"],
+      "shown": ["White", "Gray", "Brass tone"],
+      "tags": ["bench", "metal"],
+      "more": "The top comes in white or gray, on straight legs or curved X legs.",
+      "hashtag": "#upholsteredbench"
+    },
+    {
+      "no": 8, "src": 7, "hero": 0, "as_product": [2],
+      "name": "Cognac Cast-Frame Bench",
+      "line": "Cognac top, crossed stretcher",
+      "summary": "A cognac leather-look top on a cast brass-tone frame with a crossed stretcher.",
+      "details": ["Cognac leather-look top", "Cast brass-tone frame", "Crossed stretcher with a ring detail"],
+      "shown": ["Cognac", "Brass tone"],
+      "tags": ["bench", "leather", "metal"],
+      "more": "A cognac leather-look top rides on a cast brass-tone frame, with a ring where the stretchers cross.",
+      "hashtag": "#benchdecor"
+    },
+    {
+      "no": 9, "src": 8, "hero": 2,
+      "name": "Rolled-Arm Leather-Look Bench",
+      "line": "Rolled ends, cognac leather look",
+      "summary": "A cognac leather-look bench with rounded ends that roll up into arms.",
+      "details": ["Rounded ends that roll up into arms", "Loose seat cushion", "Cognac leather look"],
+      "shown": ["Cognac"],
+      "tags": ["bench", "leather"],
+      "more": "The ends roll up into soft arms, all in a cognac leather look.",
+      "hashtag": "#benchdecor"
+    },
+    {
+      "no": 10, "src": 9, "hero": 2,
+      "name": "Slim-Frame Leather-Look Bench",
+      "line": "Gray cushion, slim brass-tone frame",
+      "summary": "A gray leather-look cushion on a slim brass-tone frame.",
+      "details": ["Gray leather-look cushion", "Slim, squared brass-tone frame"],
+      "shown": ["Gray", "Brass tone"],
+      "tags": ["bench", "leather", "metal"],
+      "more": "A gray leather-look cushion on a slim, squared brass-tone frame.",
+      "hashtag": "#benchdecor"
+    },
+    {
+      "no": 11, "src": 10, "hero": 0,
+      "name": "Channel-Tufted Block Bench",
+      "line": "Gray channel tufting all around",
+      "summary": "A solid block of gray channel-tufted upholstery.",
+      "details": ["Vertical channel tufting on every side", "Low recessed base", "Gray textured fabric"],
+      "shown": ["Gray"],
+      "tags": ["bench"],
+      "more": "Channel tufting wraps all four sides, over a low recessed base.",
+      "hashtag": "#upholsteredbench"
+    },
+    {
+      "no": 12, "src": 11, "hero": 2,
+      "name": "Hide-Look Sled-Leg Bench",
+      "line": "Black hide look, brass-tone sled legs",
+      "summary": "A black hair-on-hide-look top on brass-tone sled legs.",
+      "details": ["Black hair-on-hide-look top", "Brass-tone sled legs"],
+      "shown": ["Black", "Brass tone"],
+      "tags": ["bench", "leather", "metal"],
+      "more": "The black hide-look top sits on two brass-tone sled legs.",
+      "hashtag": "#benchdecor"
+    },
+    {
+      "no": 13, "src": 12, "hero": 1,
+      "name": "Three-Pad Arched-Leg Bench",
+      "line": "Three pads, arched brass-tone legs",
+      "summary": "Three cushioned pads on a brass-tone frame with arched legs.",
+      "details": ["Three separate cushion pads", "Brass-tone frame with arched legs", "Cream textured fabric"],
+      "shown": ["Cream", "Brass tone"],
+      "tags": ["bench", "metal"],
+      "more": "Three separate cushion pads sit on a brass-tone frame with arched legs.",
+      "hashtag": "#upholsteredbench"
+    },
+    {
+      "no": 1, "singular": "Daybed", "src": 13, "hero": 0,
+      "name": "Reeded Daybed",
+      "line": "Reeded wood frame, raised ends",
+      "summary": "A deep cushioned daybed with raised ends, wrapped in reeded wood.",
+      "details": ["Reeded wood frame", "Raised ends", "Cream seat cushion and pillows"],
+      "shown": ["Natural wood", "Cream"],
+      "tags": ["daybed"],
+      "more": "Reeded wood wraps the frame and the raised ends, with a cream cushion and pillows.",
+      "hashtag": "#daybed"
+    },
+    {
+      "no": 2, "singular": "Daybed", "src": 14, "hero": 0,
+      "name": "Textured-Frame Daybed",
+      "line": "Textured frame, cognac cushion",
+      "summary": "A daybed with a textured natural-tone frame and a cognac leather-look cushion and pillows.",
+      "details": ["Textured natural-tone frame", "Raised ends", "Cognac leather-look cushion and pillows"],
+      "shown": ["Natural", "Cognac"],
+      "tags": ["daybed", "leather"],
+      "more": "The frame has a textured natural tone, with a cognac leather-look cushion and pillows.",
+      "hashtag": "#daybed"
+    },
+    {
+      "no": 3, "singular": "Daybed", "src": 15, "hero": 1,
+      "name": "Bolster Daybed",
+      "line": "Bolsters and pillows, slim legs",
+      "summary": "A long upholstered daybed on slim wood legs, with bolsters and pillows.",
+      "details": ["Long upholstered platform", "Bolsters and pillows", "Slim wood legs", "Shown in light gray and brown"],
+      "shown": ["Light gray", "Brown"],
+      "tags": ["daybed"],
+      "more": "A long, low upholstered platform on slim wood legs, shown in light gray and in brown.",
+      "hashtag": "#daybed"
+    },
+    {
+      "no": 4, "singular": "Daybed", "src": 16, "hero": 0,
+      "name": "Curved Wood Daybed",
+      "line": "Curved wood shell, cognac cushion",
+      "summary": "A daybed in a curved wood shell with a cognac leather-look cushion; also as a one-ended chaise.",
+      "details": ["Curved wood shell", "Cognac leather-look cushion and pillows", "Chaise version with one raised end"],
+      "shown": ["Natural wood", "Cognac"],
+      "tags": ["daybed", "leather"],
+      "more": "A curved wood shell holds a cognac leather-look cushion, and there's a chaise version with one raised end.",
+      "hashtag": "#daybed"
+    },
+    {
+      "no": 5, "singular": "Daybed", "src": 17, "hero": 2,
+      "name": "Cast-Frame Bolster Chaise",
+      "line": "Cast brass-tone frame, bolsters",
+      "summary": "A cream upholstered daybed on a cast brass-tone frame, with bolsters at one or both ends.",
+      "details": ["Bolster at one or both ends", "Cast brass-tone frame", "Cream upholstery"],
+      "shown": ["Cream", "Brass tone"],
+      "tags": ["daybed", "metal"],
+      "more": "Bolsters sit at one or both ends of a cream seat, on a cast brass-tone frame.",
+      "hashtag": "#daybed"
+    },
+    {
+      "no": 6, "singular": "Daybed", "src": 18, "hero": 1,
+      "name": "Rounded Wood Daybed",
+      "line": "Rounded ends, light wood",
+      "summary": "A light wood daybed with rounded ends and a cream cushion.",
+      "details": ["Rounded wood ends", "Cream seat cushion and pillows", "Light wood finish"],
+      "shown": ["Light wood", "Cream"],
+      "tags": ["daybed"],
+      "more": "Rounded light wood ends hold a cream cushion and pillows.",
+      "hashtag": "#daybed"
+    }
+  ]
+}

@@ -1,0 +1,468 @@
+{
+  "stage_bg": "#F8F7F3",
+  "models": {
+    "bench-01": [
+      {
+        "src": "collection/benches/img/bench-01-1.webp",
+        "thumb": "collection/benches/img/bench-01-1-t.webp",
+        "w": 1116,
+        "h": 549,
+        "kind": "product",
+        "i": 2
+      },
+      {
+        "src": "collection/benches/img/bench-01-2.webp",
+        "thumb": "collection/benches/img/bench-01-2-t.webp",
+        "w": 969,
+        "h": 655,
+        "kind": "product",
+        "i": 0
+      },
+      {
+        "src": "collection/benches/img/bench-01-3.webp",
+        "thumb": "collection/benches/img/bench-01-3-t.webp",
+        "w": 897,
+        "h": 399,
+        "kind": "product",
+        "i": 1
+      }
+    ],
+    "bench-02": [
+      {
+        "src": "collection/benches/img/bench-02-1.webp",
+        "thumb": "collection/benches/img/bench-02-1-t.webp",
+        "w": 1053,
+        "h": 559,
+        "kind": "product",
+        "i": 1
+      },
+      {
+        "src": "collection/benches/img/bench-02-2.webp",
+        "thumb": "collection/benches/img/bench-02-2-t.webp",
+        "w": 927,
+        "h": 598,
+        "kind": "product",
+        "i": 0
+      },
+      {
+        "src": "collection/benches/img/bench-02-3.webp",
+        "thumb": "collection/benches/img/bench-02-3-t.webp",
+        "w": 791,
+        "h": 376,
+        "kind": "product",
+        "i": 2
+      }
+    ],
+    "bench-03": [
+      {
+        "src": "collection/benches/img/bench-03-1.webp",
+        "thumb": "collection/benches/img/bench-03-1-t.webp",
+        "w": 1200,
+        "h": 592,
+        "kind": "product",
+        "i": 2
+      },
+      {
+        "src": "collection/benches/img/bench-03-2.webp",
+        "thumb": "collection/benches/img/bench-03-2-t.webp",
+        "w": 955,
+        "h": 414,
+        "kind": "product",
+        "i": 0
+      },
+      {
+        "src": "collection/benches/img/bench-03-3.webp",
+        "thumb": "collection/benches/img/bench-03-3-t.webp",
+        "w": 987,
+        "h": 440,
+        "kind": "product",
+        "i": 1
+      }
+    ],
+    "bench-04": [
+      {
+        "src": "collection/benches/img/bench-04-1.webp",
+        "thumb": "collection/benches/img/bench-04-1-t.webp",
+        "w": 1200,
+        "h": 587,
+        "kind": "product",
+        "i": 0
+      },
+      {
+        "src": "collection/benches/img/bench-04-2.webp",
+        "thumb": "collection/benches/img/bench-04-2-t.webp",
+        "w": 1043,
+        "h": 469,
+        "kind": "product",
+        "i": 1
+      },
+      {
+        "src": "collection/benches/img/bench-04-3.webp",
+        "thumb": "collection/benches/img/bench-04-3-t.webp",
+        "w": 931,
+        "h": 370,
+        "kind": "product",
+        "i": 2
+      }
+    ],
+    "bench-05": [
+      {
+        "src": "collection/benches/img/bench-05-1.webp",
+        "thumb": "collection/benches/img/bench-05-1-t.webp",
+        "w": 1200,
+        "h": 518,
+        "kind": "product",
+        "i": 0
+      },
+      {
+        "src": "collection/benches/img/bench-05-2.webp",
+        "thumb": "collection/benches/img/bench-05-2-t.webp",
+        "w": 714,
+        "h": 421,
+        "kind": "product",
+        "i": 1
+      },
+      {
+        "src": "collection/benches/img/bench-05-3.webp",
+        "thumb": "collection/benches/img/bench-05-3-t.webp",
+        "w": 1096,
+        "h": 456,
+        "kind": "product",
+        "i": 2
+      }
+    ],
+    "bench-06": [
+      {
+        "src": "collection/benches/img/bench-06-1.webp",
+        "thumb": "collection/benches/img/bench-06-1-t.webp",
+        "w": 941,
+        "h": 444,
+        "kind": "product",
+        "i": 0
+      },
+      {
+        "src": "collection/benches/img/bench-06-2.webp",
+        "thumb": "collection/benches/img/bench-06-2-t.webp",
+        "w": 1038,
+        "h": 1061,
+        "kind": "room",
+        "i": 1
+      }
+    ],
+    "bench-07": [
+      {
+        "src": "collection/benches/img/bench-07-1.webp",
+        "thumb": "collection/benches/img/bench-07-1-t.webp",
+        "w": 1200,
+        "h": 604,
+        "kind": "product",
+        "i": 2
+      },
+      {
+        "src": "collection/benches/img/bench-07-2.webp",
+        "thumb": "collection/benches/img/bench-07-2-t.webp",
+        "w": 935,
+        "h": 432,
+        "kind": "product",
+        "i": 0
+      },
+      {
+        "src": "collection/benches/img/bench-07-3.webp",
+        "thumb": "collection/benches/img/bench-07-3-t.webp",
+        "w": 861,
+        "h": 409,
+        "kind": "product",
+        "i": 1
+      }
+    ],
+    "bench-08": [
+      {
+        "src": "collection/benches/img/bench-08-1.webp",
+        "thumb": "collection/benches/img/bench-08-1-t.webp",
+        "w": 1200,
+        "h": 563,
+        "kind": "product",
+        "i": 0
+      },
+      {
+        "src": "collection/benches/img/bench-08-2.webp",
+        "thumb": "collection/benches/img/bench-08-2-t.webp",
+        "w": 1006,
+        "h": 387,
+        "kind": "product",
+        "i": 1
+      },
+      {
+        "src": "collection/benches/img/bench-08-3.webp",
+        "thumb": "collection/benches/img/bench-08-3-t.webp",
+        "w": 815,
+        "h": 783,
+        "kind": "product",
+        "i": 2
+      }
+    ],
+    "bench-09": [
+      {
+        "src": "collection/benches/img/bench-09-1.webp",
+        "thumb": "collection/benches/img/bench-09-1-t.webp",
+        "w": 1073,
+        "h": 537,
+        "kind": "product",
+        "i": 2
+      },
+      {
+        "src": "collection/benches/img/bench-09-2.webp",
+        "thumb": "collection/benches/img/bench-09-2-t.webp",
+        "w": 791,
+        "h": 900,
+        "kind": "product",
+        "i": 0
+      },
+      {
+        "src": "collection/benches/img/bench-09-3.webp",
+        "thumb": "collection/benches/img/bench-09-3-t.webp",
+        "w": 785,
+        "h": 349,
+        "kind": "product",
+        "i": 1
+      }
+    ],
+    "bench-10": [
+      {
+        "src": "collection/benches/img/bench-10-1.webp",
+        "thumb": "collection/benches/img/bench-10-1-t.webp",
+        "w": 1172,
+        "h": 495,
+        "kind": "product",
+        "i": 2
+      },
+      {
+        "src": "collection/benches/img/bench-10-2.webp",
+        "thumb": "collection/benches/img/bench-10-2-t.webp",
+        "w": 859,
+        "h": 900,
+        "kind": "product",
+        "i": 0
+      },
+      {
+        "src": "collection/benches/img/bench-10-3.webp",
+        "thumb": "collection/benches/img/bench-10-3-t.webp",
+        "w": 1020,
+        "h": 375,
+        "kind": "product",
+        "i": 1
+      }
+    ],
+    "bench-11": [
+      {
+        "src": "collection/benches/img/bench-11-1.webp",
+        "thumb": "collection/benches/img/bench-11-1-t.webp",
+        "w": 1200,
+        "h": 524,
+        "kind": "product",
+        "i": 0
+      },
+      {
+        "src": "collection/benches/img/bench-11-2.webp",
+        "thumb": "collection/benches/img/bench-11-2-t.webp",
+        "w": 952,
+        "h": 386,
+        "kind": "product",
+        "i": 1
+      }
+    ],
+    "bench-12": [
+      {
+        "src": "collection/benches/img/bench-12-1.webp",
+        "thumb": "collection/benches/img/bench-12-1-t.webp",
+        "w": 1200,
+        "h": 627,
+        "kind": "product",
+        "i": 2
+      },
+      {
+        "src": "collection/benches/img/bench-12-2.webp",
+        "thumb": "collection/benches/img/bench-12-2-t.webp",
+        "w": 844,
+        "h": 802,
+        "kind": "product",
+        "i": 0
+      },
+      {
+        "src": "collection/benches/img/bench-12-3.webp",
+        "thumb": "collection/benches/img/bench-12-3-t.webp",
+        "w": 992,
+        "h": 470,
+        "kind": "product",
+        "i": 1
+      }
+    ],
+    "bench-13": [
+      {
+        "src": "collection/benches/img/bench-13-1.webp",
+        "thumb": "collection/benches/img/bench-13-1-t.webp",
+        "w": 851,
+        "h": 399,
+        "kind": "product",
+        "i": 1
+      },
+      {
+        "src": "collection/benches/img/bench-13-2.webp",
+        "thumb": "collection/benches/img/bench-13-2-t.webp",
+        "w": 891,
+        "h": 900,
+        "kind": "product",
+        "i": 0
+      },
+      {
+        "src": "collection/benches/img/bench-13-3.webp",
+        "thumb": "collection/benches/img/bench-13-3-t.webp",
+        "w": 794,
+        "h": 351,
+        "kind": "product",
+        "i": 2
+      }
+    ],
+    "daybed-01": [
+      {
+        "src": "collection/benches/img/daybed-01-1.webp",
+        "thumb": "collection/benches/img/daybed-01-1-t.webp",
+        "w": 1061,
+        "h": 626,
+        "kind": "product",
+        "i": 0
+      },
+      {
+        "src": "collection/benches/img/daybed-01-2.webp",
+        "thumb": "collection/benches/img/daybed-01-2-t.webp",
+        "w": 891,
+        "h": 472,
+        "kind": "product",
+        "i": 1
+      },
+      {
+        "src": "collection/benches/img/daybed-01-3.webp",
+        "thumb": "collection/benches/img/daybed-01-3-t.webp",
+        "w": 1075,
+        "h": 769,
+        "kind": "room",
+        "i": 2
+      }
+    ],
+    "daybed-02": [
+      {
+        "src": "collection/benches/img/daybed-02-1.webp",
+        "thumb": "collection/benches/img/daybed-02-1-t.webp",
+        "w": 1200,
+        "h": 628,
+        "kind": "product",
+        "i": 0
+      },
+      {
+        "src": "collection/benches/img/daybed-02-2.webp",
+        "thumb": "collection/benches/img/daybed-02-2-t.webp",
+        "w": 927,
+        "h": 461,
+        "kind": "product",
+        "i": 1
+      }
+    ],
+    "daybed-03": [
+      {
+        "src": "collection/benches/img/daybed-03-1.webp",
+        "thumb": "collection/benches/img/daybed-03-1-t.webp",
+        "w": 1200,
+        "h": 507,
+        "kind": "product",
+        "i": 1
+      },
+      {
+        "src": "collection/benches/img/daybed-03-2.webp",
+        "thumb": "collection/benches/img/daybed-03-2-t.webp",
+        "w": 968,
+        "h": 465,
+        "kind": "product",
+        "i": 0
+      }
+    ],
+    "daybed-04": [
+      {
+        "src": "collection/benches/img/daybed-04-1.webp",
+        "thumb": "collection/benches/img/daybed-04-1-t.webp",
+        "w": 963,
+        "h": 458,
+        "kind": "product",
+        "i": 0
+      },
+      {
+        "src": "collection/benches/img/daybed-04-2.webp",
+        "thumb": "collection/benches/img/daybed-04-2-t.webp",
+        "w": 791,
+        "h": 428,
+        "kind": "product",
+        "i": 1
+      },
+      {
+        "src": "collection/benches/img/daybed-04-3.webp",
+        "thumb": "collection/benches/img/daybed-04-3-t.webp",
+        "w": 673,
+        "h": 900,
+        "kind": "product",
+        "i": 2
+      }
+    ],
+    "daybed-05": [
+      {
+        "src": "collection/benches/img/daybed-05-1.webp",
+        "thumb": "collection/benches/img/daybed-05-1-t.webp",
+        "w": 1200,
+        "h": 604,
+        "kind": "product",
+        "i": 2
+      },
+      {
+        "src": "collection/benches/img/daybed-05-2.webp",
+        "thumb": "collection/benches/img/daybed-05-2-t.webp",
+        "w": 994,
+        "h": 463,
+        "kind": "product",
+        "i": 0
+      },
+      {
+        "src": "collection/benches/img/daybed-05-3.webp",
+        "thumb": "collection/benches/img/daybed-05-3-t.webp",
+        "w": 803,
+        "h": 397,
+        "kind": "product",
+        "i": 1
+      }
+    ],
+    "daybed-06": [
+      {
+        "src": "collection/benches/img/daybed-06-1.webp",
+        "thumb": "collection/benches/img/daybed-06-1-t.webp",
+        "w": 971,
+        "h": 555,
+        "kind": "product",
+        "i": 1
+      },
+      {
+        "src": "collection/benches/img/daybed-06-2.webp",
+        "thumb": "collection/benches/img/daybed-06-2-t.webp",
+        "w": 850,
+        "h": 436,
+        "kind": "product",
+        "i": 0
+      },
+      {
+        "src": "collection/benches/img/daybed-06-3.webp",
+        "thumb": "collection/benches/img/daybed-06-3-t.webp",
+        "w": 923,
+        "h": 611,
+        "kind": "room",
+        "i": 2
+      }
+    ]
+  },
+  "editorial": []
+}
