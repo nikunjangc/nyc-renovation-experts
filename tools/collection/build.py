@@ -44,7 +44,7 @@ from urllib.parse import quote
 
 ROOT = os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 TOOLS = os.path.dirname(os.path.abspath(__file__))
-SITE = "https://nycrenovationexperts.com"
+SITE = "https://www.nycrenovationexperts.com"   # the apex domain redirects here
 
 # Image sizes (bounding boxes) and WebP quality. Product shots sit on a plain
 # background and compress well; room photos and full-width breaks need more.

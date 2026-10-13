@@ -91,5 +91,5 @@ hold the partner's name and codes).
 `collection-posts.html` has every post with Download, Copy caption and Copy
 image link. Post from the Instagram app, or use the automate_instagram repo:
 its connector can publish an image from its public URL
-(`https://nycrenovationexperts.com/collection/posts/<slug>/<file>.jpg`) after
+(`https://www.nycrenovationexperts.com/collection/posts/<slug>/<file>.jpg`) after
 the usual preview and approval.
