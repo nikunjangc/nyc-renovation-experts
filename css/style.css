@@ -108,6 +108,57 @@
     }
 }
 
+/* Phones: keep the brand on one line next to the menu button. */
+@media (max-width: 575.98px) {
+    .navbar .navbar-brand {
+        margin-right: 8px;
+    }
+
+    .navbar .navbar-brand h1 {
+        font-size: clamp(16px, 5vw, 22px);
+    }
+
+    .navbar .navbar-brand h1 .fa {
+        margin-right: 10px !important;
+    }
+}
+
+/* Link size, spacing and the brand scale with the window, so ten links fit
+   on one line from 1200px up. Pages with more links wrap their labels. */
+@media (min-width: 1200px) {
+    .navbar .navbar-nav .nav-link {
+        margin-left: clamp(12px, calc(2.2vw - 14.4px), 30px);
+        font-size: clamp(12.5px, calc(0.5vw + 6.5px), 16px);
+    }
+
+    .navbar .navbar-brand h1 {
+        font-size: clamp(22px, calc(1.8vw + 0.4px), 40px);
+    }
+}
+
+@media (min-width: 1200px) and (max-width: 1399.98px) {
+    .navbar.px-lg-5 {
+        padding-left: 24px !important;
+        padding-right: 24px !important;
+    }
+}
+
+@media (min-width: 992px) and (max-width: 1199.98px) {
+    .navbar.px-lg-5 {
+        padding-left: 16px !important;
+        padding-right: 16px !important;
+    }
+
+    .navbar .navbar-nav .nav-link {
+        margin-left: 10px;
+        font-size: 12px;
+    }
+
+    .navbar .navbar-brand h1 {
+        font-size: 20px;
+    }
+}
+
 @media (min-width: 992px) {
     .navbar .nav-item .dropdown-menu {
         display: block;

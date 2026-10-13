@@ -1,0 +1,10 @@
+{
+  "note": "Partner collections shown on collection.html. status: live (has catalog.json and images.json) or soon (listed as coming soon). Order here is the order on the page.",
+  "collections": [
+    {"slug": "beds", "title": "Beds", "status": "live"},
+    {"slug": "desks", "title": "Desks", "status": "soon"},
+    {"slug": "benches", "title": "Benches", "status": "soon"},
+    {"slug": "outdoor", "title": "Outdoor", "status": "soon"},
+    {"slug": "minimalist", "title": "Minimalist Living", "status": "soon"}
+  ]
+}

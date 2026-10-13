@@ -1,0 +1,1322 @@
+{
+  "stage_bg": "#F8F7F3",
+  "models": {
+    "1": [
+      {
+        "src": "collection/beds/img/bed-01-1.webp",
+        "thumb": "collection/beds/img/bed-01-1-t.webp",
+        "w": 1038,
+        "h": 454,
+        "kind": "product"
+      },
+      {
+        "src": "collection/beds/img/bed-01-2.webp",
+        "thumb": "collection/beds/img/bed-01-2-t.webp",
+        "w": 504,
+        "h": 466,
+        "kind": "product"
+      },
+      {
+        "src": "collection/beds/img/bed-01-3.webp",
+        "thumb": "collection/beds/img/bed-01-3-t.webp",
+        "w": 736,
+        "h": 724,
+        "kind": "product"
+      },
+      {
+        "src": "collection/beds/img/bed-01-4.webp",
+        "thumb": "collection/beds/img/bed-01-4-t.webp",
+        "w": 653,
+        "h": 365,
+        "kind": "product"
+      },
+      {
+        "src": "collection/beds/img/bed-01-5.webp",
+        "thumb": "collection/beds/img/bed-01-5-t.webp",
+        "w": 635,
+        "h": 346,
+        "kind": "product"
+      },
+      {
+        "src": "collection/beds/img/bed-01-6.webp",
+        "thumb": "collection/beds/img/bed-01-6-t.webp",
+        "w": 919,
+        "h": 466,
+        "kind": "product"
+      },
+      {
+        "src": "collection/beds/img/bed-01-7.webp",
+        "thumb": "collection/beds/img/bed-01-7-t.webp",
+        "w": 683,
+        "h": 353,
+        "kind": "product"
+      },
+      {
+        "src": "collection/beds/img/bed-01-8.webp",
+        "thumb": "collection/beds/img/bed-01-8-t.webp",
+        "w": 749,
+        "h": 297,
+        "kind": "product"
+      },
+      {
+        "src": "collection/beds/img/bed-01-9.webp",
+        "thumb": "collection/beds/img/bed-01-9-t.webp",
+        "w": 871,
+        "h": 627,
+        "kind": "room"
+      }
+    ],
+    "2": [
+      {
+        "src": "collection/beds/img/bed-02-1.webp",
+        "thumb": "collection/beds/img/bed-02-1-t.webp",
+        "w": 773,
+        "h": 364,
+        "kind": "product"
+      },
+      {
+        "src": "collection/beds/img/bed-02-2.webp",
+        "thumb": "collection/beds/img/bed-02-2-t.webp",
+        "w": 694,
+        "h": 379,
+        "kind": "product"
+      },
+      {
+        "src": "collection/beds/img/bed-02-3.webp",
+        "thumb": "collection/beds/img/bed-02-3-t.webp",
+        "w": 854,
+        "h": 428,
+        "kind": "product"
+      },
+      {
+        "src": "collection/beds/img/bed-02-4.webp",
+        "thumb": "collection/beds/img/bed-02-4-t.webp",
+        "w": 715,
+        "h": 379,
+        "kind": "product"
+      },
+      {
+        "src": "collection/beds/img/bed-02-5.webp",
+        "thumb": "collection/beds/img/bed-02-5-t.webp",
+        "w": 765,
+        "h": 370,
+        "kind": "product"
+      },
+      {
+        "src": "collection/beds/img/bed-02-6.webp",
+        "thumb": "collection/beds/img/bed-02-6-t.webp",
+        "w": 832,
+        "h": 386,
+        "kind": "product"
+      }
+    ],
+    "3": [
+      {
+        "src": "collection/beds/img/bed-03-1.webp",
+        "thumb": "collection/beds/img/bed-03-1-t.webp",
+        "w": 803,
+        "h": 446,
+        "kind": "product"
+      },
+      {
+        "src": "collection/beds/img/bed-03-2.webp",
+        "thumb": "collection/beds/img/bed-03-2-t.webp",
+        "w": 956,
+        "h": 900,
+        "kind": "product"
+      },
+      {
+        "src": "collection/beds/img/bed-03-3.webp",
+        "thumb": "collection/beds/img/bed-03-3-t.webp",
+        "w": 768,
+        "h": 451,
+        "kind": "product"
+      },
+      {
+        "src": "collection/beds/img/bed-03-4.webp",
+        "thumb": "collection/beds/img/bed-03-4-t.webp",
+        "w": 763,
+        "h": 430,
+        "kind": "product"
+      },
+      {
+        "src": "collection/beds/img/bed-03-5.webp",
+        "thumb": "collection/beds/img/bed-03-5-t.webp",
+        "w": 762,
+        "h": 448,
+        "kind": "product"
+      },
+      {
+        "src": "collection/beds/img/bed-03-6.webp",
+        "thumb": "collection/beds/img/bed-03-6-t.webp",
+        "w": 980,
+        "h": 590,
+        "kind": "room"
+      }
+    ],
+    "4": [
+      {
+        "src": "collection/beds/img/bed-04-1.webp",
+        "thumb": "collection/beds/img/bed-04-1-t.webp",
+        "w": 761,
+        "h": 482,
+        "kind": "product"
+      },
+      {
+        "src": "collection/beds/img/bed-04-2.webp",
+        "thumb": "collection/beds/img/bed-04-2-t.webp",
+        "w": 716,
+        "h": 462,
+        "kind": "product"
+      },
+      {
+        "src": "collection/beds/img/bed-04-3.webp",
+        "thumb": "collection/beds/img/bed-04-3-t.webp",
+        "w": 693,
+        "h": 415,
+        "kind": "product"
+      },
+      {
+        "src": "collection/beds/img/bed-04-4.webp",
+        "thumb": "collection/beds/img/bed-04-4-t.webp",
+        "w": 786,
+        "h": 765,
+        "kind": "product"
+      },
+      {
+        "src": "collection/beds/img/bed-04-5.webp",
+        "thumb": "collection/beds/img/bed-04-5-t.webp",
+        "w": 609,
+        "h": 556,
+        "kind": "product"
+      },
+      {
+        "src": "collection/beds/img/bed-04-6.webp",
+        "thumb": "collection/beds/img/bed-04-6-t.webp",
+        "w": 1071,
+        "h": 982,
+        "kind": "room"
+      }
+    ],
+    "5": [
+      {
+        "src": "collection/beds/img/bed-05-1.webp",
+        "thumb": "collection/beds/img/bed-05-1-t.webp",
+        "w": 864,
+        "h": 444,
+        "kind": "product"
+      },
+      {
+        "src": "collection/beds/img/bed-05-2.webp",
+        "thumb": "collection/beds/img/bed-05-2-t.webp",
+        "w": 820,
+        "h": 465,
+        "kind": "product"
+      },
+      {
+        "src": "collection/beds/img/bed-05-3.webp",
+        "thumb": "collection/beds/img/bed-05-3-t.webp",
+        "w": 879,
+        "h": 475,
+        "kind": "product"
+      },
+      {
+        "src": "collection/beds/img/bed-05-4.webp",
+        "thumb": "collection/beds/img/bed-05-4-t.webp",
+        "w": 774,
+        "h": 396,
+        "kind": "product"
+      },
+      {
+        "src": "collection/beds/img/bed-05-5.webp",
+        "thumb": "collection/beds/img/bed-05-5-t.webp",
+        "w": 793,
+        "h": 754,
+        "kind": "product"
+      },
+      {
+        "src": "collection/beds/img/bed-05-6.webp",
+        "thumb": "collection/beds/img/bed-05-6-t.webp",
+        "w": 527,
+        "h": 515,
+        "kind": "product"
+      },
+      {
+        "src": "collection/beds/img/bed-05-7.webp",
+        "thumb": "collection/beds/img/bed-05-7-t.webp",
+        "w": 1396,
+        "h": 919,
+        "kind": "room"
+      }
+    ],
+    "6": [
+      {
+        "src": "collection/beds/img/bed-06-1.webp",
+        "thumb": "collection/beds/img/bed-06-1-t.webp",
+        "w": 820,
+        "h": 441,
+        "kind": "product"
+      },
+      {
+        "src": "collection/beds/img/bed-06-2.webp",
+        "thumb": "collection/beds/img/bed-06-2-t.webp",
+        "w": 820,
+        "h": 462,
+        "kind": "product"
+      },
+      {
+        "src": "collection/beds/img/bed-06-3.webp",
+        "thumb": "collection/beds/img/bed-06-3-t.webp",
+        "w": 820,
+        "h": 460,
+        "kind": "product"
+      },
+      {
+        "src": "collection/beds/img/bed-06-4.webp",
+        "thumb": "collection/beds/img/bed-06-4-t.webp",
+        "w": 820,
+        "h": 456,
+        "kind": "product"
+      },
+      {
+        "src": "collection/beds/img/bed-06-5.webp",
+        "thumb": "collection/beds/img/bed-06-5-t.webp",
+        "w": 581,
+        "h": 544,
+        "kind": "product"
+      },
+      {
+        "src": "collection/beds/img/bed-06-6.webp",
+        "thumb": "collection/beds/img/bed-06-6-t.webp",
+        "w": 771,
+        "h": 746,
+        "kind": "product"
+      },
+      {
+        "src": "collection/beds/img/bed-06-7.webp",
+        "thumb": "collection/beds/img/bed-06-7-t.webp",
+        "w": 1063,
+        "h": 701,
+        "kind": "room"
+      }
+    ],
+    "7": [
+      {
+        "src": "collection/beds/img/bed-07-1.webp",
+        "thumb": "collection/beds/img/bed-07-1-t.webp",
+        "w": 820,
+        "h": 482,
+        "kind": "product"
+      },
+      {
+        "src": "collection/beds/img/bed-07-2.webp",
+        "thumb": "collection/beds/img/bed-07-2-t.webp",
+        "w": 816,
+        "h": 488,
+        "kind": "product"
+      },
+      {
+        "src": "collection/beds/img/bed-07-3.webp",
+        "thumb": "collection/beds/img/bed-07-3-t.webp",
+        "w": 845,
+        "h": 495,
+        "kind": "product"
+      },
+      {
+        "src": "collection/beds/img/bed-07-4.webp",
+        "thumb": "collection/beds/img/bed-07-4-t.webp",
+        "w": 820,
+        "h": 472,
+        "kind": "product"
+      },
+      {
+        "src": "collection/beds/img/bed-07-5.webp",
+        "thumb": "collection/beds/img/bed-07-5-t.webp",
+        "w": 822,
+        "h": 492,
+        "kind": "product"
+      },
+      {
+        "src": "collection/beds/img/bed-07-6.webp",
+        "thumb": "collection/beds/img/bed-07-6-t.webp",
+        "w": 826,
+        "h": 473,
+        "kind": "product"
+      },
+      {
+        "src": "collection/beds/img/bed-07-7.webp",
+        "thumb": "collection/beds/img/bed-07-7-t.webp",
+        "w": 822,
+        "h": 483,
+        "kind": "product"
+      },
+      {
+        "src": "collection/beds/img/bed-07-8.webp",
+        "thumb": "collection/beds/img/bed-07-8-t.webp",
+        "w": 845,
+        "h": 506,
+        "kind": "product"
+      },
+      {
+        "src": "collection/beds/img/bed-07-9.webp",
+        "thumb": "collection/beds/img/bed-07-9-t.webp",
+        "w": 921,
+        "h": 900,
+        "kind": "product"
+      },
+      {
+        "src": "collection/beds/img/bed-07-10.webp",
+        "thumb": "collection/beds/img/bed-07-10-t.webp",
+        "w": 971,
+        "h": 700,
+        "kind": "room"
+      }
+    ],
+    "8": [
+      {
+        "src": "collection/beds/img/bed-08-1.webp",
+        "thumb": "collection/beds/img/bed-08-1-t.webp",
+        "w": 947,
+        "h": 484,
+        "kind": "product"
+      },
+      {
+        "src": "collection/beds/img/bed-08-2.webp",
+        "thumb": "collection/beds/img/bed-08-2-t.webp",
+        "w": 712,
+        "h": 382,
+        "kind": "product"
+      },
+      {
+        "src": "collection/beds/img/bed-08-3.webp",
+        "thumb": "collection/beds/img/bed-08-3-t.webp",
+        "w": 707,
+        "h": 363,
+        "kind": "product"
+      },
+      {
+        "src": "collection/beds/img/bed-08-4.webp",
+        "thumb": "collection/beds/img/bed-08-4-t.webp",
+        "w": 709,
+        "h": 379,
+        "kind": "product"
+      },
+      {
+        "src": "collection/beds/img/bed-08-5.webp",
+        "thumb": "collection/beds/img/bed-08-5-t.webp",
+        "w": 726,
+        "h": 401,
+        "kind": "product"
+      },
+      {
+        "src": "collection/beds/img/bed-08-6.webp",
+        "thumb": "collection/beds/img/bed-08-6-t.webp",
+        "w": 707,
+        "h": 373,
+        "kind": "product"
+      },
+      {
+        "src": "collection/beds/img/bed-08-7.webp",
+        "thumb": "collection/beds/img/bed-08-7-t.webp",
+        "w": 707,
+        "h": 364,
+        "kind": "product"
+      },
+      {
+        "src": "collection/beds/img/bed-08-8.webp",
+        "thumb": "collection/beds/img/bed-08-8-t.webp",
+        "w": 996,
+        "h": 521,
+        "kind": "product"
+      },
+      {
+        "src": "collection/beds/img/bed-08-9.webp",
+        "thumb": "collection/beds/img/bed-08-9-t.webp",
+        "w": 665,
+        "h": 620,
+        "kind": "product"
+      },
+      {
+        "src": "collection/beds/img/bed-08-10.webp",
+        "thumb": "collection/beds/img/bed-08-10-t.webp",
+        "w": 612,
+        "h": 609,
+        "kind": "product"
+      },
+      {
+        "src": "collection/beds/img/bed-08-11.webp",
+        "thumb": "collection/beds/img/bed-08-11-t.webp",
+        "w": 660,
+        "h": 640,
+        "kind": "product"
+      },
+      {
+        "src": "collection/beds/img/bed-08-12.webp",
+        "thumb": "collection/beds/img/bed-08-12-t.webp",
+        "w": 769,
+        "h": 722,
+        "kind": "product"
+      }
+    ],
+    "9": [
+      {
+        "src": "collection/beds/img/bed-09-1.webp",
+        "thumb": "collection/beds/img/bed-09-1-t.webp",
+        "w": 923,
+        "h": 525,
+        "kind": "product"
+      },
+      {
+        "src": "collection/beds/img/bed-09-2.webp",
+        "thumb": "collection/beds/img/bed-09-2-t.webp",
+        "w": 684,
+        "h": 392,
+        "kind": "product"
+      },
+      {
+        "src": "collection/beds/img/bed-09-3.webp",
+        "thumb": "collection/beds/img/bed-09-3-t.webp",
+        "w": 877,
+        "h": 900,
+        "kind": "product"
+      },
+      {
+        "src": "collection/beds/img/bed-09-4.webp",
+        "thumb": "collection/beds/img/bed-09-4-t.webp",
+        "w": 759,
+        "h": 718,
+        "kind": "room"
+      },
+      {
+        "src": "collection/beds/img/bed-09-5.webp",
+        "thumb": "collection/beds/img/bed-09-5-t.webp",
+        "w": 1084,
+        "h": 702,
+        "kind": "room"
+      }
+    ],
+    "10": [
+      {
+        "src": "collection/beds/img/bed-10-1.webp",
+        "thumb": "collection/beds/img/bed-10-1-t.webp",
+        "w": 712,
+        "h": 361,
+        "kind": "product"
+      },
+      {
+        "src": "collection/beds/img/bed-10-2.webp",
+        "thumb": "collection/beds/img/bed-10-2-t.webp",
+        "w": 879,
+        "h": 511,
+        "kind": "product"
+      },
+      {
+        "src": "collection/beds/img/bed-10-3.webp",
+        "thumb": "collection/beds/img/bed-10-3-t.webp",
+        "w": 647,
+        "h": 597,
+        "kind": "product"
+      },
+      {
+        "src": "collection/beds/img/bed-10-4.webp",
+        "thumb": "collection/beds/img/bed-10-4-t.webp",
+        "w": 925,
+        "h": 900,
+        "kind": "product"
+      },
+      {
+        "src": "collection/beds/img/bed-10-5.webp",
+        "thumb": "collection/beds/img/bed-10-5-t.webp",
+        "w": 565,
+        "h": 597,
+        "kind": "product"
+      },
+      {
+        "src": "collection/beds/img/bed-10-6.webp",
+        "thumb": "collection/beds/img/bed-10-6-t.webp",
+        "w": 1084,
+        "h": 703,
+        "kind": "room"
+      }
+    ],
+    "11": [
+      {
+        "src": "collection/beds/img/bed-11-1.webp",
+        "thumb": "collection/beds/img/bed-11-1-t.webp",
+        "w": 1033,
+        "h": 429,
+        "kind": "product"
+      },
+      {
+        "src": "collection/beds/img/bed-11-2.webp",
+        "thumb": "collection/beds/img/bed-11-2-t.webp",
+        "w": 706,
+        "h": 372,
+        "kind": "product"
+      },
+      {
+        "src": "collection/beds/img/bed-11-3.webp",
+        "thumb": "collection/beds/img/bed-11-3-t.webp",
+        "w": 706,
+        "h": 360,
+        "kind": "product"
+      },
+      {
+        "src": "collection/beds/img/bed-11-4.webp",
+        "thumb": "collection/beds/img/bed-11-4-t.webp",
+        "w": 750,
+        "h": 341,
+        "kind": "product"
+      },
+      {
+        "src": "collection/beds/img/bed-11-5.webp",
+        "thumb": "collection/beds/img/bed-11-5-t.webp",
+        "w": 729,
+        "h": 361,
+        "kind": "product"
+      },
+      {
+        "src": "collection/beds/img/bed-11-6.webp",
+        "thumb": "collection/beds/img/bed-11-6-t.webp",
+        "w": 729,
+        "h": 478,
+        "kind": "product"
+      },
+      {
+        "src": "collection/beds/img/bed-11-7.webp",
+        "thumb": "collection/beds/img/bed-11-7-t.webp",
+        "w": 1046,
+        "h": 419,
+        "kind": "product"
+      },
+      {
+        "src": "collection/beds/img/bed-11-8.webp",
+        "thumb": "collection/beds/img/bed-11-8-t.webp",
+        "w": 1045,
+        "h": 434,
+        "kind": "product"
+      },
+      {
+        "src": "collection/beds/img/bed-11-9.webp",
+        "thumb": "collection/beds/img/bed-11-9-t.webp",
+        "w": 1097,
+        "h": 428,
+        "kind": "product"
+      },
+      {
+        "src": "collection/beds/img/bed-11-10.webp",
+        "thumb": "collection/beds/img/bed-11-10-t.webp",
+        "w": 1185,
+        "h": 419,
+        "kind": "product"
+      },
+      {
+        "src": "collection/beds/img/bed-11-11.webp",
+        "thumb": "collection/beds/img/bed-11-11-t.webp",
+        "w": 1066,
+        "h": 418,
+        "kind": "product"
+      },
+      {
+        "src": "collection/beds/img/bed-11-12.webp",
+        "thumb": "collection/beds/img/bed-11-12-t.webp",
+        "w": 1008,
+        "h": 461,
+        "kind": "product"
+      }
+    ],
+    "12": [
+      {
+        "src": "collection/beds/img/bed-12-1.webp",
+        "thumb": "collection/beds/img/bed-12-1-t.webp",
+        "w": 1021,
+        "h": 451,
+        "kind": "product"
+      },
+      {
+        "src": "collection/beds/img/bed-12-2.webp",
+        "thumb": "collection/beds/img/bed-12-2-t.webp",
+        "w": 966,
+        "h": 473,
+        "kind": "product"
+      },
+      {
+        "src": "collection/beds/img/bed-12-3.webp",
+        "thumb": "collection/beds/img/bed-12-3-t.webp",
+        "w": 1002,
+        "h": 479,
+        "kind": "product"
+      },
+      {
+        "src": "collection/beds/img/bed-12-4.webp",
+        "thumb": "collection/beds/img/bed-12-4-t.webp",
+        "w": 676,
+        "h": 349,
+        "kind": "product"
+      },
+      {
+        "src": "collection/beds/img/bed-12-5.webp",
+        "thumb": "collection/beds/img/bed-12-5-t.webp",
+        "w": 1070,
+        "h": 980,
+        "kind": "room"
+      },
+      {
+        "src": "collection/beds/img/bed-12-6.webp",
+        "thumb": "collection/beds/img/bed-12-6-t.webp",
+        "w": 1156,
+        "h": 699,
+        "kind": "room"
+      }
+    ],
+    "13": [
+      {
+        "src": "collection/beds/img/bed-13-1.webp",
+        "thumb": "collection/beds/img/bed-13-1-t.webp",
+        "w": 880,
+        "h": 479,
+        "kind": "product"
+      },
+      {
+        "src": "collection/beds/img/bed-13-2.webp",
+        "thumb": "collection/beds/img/bed-13-2-t.webp",
+        "w": 983,
+        "h": 533,
+        "kind": "product"
+      },
+      {
+        "src": "collection/beds/img/bed-13-3.webp",
+        "thumb": "collection/beds/img/bed-13-3-t.webp",
+        "w": 905,
+        "h": 900,
+        "kind": "product"
+      },
+      {
+        "src": "collection/beds/img/bed-13-4.webp",
+        "thumb": "collection/beds/img/bed-13-4-t.webp",
+        "w": 955,
+        "h": 900,
+        "kind": "product"
+      },
+      {
+        "src": "collection/beds/img/bed-13-5.webp",
+        "thumb": "collection/beds/img/bed-13-5-t.webp",
+        "w": 744,
+        "h": 709,
+        "kind": "room"
+      }
+    ],
+    "14": [
+      {
+        "src": "collection/beds/img/bed-14-1.webp",
+        "thumb": "collection/beds/img/bed-14-1-t.webp",
+        "w": 765,
+        "h": 434,
+        "kind": "product"
+      },
+      {
+        "src": "collection/beds/img/bed-14-2.webp",
+        "thumb": "collection/beds/img/bed-14-2-t.webp",
+        "w": 694,
+        "h": 413,
+        "kind": "product"
+      },
+      {
+        "src": "collection/beds/img/bed-14-3.webp",
+        "thumb": "collection/beds/img/bed-14-3-t.webp",
+        "w": 828,
+        "h": 468,
+        "kind": "product"
+      },
+      {
+        "src": "collection/beds/img/bed-14-4.webp",
+        "thumb": "collection/beds/img/bed-14-4-t.webp",
+        "w": 1024,
+        "h": 534,
+        "kind": "product"
+      },
+      {
+        "src": "collection/beds/img/bed-14-5.webp",
+        "thumb": "collection/beds/img/bed-14-5-t.webp",
+        "w": 819,
+        "h": 453,
+        "kind": "product"
+      },
+      {
+        "src": "collection/beds/img/bed-14-6.webp",
+        "thumb": "collection/beds/img/bed-14-6-t.webp",
+        "w": 808,
+        "h": 436,
+        "kind": "product"
+      },
+      {
+        "src": "collection/beds/img/bed-14-7.webp",
+        "thumb": "collection/beds/img/bed-14-7-t.webp",
+        "w": 962,
+        "h": 900,
+        "kind": "product"
+      },
+      {
+        "src": "collection/beds/img/bed-14-8.webp",
+        "thumb": "collection/beds/img/bed-14-8-t.webp",
+        "w": 792,
+        "h": 451,
+        "kind": "product"
+      },
+      {
+        "src": "collection/beds/img/bed-14-9.webp",
+        "thumb": "collection/beds/img/bed-14-9-t.webp",
+        "w": 748,
+        "h": 431,
+        "kind": "product"
+      }
+    ],
+    "15": [
+      {
+        "src": "collection/beds/img/bed-15-1.webp",
+        "thumb": "collection/beds/img/bed-15-1-t.webp",
+        "w": 963,
+        "h": 421,
+        "kind": "product"
+      },
+      {
+        "src": "collection/beds/img/bed-15-2.webp",
+        "thumb": "collection/beds/img/bed-15-2-t.webp",
+        "w": 854,
+        "h": 420,
+        "kind": "product"
+      },
+      {
+        "src": "collection/beds/img/bed-15-3.webp",
+        "thumb": "collection/beds/img/bed-15-3-t.webp",
+        "w": 843,
+        "h": 411,
+        "kind": "product"
+      },
+      {
+        "src": "collection/beds/img/bed-15-4.webp",
+        "thumb": "collection/beds/img/bed-15-4-t.webp",
+        "w": 1126,
+        "h": 537,
+        "kind": "product"
+      },
+      {
+        "src": "collection/beds/img/bed-15-5.webp",
+        "thumb": "collection/beds/img/bed-15-5-t.webp",
+        "w": 1139,
+        "h": 695,
+        "kind": "room"
+      }
+    ],
+    "16": [
+      {
+        "src": "collection/beds/img/bed-16-1.webp",
+        "thumb": "collection/beds/img/bed-16-1-t.webp",
+        "w": 856,
+        "h": 444,
+        "kind": "product"
+      },
+      {
+        "src": "collection/beds/img/bed-16-2.webp",
+        "thumb": "collection/beds/img/bed-16-2-t.webp",
+        "w": 898,
+        "h": 533,
+        "kind": "product"
+      },
+      {
+        "src": "collection/beds/img/bed-16-3.webp",
+        "thumb": "collection/beds/img/bed-16-3-t.webp",
+        "w": 824,
+        "h": 481,
+        "kind": "product"
+      }
+    ],
+    "17": [
+      {
+        "src": "collection/beds/img/bed-17-1.webp",
+        "thumb": "collection/beds/img/bed-17-1-t.webp",
+        "w": 1045,
+        "h": 490,
+        "kind": "product"
+      },
+      {
+        "src": "collection/beds/img/bed-17-2.webp",
+        "thumb": "collection/beds/img/bed-17-2-t.webp",
+        "w": 800,
+        "h": 392,
+        "kind": "product"
+      },
+      {
+        "src": "collection/beds/img/bed-17-3.webp",
+        "thumb": "collection/beds/img/bed-17-3-t.webp",
+        "w": 1070,
+        "h": 639,
+        "kind": "room"
+      }
+    ],
+    "18": [
+      {
+        "src": "collection/beds/img/bed-18-1.webp",
+        "thumb": "collection/beds/img/bed-18-1-t.webp",
+        "w": 865,
+        "h": 351,
+        "kind": "product"
+      },
+      {
+        "src": "collection/beds/img/bed-18-2.webp",
+        "thumb": "collection/beds/img/bed-18-2-t.webp",
+        "w": 864,
+        "h": 361,
+        "kind": "product"
+      },
+      {
+        "src": "collection/beds/img/bed-18-3.webp",
+        "thumb": "collection/beds/img/bed-18-3-t.webp",
+        "w": 918,
+        "h": 1045,
+        "kind": "room"
+      }
+    ],
+    "19": [
+      {
+        "src": "collection/beds/img/bed-19-1.webp",
+        "thumb": "collection/beds/img/bed-19-1-t.webp",
+        "w": 950,
+        "h": 471,
+        "kind": "product"
+      },
+      {
+        "src": "collection/beds/img/bed-19-2.webp",
+        "thumb": "collection/beds/img/bed-19-2-t.webp",
+        "w": 883,
+        "h": 440,
+        "kind": "product"
+      },
+      {
+        "src": "collection/beds/img/bed-19-3.webp",
+        "thumb": "collection/beds/img/bed-19-3-t.webp",
+        "w": 1067,
+        "h": 639,
+        "kind": "room"
+      }
+    ],
+    "20": [
+      {
+        "src": "collection/beds/img/bed-20-1.webp",
+        "thumb": "collection/beds/img/bed-20-1-t.webp",
+        "w": 1076,
+        "h": 563,
+        "kind": "product"
+      },
+      {
+        "src": "collection/beds/img/bed-20-2.webp",
+        "thumb": "collection/beds/img/bed-20-2-t.webp",
+        "w": 827,
+        "h": 412,
+        "kind": "product"
+      },
+      {
+        "src": "collection/beds/img/bed-20-3.webp",
+        "thumb": "collection/beds/img/bed-20-3-t.webp",
+        "w": 1254,
+        "h": 762,
+        "kind": "room"
+      }
+    ],
+    "21": [
+      {
+        "src": "collection/beds/img/bed-21-1.webp",
+        "thumb": "collection/beds/img/bed-21-1-t.webp",
+        "w": 1040,
+        "h": 681,
+        "kind": "product"
+      },
+      {
+        "src": "collection/beds/img/bed-21-2.webp",
+        "thumb": "collection/beds/img/bed-21-2-t.webp",
+        "w": 705,
+        "h": 437,
+        "kind": "product"
+      },
+      {
+        "src": "collection/beds/img/bed-21-3.webp",
+        "thumb": "collection/beds/img/bed-21-3-t.webp",
+        "w": 1011,
+        "h": 612,
+        "kind": "product"
+      },
+      {
+        "src": "collection/beds/img/bed-21-4.webp",
+        "thumb": "collection/beds/img/bed-21-4-t.webp",
+        "w": 984,
+        "h": 900,
+        "kind": "product"
+      },
+      {
+        "src": "collection/beds/img/bed-21-5.webp",
+        "thumb": "collection/beds/img/bed-21-5-t.webp",
+        "w": 1232,
+        "h": 739,
+        "kind": "room"
+      }
+    ],
+    "22": [
+      {
+        "src": "collection/beds/img/bed-22-1.webp",
+        "thumb": "collection/beds/img/bed-22-1-t.webp",
+        "w": 811,
+        "h": 453,
+        "kind": "product"
+      },
+      {
+        "src": "collection/beds/img/bed-22-2.webp",
+        "thumb": "collection/beds/img/bed-22-2-t.webp",
+        "w": 553,
+        "h": 652,
+        "kind": "product"
+      },
+      {
+        "src": "collection/beds/img/bed-22-3.webp",
+        "thumb": "collection/beds/img/bed-22-3-t.webp",
+        "w": 919,
+        "h": 900,
+        "kind": "product"
+      },
+      {
+        "src": "collection/beds/img/bed-22-4.webp",
+        "thumb": "collection/beds/img/bed-22-4-t.webp",
+        "w": 781,
+        "h": 430,
+        "kind": "product"
+      },
+      {
+        "src": "collection/beds/img/bed-22-5.webp",
+        "thumb": "collection/beds/img/bed-22-5-t.webp",
+        "w": 874,
+        "h": 446,
+        "kind": "product"
+      },
+      {
+        "src": "collection/beds/img/bed-22-6.webp",
+        "thumb": "collection/beds/img/bed-22-6-t.webp",
+        "w": 949,
+        "h": 452,
+        "kind": "product"
+      },
+      {
+        "src": "collection/beds/img/bed-22-7.webp",
+        "thumb": "collection/beds/img/bed-22-7-t.webp",
+        "w": 1085,
+        "h": 649,
+        "kind": "room"
+      }
+    ],
+    "23": [
+      {
+        "src": "collection/beds/img/bed-23-1.webp",
+        "thumb": "collection/beds/img/bed-23-1-t.webp",
+        "w": 952,
+        "h": 502,
+        "kind": "product"
+      },
+      {
+        "src": "collection/beds/img/bed-23-2.webp",
+        "thumb": "collection/beds/img/bed-23-2-t.webp",
+        "w": 1016,
+        "h": 485,
+        "kind": "product"
+      },
+      {
+        "src": "collection/beds/img/bed-23-3.webp",
+        "thumb": "collection/beds/img/bed-23-3-t.webp",
+        "w": 760,
+        "h": 680,
+        "kind": "product"
+      },
+      {
+        "src": "collection/beds/img/bed-23-4.webp",
+        "thumb": "collection/beds/img/bed-23-4-t.webp",
+        "w": 781,
+        "h": 409,
+        "kind": "product"
+      },
+      {
+        "src": "collection/beds/img/bed-23-5.webp",
+        "thumb": "collection/beds/img/bed-23-5-t.webp",
+        "w": 1060,
+        "h": 576,
+        "kind": "product"
+      },
+      {
+        "src": "collection/beds/img/bed-23-6.webp",
+        "thumb": "collection/beds/img/bed-23-6-t.webp",
+        "w": 657,
+        "h": 667,
+        "kind": "product"
+      }
+    ],
+    "24": [
+      {
+        "src": "collection/beds/img/bed-24-1.webp",
+        "thumb": "collection/beds/img/bed-24-1-t.webp",
+        "w": 731,
+        "h": 581,
+        "kind": "product"
+      },
+      {
+        "src": "collection/beds/img/bed-24-2.webp",
+        "thumb": "collection/beds/img/bed-24-2-t.webp",
+        "w": 528,
+        "h": 593,
+        "kind": "product"
+      },
+      {
+        "src": "collection/beds/img/bed-24-3.webp",
+        "thumb": "collection/beds/img/bed-24-3-t.webp",
+        "w": 883,
+        "h": 738,
+        "kind": "product"
+      },
+      {
+        "src": "collection/beds/img/bed-24-4.webp",
+        "thumb": "collection/beds/img/bed-24-4-t.webp",
+        "w": 732,
+        "h": 441,
+        "kind": "product"
+      },
+      {
+        "src": "collection/beds/img/bed-24-5.webp",
+        "thumb": "collection/beds/img/bed-24-5-t.webp",
+        "w": 692,
+        "h": 442,
+        "kind": "product"
+      },
+      {
+        "src": "collection/beds/img/bed-24-6.webp",
+        "thumb": "collection/beds/img/bed-24-6-t.webp",
+        "w": 966,
+        "h": 455,
+        "kind": "product"
+      },
+      {
+        "src": "collection/beds/img/bed-24-7.webp",
+        "thumb": "collection/beds/img/bed-24-7-t.webp",
+        "w": 770,
+        "h": 454,
+        "kind": "product"
+      },
+      {
+        "src": "collection/beds/img/bed-24-8.webp",
+        "thumb": "collection/beds/img/bed-24-8-t.webp",
+        "w": 1056,
+        "h": 634,
+        "kind": "room"
+      }
+    ],
+    "25": [
+      {
+        "src": "collection/beds/img/bed-25-1.webp",
+        "thumb": "collection/beds/img/bed-25-1-t.webp",
+        "w": 1004,
+        "h": 868,
+        "kind": "product"
+      },
+      {
+        "src": "collection/beds/img/bed-25-2.webp",
+        "thumb": "collection/beds/img/bed-25-2-t.webp",
+        "w": 596,
+        "h": 637,
+        "kind": "product"
+      },
+      {
+        "src": "collection/beds/img/bed-25-3.webp",
+        "thumb": "collection/beds/img/bed-25-3-t.webp",
+        "w": 1084,
+        "h": 650,
+        "kind": "room"
+      }
+    ],
+    "26": [
+      {
+        "src": "collection/beds/img/bed-26-1.webp",
+        "thumb": "collection/beds/img/bed-26-1-t.webp",
+        "w": 1005,
+        "h": 607,
+        "kind": "product"
+      },
+      {
+        "src": "collection/beds/img/bed-26-2.webp",
+        "thumb": "collection/beds/img/bed-26-2-t.webp",
+        "w": 607,
+        "h": 357,
+        "kind": "product"
+      },
+      {
+        "src": "collection/beds/img/bed-26-3.webp",
+        "thumb": "collection/beds/img/bed-26-3-t.webp",
+        "w": 843,
+        "h": 718,
+        "kind": "product"
+      },
+      {
+        "src": "collection/beds/img/bed-26-4.webp",
+        "thumb": "collection/beds/img/bed-26-4-t.webp",
+        "w": 743,
+        "h": 705,
+        "kind": "product"
+      },
+      {
+        "src": "collection/beds/img/bed-26-5.webp",
+        "thumb": "collection/beds/img/bed-26-5-t.webp",
+        "w": 724,
+        "h": 703,
+        "kind": "product"
+      },
+      {
+        "src": "collection/beds/img/bed-26-6.webp",
+        "thumb": "collection/beds/img/bed-26-6-t.webp",
+        "w": 1015,
+        "h": 607,
+        "kind": "room"
+      }
+    ],
+    "27": [
+      {
+        "src": "collection/beds/img/bed-27-1.webp",
+        "thumb": "collection/beds/img/bed-27-1-t.webp",
+        "w": 1165,
+        "h": 619,
+        "kind": "product"
+      },
+      {
+        "src": "collection/beds/img/bed-27-2.webp",
+        "thumb": "collection/beds/img/bed-27-2-t.webp",
+        "w": 861,
+        "h": 489,
+        "kind": "product"
+      },
+      {
+        "src": "collection/beds/img/bed-27-3.webp",
+        "thumb": "collection/beds/img/bed-27-3-t.webp",
+        "w": 1022,
+        "h": 612,
+        "kind": "room"
+      }
+    ],
+    "28": [
+      {
+        "src": "collection/beds/img/bed-28-1.webp",
+        "thumb": "collection/beds/img/bed-28-1-t.webp",
+        "w": 948,
+        "h": 485,
+        "kind": "product"
+      },
+      {
+        "src": "collection/beds/img/bed-28-2.webp",
+        "thumb": "collection/beds/img/bed-28-2-t.webp",
+        "w": 568,
+        "h": 269,
+        "kind": "product"
+      },
+      {
+        "src": "collection/beds/img/bed-28-3.webp",
+        "thumb": "collection/beds/img/bed-28-3-t.webp",
+        "w": 500,
+        "h": 269,
+        "kind": "product"
+      },
+      {
+        "src": "collection/beds/img/bed-28-4.webp",
+        "thumb": "collection/beds/img/bed-28-4-t.webp",
+        "w": 1030,
+        "h": 616,
+        "kind": "room"
+      }
+    ],
+    "29": [
+      {
+        "src": "collection/beds/img/bed-29-1.webp",
+        "thumb": "collection/beds/img/bed-29-1-t.webp",
+        "w": 1155,
+        "h": 523,
+        "kind": "product"
+      },
+      {
+        "src": "collection/beds/img/bed-29-2.webp",
+        "thumb": "collection/beds/img/bed-29-2-t.webp",
+        "w": 827,
+        "h": 373,
+        "kind": "product"
+      },
+      {
+        "src": "collection/beds/img/bed-29-3.webp",
+        "thumb": "collection/beds/img/bed-29-3-t.webp",
+        "w": 1117,
+        "h": 669,
+        "kind": "room"
+      }
+    ]
+  },
+  "editorial": [
+    {
+      "src": "collection/beds/img/beds-room-01.webp",
+      "w": 1744,
+      "h": 1047,
+      "before": 1
+    },
+    {
+      "src": "collection/beds/img/beds-room-02.webp",
+      "w": 1630,
+      "h": 920,
+      "before": 2
+    },
+    {
+      "src": "collection/beds/img/beds-room-03.webp",
+      "w": 1767,
+      "h": 994,
+      "before": 3
+    },
+    {
+      "src": "collection/beds/img/beds-room-04.webp",
+      "w": 1738,
+      "h": 978,
+      "before": 4
+    },
+    {
+      "src": "collection/beds/img/beds-room-05.webp",
+      "w": 1744,
+      "h": 981,
+      "before": 5
+    },
+    {
+      "src": "collection/beds/img/beds-room-06.webp",
+      "w": 1742,
+      "h": 980,
+      "before": 6
+    },
+    {
+      "src": "collection/beds/img/beds-room-07.webp",
+      "w": 1744,
+      "h": 981,
+      "before": 8
+    },
+    {
+      "src": "collection/beds/img/beds-room-08.webp",
+      "w": 1770,
+      "h": 996,
+      "before": 11
+    },
+    {
+      "src": "collection/beds/img/beds-room-09.webp",
+      "w": 1730,
+      "h": 973,
+      "before": 15
+    },
+    {
+      "src": "collection/beds/img/beds-room-10.webp",
+      "w": 1746,
+      "h": 982,
+      "before": 20
+    }
+  ]
+}
