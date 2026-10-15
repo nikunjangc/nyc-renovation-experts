@@ -1,0 +1,256 @@
+{
+  "stage_bg": "#F8F7F3",
+  "models": {
+    "sofa-01": [
+      {
+        "src": "collection/sofas/img/sofa-01-1.webp",
+        "thumb": "collection/sofas/img/sofa-01-1-t.webp",
+        "w": 929,
+        "h": 307,
+        "kind": "product",
+        "i": 0
+      }
+    ],
+    "sofa-02": [
+      {
+        "src": "collection/sofas/img/sofa-02-1.webp",
+        "thumb": "collection/sofas/img/sofa-02-1-t.webp",
+        "w": 801,
+        "h": 279,
+        "kind": "product",
+        "i": 0
+      }
+    ],
+    "sofa-03": [
+      {
+        "src": "collection/sofas/img/sofa-03-1.webp",
+        "thumb": "collection/sofas/img/sofa-03-1-t.webp",
+        "w": 935,
+        "h": 309,
+        "kind": "product",
+        "i": 0
+      }
+    ],
+    "sofa-04": [
+      {
+        "src": "collection/sofas/img/sofa-04-1.webp",
+        "thumb": "collection/sofas/img/sofa-04-1-t.webp",
+        "w": 861,
+        "h": 248,
+        "kind": "product",
+        "i": 0
+      }
+    ],
+    "sofa-05": [
+      {
+        "src": "collection/sofas/img/sofa-05-1.webp",
+        "thumb": "collection/sofas/img/sofa-05-1-t.webp",
+        "w": 937,
+        "h": 295,
+        "kind": "product",
+        "i": 0
+      }
+    ],
+    "sofa-06": [
+      {
+        "src": "collection/sofas/img/sofa-06-1.webp",
+        "thumb": "collection/sofas/img/sofa-06-1-t.webp",
+        "w": 939,
+        "h": 312,
+        "kind": "product",
+        "i": 0
+      }
+    ],
+    "sofa-07": [
+      {
+        "src": "collection/sofas/img/sofa-07-1.webp",
+        "thumb": "collection/sofas/img/sofa-07-1-t.webp",
+        "w": 930,
+        "h": 359,
+        "kind": "product",
+        "i": 0
+      }
+    ],
+    "sofa-08": [
+      {
+        "src": "collection/sofas/img/sofa-08-1.webp",
+        "thumb": "collection/sofas/img/sofa-08-1-t.webp",
+        "w": 944,
+        "h": 319,
+        "kind": "product",
+        "i": 0
+      }
+    ],
+    "sofa-09": [
+      {
+        "src": "collection/sofas/img/sofa-09-1.webp",
+        "thumb": "collection/sofas/img/sofa-09-1-t.webp",
+        "w": 935,
+        "h": 305,
+        "kind": "product",
+        "i": 0
+      }
+    ],
+    "sofa-10": [
+      {
+        "src": "collection/sofas/img/sofa-10-1.webp",
+        "thumb": "collection/sofas/img/sofa-10-1-t.webp",
+        "w": 916,
+        "h": 294,
+        "kind": "product",
+        "i": 0
+      }
+    ],
+    "sofa-11": [
+      {
+        "src": "collection/sofas/img/sofa-11-1.webp",
+        "thumb": "collection/sofas/img/sofa-11-1-t.webp",
+        "w": 940,
+        "h": 318,
+        "kind": "product",
+        "i": 0
+      }
+    ],
+    "sofa-12": [
+      {
+        "src": "collection/sofas/img/sofa-12-1.webp",
+        "thumb": "collection/sofas/img/sofa-12-1-t.webp",
+        "w": 904,
+        "h": 305,
+        "kind": "product",
+        "i": 0
+      }
+    ],
+    "sofa-13": [
+      {
+        "src": "collection/sofas/img/sofa-13-1.webp",
+        "thumb": "collection/sofas/img/sofa-13-1-t.webp",
+        "w": 923,
+        "h": 263,
+        "kind": "product",
+        "i": 0
+      }
+    ],
+    "sofa-14": [
+      {
+        "src": "collection/sofas/img/sofa-14-1.webp",
+        "thumb": "collection/sofas/img/sofa-14-1-t.webp",
+        "w": 936,
+        "h": 279,
+        "kind": "product",
+        "i": 0
+      }
+    ],
+    "sofa-15": [
+      {
+        "src": "collection/sofas/img/sofa-15-1.webp",
+        "thumb": "collection/sofas/img/sofa-15-1-t.webp",
+        "w": 926,
+        "h": 382,
+        "kind": "product",
+        "i": 0
+      }
+    ],
+    "sofa-16": [
+      {
+        "src": "collection/sofas/img/sofa-16-1.webp",
+        "thumb": "collection/sofas/img/sofa-16-1-t.webp",
+        "w": 938,
+        "h": 291,
+        "kind": "product",
+        "i": 0
+      }
+    ],
+    "sofa-17": [
+      {
+        "src": "collection/sofas/img/sofa-17-1.webp",
+        "thumb": "collection/sofas/img/sofa-17-1-t.webp",
+        "w": 847,
+        "h": 319,
+        "kind": "product",
+        "i": 0
+      }
+    ],
+    "sofa-18": [
+      {
+        "src": "collection/sofas/img/sofa-18-1.webp",
+        "thumb": "collection/sofas/img/sofa-18-1-t.webp",
+        "w": 936,
+        "h": 312,
+        "kind": "product",
+        "i": 0
+      }
+    ],
+    "sofa-19": [
+      {
+        "src": "collection/sofas/img/sofa-19-1.webp",
+        "thumb": "collection/sofas/img/sofa-19-1-t.webp",
+        "w": 940,
+        "h": 239,
+        "kind": "product",
+        "i": 0
+      }
+    ],
+    "sofa-20": [
+      {
+        "src": "collection/sofas/img/sofa-20-1.webp",
+        "thumb": "collection/sofas/img/sofa-20-1-t.webp",
+        "w": 921,
+        "h": 245,
+        "kind": "product",
+        "i": 0
+      }
+    ],
+    "sofa-21": [
+      {
+        "src": "collection/sofas/img/sofa-21-1.webp",
+        "thumb": "collection/sofas/img/sofa-21-1-t.webp",
+        "w": 939,
+        "h": 370,
+        "kind": "product",
+        "i": 0
+      }
+    ],
+    "sofa-22": [
+      {
+        "src": "collection/sofas/img/sofa-22-1.webp",
+        "thumb": "collection/sofas/img/sofa-22-1-t.webp",
+        "w": 873,
+        "h": 328,
+        "kind": "product",
+        "i": 0
+      }
+    ],
+    "sofa-23": [
+      {
+        "src": "collection/sofas/img/sofa-23-1.webp",
+        "thumb": "collection/sofas/img/sofa-23-1-t.webp",
+        "w": 931,
+        "h": 314,
+        "kind": "product",
+        "i": 0
+      }
+    ],
+    "sofa-24": [
+      {
+        "src": "collection/sofas/img/sofa-24-1.webp",
+        "thumb": "collection/sofas/img/sofa-24-1-t.webp",
+        "w": 896,
+        "h": 314,
+        "kind": "product",
+        "i": 0
+      }
+    ],
+    "sofa-25": [
+      {
+        "src": "collection/sofas/img/sofa-25-1.webp",
+        "thumb": "collection/sofas/img/sofa-25-1-t.webp",
+        "w": 895,
+        "h": 535,
+        "kind": "product",
+        "i": 0
+      }
+    ]
+  },
+  "editorial": []
+}

@@ -1,0 +1,661 @@
+{
+  "slug": "armchairs",
+  "title": "Armchairs",
+  "singular": "Armchair",
+  "noun": "chair",
+  "lead": "Tub and barrel chairs, wingbacks, bouclé lounge chairs and chairs framed in wood or metal.",
+  "intro": "Every chair has a number, like Armchair No. 12. Ask about it by number and we will come back with sizes, finishes, pricing and lead time.",
+  "source": "Imported from ready-made posts (tools/collection/import_posts.py)",
+  "hashtags": [
+    "#nycinteriors",
+    "#interiordesign",
+    "#armchair"
+  ],
+  "filters": [
+    {
+      "tag": "tub",
+      "label": "Tub & barrel"
+    },
+    {
+      "tag": "boucle",
+      "label": "Bouclé look"
+    },
+    {
+      "tag": "wing",
+      "label": "Wingback"
+    },
+    {
+      "tag": "lounge",
+      "label": "Lounge & recliners"
+    },
+    {
+      "tag": "wood",
+      "label": "Wood"
+    },
+    {
+      "tag": "metal",
+      "label": "Metal"
+    }
+  ],
+  "models": [
+    {
+      "no": 1,
+      "name": "Round-Base Tub Chair",
+      "summary": "A cream tub chair with a curved back and arms, on a dark round base.",
+      "more": "The back curves round into the arms, and the chair sits on a dark round base.",
+      "tags": [
+        "tub"
+      ],
+      "hashtag": "#accentchair"
+    },
+    {
+      "no": 2,
+      "name": "Square Plinth Chair",
+      "summary": "A taupe chair with straight, squared sides on a low dark plinth.",
+      "more": "Squared arms and back sit on a low dark plinth.",
+      "tags": [],
+      "hashtag": "#accentchair"
+    },
+    {
+      "no": 3,
+      "name": "Barrel Chair",
+      "summary": "A cream barrel chair whose back slopes down into the arms.",
+      "more": "The rounded back slopes down into the arms, upholstered all the way to the floor.",
+      "tags": [
+        "tub"
+      ],
+      "hashtag": "#accentchair"
+    },
+    {
+      "no": 4,
+      "name": "Arched-Base Barrel Chair",
+      "summary": "A cream barrel chair with an arched cutaway under the seat at each side.",
+      "more": "The base is cut away in an arch below the seat, under a rounded barrel back.",
+      "tags": [
+        "tub"
+      ],
+      "hashtag": "#accentchair"
+    },
+    {
+      "no": 5,
+      "name": "Track-Arm Cushion Chair",
+      "summary": "A cream chair with straight track arms and loose back and seat cushions.",
+      "more": "Straight track arms frame loose back and seat cushions, all in cream.",
+      "tags": [],
+      "hashtag": "#readingchair"
+    },
+    {
+      "no": 6,
+      "name": "Skirted Slipcover Chair",
+      "summary": "An oatmeal chair with square arms and a skirt that falls to the floor.",
+      "more": "Square arms, a deep seat cushion and a skirt that falls to the floor.",
+      "tags": [],
+      "hashtag": "#readingchair"
+    },
+    {
+      "no": 7,
+      "name": "Sloped-Arm Skirted Chair",
+      "summary": "A cream chair with arms that slope down to the front, over a skirted base.",
+      "more": "The arms slope down toward the front, over a skirt that reaches the floor.",
+      "tags": [],
+      "hashtag": "#readingchair"
+    },
+    {
+      "no": 8,
+      "name": "Curved-Back Tub Chair",
+      "summary": "A brown tub chair with a low curved back and a loose seat cushion.",
+      "more": "A low back curves round into the arms, over a loose brown seat cushion.",
+      "tags": [
+        "tub"
+      ],
+      "hashtag": "#accentchair"
+    },
+    {
+      "no": 9,
+      "name": "Skirted Tub Chair",
+      "summary": "A taupe tub chair with a curved back and a skirt with pleats at the corners.",
+      "more": "The curved back wraps into the arms, and a pleated skirt runs to the floor.",
+      "tags": [
+        "tub"
+      ],
+      "hashtag": "#accentchair"
+    },
+    {
+      "no": 10,
+      "name": "Skirted Wingback Chair",
+      "summary": "A tall cream wingback with a back pillow and a skirt to the floor.",
+      "more": "A high back with slim wings, a back pillow and a skirt that reaches the floor.",
+      "tags": [
+        "wing"
+      ],
+      "hashtag": "#wingbackchair"
+    },
+    {
+      "no": 11,
+      "name": "Button-Back Wing Chair",
+      "summary": "A sand-colored wing chair with a buttoned back and rolled arms, on short wood legs.",
+      "more": "The back is button-tufted, the arms roll outward, and short wood legs lift the chair.",
+      "tags": [
+        "wing",
+        "wood"
+      ],
+      "hashtag": "#wingbackchair"
+    },
+    {
+      "no": 12,
+      "name": "Nailhead Club Chair",
+      "summary": "A sand-colored club chair with wide track arms and nailhead trim along the base.",
+      "more": "Wide track arms, a loose seat cushion and nailhead trim along the back and base.",
+      "tags": [],
+      "hashtag": "#clubchair"
+    },
+    {
+      "no": 13,
+      "name": "Round Boucle Tub Chair",
+      "summary": "A round, low tub chair in brown boucle with a deep curved back.",
+      "more": "A round, low chair in brown boucle, with the back curving all the way round.",
+      "tags": [
+        "tub",
+        "boucle"
+      ],
+      "hashtag": "#boucle"
+    },
+    {
+      "no": 14,
+      "name": "Channel-Back Round Chair",
+      "summary": "A round cream boucle chair with channel stitching on the inside of the back.",
+      "more": "Channel stitching runs up the inside of the back on this round cream boucle chair.",
+      "tags": [
+        "boucle"
+      ],
+      "hashtag": "#boucle"
+    },
+    {
+      "no": 15,
+      "name": "Wrap-Back Round Chair",
+      "summary": "A cream chair whose thick back wraps around a round seat, on a dark round base.",
+      "more": "A thick back wraps around a round seat, and the chair sits on a dark round base.",
+      "tags": [],
+      "hashtag": "#boucle"
+    },
+    {
+      "no": 16,
+      "name": "Sculpted Boucle Chair",
+      "summary": "A sculpted boucle chair whose back slopes down into wide, rounded arms.",
+      "more": "The shell slopes from the back down into wide, rounded arms. Shown in cream and in brown.",
+      "tags": [
+        "boucle"
+      ],
+      "hashtag": "#boucle"
+    },
+    {
+      "no": 17,
+      "name": "Low Sculpted Lounge Chair",
+      "summary": "A low, wide sculpted chair in camel, with arms that curve forward and down.",
+      "more": "A low, wide shell whose arms curve forward and down to the floor.",
+      "tags": [
+        "lounge"
+      ],
+      "hashtag": "#loungechair"
+    },
+    {
+      "no": 18,
+      "name": "Stacked-Roll Chair",
+      "summary": "A cream boucle chair with a rounded back that rests on a thick rolled base.",
+      "more": "A rounded back and arms sit on a thick rolled base, in cream boucle.",
+      "tags": [
+        "boucle"
+      ],
+      "hashtag": "#boucle"
+    },
+    {
+      "no": 19,
+      "name": "Rounded-Square Tub Chair",
+      "summary": "A cream tub chair with a square outline and soft, rounded corners.",
+      "more": "A square outline with rounded corners, and a cushion set into the seat.",
+      "tags": [
+        "tub"
+      ],
+      "hashtag": "#accentchair"
+    },
+    {
+      "no": 20,
+      "name": "Low-Arm Boucle Chair",
+      "summary": "A taupe boucle chair with a tall rounded back and low, rounded arms.",
+      "more": "A tall rounded back rises over low, rounded arms, all in taupe boucle.",
+      "tags": [
+        "boucle"
+      ],
+      "hashtag": "#boucle"
+    },
+    {
+      "no": 21,
+      "name": "Spiral-Back Chair",
+      "summary": "A camel chair whose curved back sweeps down into one arm.",
+      "more": "The back sweeps around and down into a single arm, over a round seat.",
+      "tags": [],
+      "hashtag": "#accentchair"
+    },
+    {
+      "no": 22,
+      "name": "Spiral-Back Chair on Base",
+      "summary": "A camel chair with a curved back that sweeps into the arm, on a dark round base.",
+      "more": "A curved back sweeps down into the arm, on a dark round base.",
+      "tags": [],
+      "hashtag": "#accentchair"
+    },
+    {
+      "no": 23,
+      "name": "Curved Brown Tub Chair",
+      "summary": "A brown chair with a soft curved back and a deep, rounded seat.",
+      "more": "A soft curved back wraps into the arms around a deep, rounded seat.",
+      "tags": [
+        "tub"
+      ],
+      "hashtag": "#accentchair"
+    },
+    {
+      "no": 24,
+      "name": "Wood-Panel Boucle Chair",
+      "summary": "A cream boucle chair set between two light wood side panels.",
+      "more": "Rounded cream boucle sits between two flat light wood side panels.",
+      "tags": [
+        "boucle",
+        "wood"
+      ],
+      "hashtag": "#boucle"
+    },
+    {
+      "no": 25,
+      "name": "Angled-Leg Lounge Chair",
+      "summary": "A low lounge chair on angled dark wood legs, in brown or cream.",
+      "more": "Angled dark wood legs hold an upholstered seat and back, shown in brown and in cream.",
+      "tags": [
+        "lounge",
+        "wood"
+      ],
+      "hashtag": "#loungechair"
+    },
+    {
+      "no": 26,
+      "name": "Oval-Back Wood Chair",
+      "summary": "A light wood chair with an oval cream back and a brass-tone rail at the arms.",
+      "more": "An oval cream back floats on a light wood frame, with a brass-tone rail at the arms.",
+      "tags": [
+        "wood",
+        "metal"
+      ],
+      "hashtag": "#accentchair"
+    },
+    {
+      "no": 27,
+      "name": "Dark Wood Frame Chair",
+      "summary": "A cream cushioned chair in a dark wood frame with curved arms.",
+      "more": "Curved dark wood arms frame cream back and seat cushions.",
+      "tags": [
+        "wood"
+      ],
+      "hashtag": "#loungechair"
+    },
+    {
+      "no": 28,
+      "name": "Light Wood Frame Chair",
+      "summary": "Cream boucle cushions in a light wood frame with gently curved arms.",
+      "more": "Cream boucle cushions sit in a light wood frame with gently curved arms.",
+      "tags": [
+        "boucle",
+        "wood"
+      ],
+      "hashtag": "#loungechair"
+    },
+    {
+      "no": 29,
+      "name": "Wood-Block Boucle Chair",
+      "summary": "A cream boucle chair with a block of light wood on the outside of each arm.",
+      "more": "Each arm carries a block of textured light wood, against cream boucle.",
+      "tags": [
+        "boucle",
+        "wood"
+      ],
+      "hashtag": "#boucle"
+    },
+    {
+      "no": 30,
+      "name": "Wing-Back Chair on Wood Base",
+      "summary": "A rust-brown chair with a tall curved wing back, on a round wood base.",
+      "more": "A tall curved back wraps one side of a deep seat, on a round wood base.",
+      "tags": [
+        "wing",
+        "wood"
+      ],
+      "hashtag": "#accentchair"
+    },
+    {
+      "no": 31,
+      "name": "Cast-Frame Lounge Chair",
+      "summary": "A light gray upholstered chair in a slim, cast brass-tone frame.",
+      "more": "A slim, cast brass-tone frame holds a light gray upholstered seat and back.",
+      "tags": [
+        "lounge",
+        "metal"
+      ],
+      "hashtag": "#loungechair"
+    },
+    {
+      "no": 32,
+      "name": "Angled Cast-Frame Chair",
+      "summary": "An upholstered chair with an angled back in a slim cast frame, brass tone or silver tone.",
+      "more": "The back leans in a slim cast frame, shown in brass tone with taupe and silver tone with charcoal.",
+      "tags": [
+        "metal"
+      ],
+      "hashtag": "#loungechair"
+    },
+    {
+      "no": 33,
+      "name": "Armless Cast-Frame Chair",
+      "summary": "An armless gray chair on a slim silver-tone cast frame.",
+      "more": "An armless gray seat and back on a slim silver-tone cast frame.",
+      "tags": [
+        "metal"
+      ],
+      "hashtag": "#accentchair"
+    },
+    {
+      "no": 34,
+      "name": "Armless X-Leg Chair",
+      "summary": "An armless taupe chair on curved brass-tone X legs.",
+      "more": "An armless taupe seat rides on curved, crossed brass-tone legs.",
+      "tags": [
+        "metal"
+      ],
+      "hashtag": "#accentchair"
+    },
+    {
+      "no": 35,
+      "name": "Slim-Leg Tub Chair",
+      "summary": "A sand-colored tub chair on slim dark metal legs.",
+      "more": "A curved tub seat lifted on slim dark metal legs.",
+      "tags": [
+        "tub",
+        "metal"
+      ],
+      "hashtag": "#accentchair"
+    },
+    {
+      "no": 36,
+      "name": "Bronze-Frame Hoop Chair",
+      "summary": "A dark bronze-tone frame with a curved back rail and a gray upholstered seat.",
+      "more": "A curved back rail runs into the arms of a dark bronze-tone frame, over a gray seat.",
+      "tags": [
+        "metal"
+      ],
+      "hashtag": "#accentchair"
+    },
+    {
+      "no": 37,
+      "name": "High-Back Pedestal Chair",
+      "summary": "A high-back shell chair with wings on a round pedestal base, with a matching ottoman.",
+      "more": "A high winged shell on a round pedestal base, shown in camel and cream, with a matching ottoman.",
+      "tags": [
+        "wing",
+        "lounge"
+      ],
+      "hashtag": "#loungechair"
+    },
+    {
+      "no": 38,
+      "name": "Wood-Trim Tub Chair",
+      "summary": "A sand-colored tub chair with a thin band of wood around the outer edge.",
+      "more": "A thin band of wood traces the outer edge of this tub chair.",
+      "tags": [
+        "tub",
+        "wood"
+      ],
+      "hashtag": "#accentchair"
+    },
+    {
+      "no": 39,
+      "name": "Open-Back Curved Chair",
+      "summary": "A sand-colored curved chair with an open gap between the back and the seat.",
+      "more": "A curved shell with an open gap between the back and the seat.",
+      "tags": [],
+      "hashtag": "#accentchair"
+    },
+    {
+      "no": 40,
+      "name": "Open-Back Arched Chair",
+      "summary": "A sand-colored chair with an open back and arched cutaways at the sides.",
+      "more": "An open gap in the back and arched cutaways at each side.",
+      "tags": [],
+      "hashtag": "#accentchair"
+    },
+    {
+      "no": 41,
+      "name": "Tall Camel Tub Chair",
+      "summary": "A camel tub chair with a tall, gently flared back.",
+      "more": "A tall, gently flared back, upholstered to the floor; camel, and sand in the room photo.",
+      "tags": [
+        "tub"
+      ],
+      "hashtag": "#accentchair"
+    },
+    {
+      "no": 42,
+      "name": "Arched-Base Camel Chair",
+      "summary": "A camel tub chair with a curved back and an arched cutaway at the base.",
+      "more": "A curved back and arms over a base cut away in an arch, with piped edges.",
+      "tags": [
+        "tub"
+      ],
+      "hashtag": "#accentchair"
+    },
+    {
+      "no": 43,
+      "name": "Block Boucle Chair",
+      "summary": "A chunky taupe boucle chair built from rounded blocks.",
+      "more": "Rounded blocks form the back, arms and base, all in taupe boucle.",
+      "tags": [
+        "boucle"
+      ],
+      "hashtag": "#boucle"
+    },
+    {
+      "no": 44,
+      "name": "Cream Tub Chair",
+      "summary": "A cream tub chair with a curved back and a soft rounded seat.",
+      "more": "A curved back wraps into the arms around a soft, rounded cream seat.",
+      "tags": [
+        "tub"
+      ],
+      "hashtag": "#accentchair"
+    },
+    {
+      "no": 45,
+      "name": "Boucle Wing Recliner",
+      "summary": "A sand boucle wingback with a footrest that lifts out from the front.",
+      "more": "A wing back in sand boucle, with a footrest that lifts out from the front.",
+      "tags": [
+        "boucle",
+        "wing",
+        "lounge"
+      ],
+      "hashtag": "#recliner"
+    },
+    {
+      "no": 46,
+      "name": "Rounded Boucle Recliner",
+      "summary": "A cream boucle chair with rounded arms and a footrest that lifts out.",
+      "more": "Rounded cream boucle arms and back, with a footrest that lifts out from the front.",
+      "tags": [
+        "boucle",
+        "lounge"
+      ],
+      "hashtag": "#recliner"
+    },
+    {
+      "no": 47,
+      "name": "Winged Pedestal Lounge Chair",
+      "summary": "A brown lounge chair with wide winged arms on a round brass-tone base.",
+      "more": "Wide winged arms and a tall back sit on a round brass-tone pedestal base.",
+      "tags": [
+        "wing",
+        "lounge",
+        "metal"
+      ],
+      "hashtag": "#loungechair"
+    },
+    {
+      "no": 48,
+      "name": "Slipper Boucle Chair",
+      "summary": "A cream boucle chair with a flared back on short tapered wood legs; shown in shearling-look too.",
+      "more": "A flared back on short tapered wood legs, in cream boucle or a shearling look.",
+      "tags": [
+        "boucle",
+        "wood"
+      ],
+      "hashtag": "#boucle"
+    },
+    {
+      "no": 49,
+      "name": "Curved Wood-Back Chair",
+      "summary": "A cream upholstered seat under a curved dark wood back that forms the arms.",
+      "more": "A curved dark wood back runs into the arms, over a cream upholstered seat.",
+      "tags": [
+        "wood"
+      ],
+      "hashtag": "#accentchair"
+    },
+    {
+      "no": 50,
+      "name": "Woven Bentwood Chair",
+      "summary": "A woven seat and back in a bent light wood frame with looped arms.",
+      "more": "A woven seat and back sit in a bent light wood frame with looped arms.",
+      "tags": [
+        "wood"
+      ],
+      "hashtag": "#loungechair"
+    },
+    {
+      "no": 51,
+      "name": "Nailhead Wing Club Chair",
+      "summary": "A small club chair with flared arms, edged in nailhead trim, on light wood legs.",
+      "more": "Flared arms and nailhead trim along every edge, on light wood legs.",
+      "tags": [
+        "wing",
+        "wood"
+      ],
+      "hashtag": "#clubchair"
+    },
+    {
+      "no": 52,
+      "name": "Flared-Arm Club Chair",
+      "summary": "A small cream club chair with flared arms on light wood legs.",
+      "more": "Flared arms and a loose seat cushion, on light wood legs.",
+      "tags": [
+        "wood"
+      ],
+      "hashtag": "#clubchair"
+    },
+    {
+      "no": 53,
+      "name": "Brass-Band Tub Chair",
+      "summary": "A cream tub chair wrapped in a brass-tone band, on a dark round base.",
+      "more": "A brass-tone band wraps the outside of this cream tub chair, on a dark round base.",
+      "tags": [
+        "tub",
+        "metal"
+      ],
+      "hashtag": "#accentchair"
+    },
+    {
+      "no": 54,
+      "name": "Brass-Leg Tub Chair",
+      "summary": "A cream tub chair on brass-tone legs that rise into bars at the sides.",
+      "more": "Brass-tone legs rise up into bars at each side of this cream tub chair.",
+      "tags": [
+        "tub",
+        "metal"
+      ],
+      "hashtag": "#accentchair"
+    },
+    {
+      "no": 55,
+      "name": "Pedestal Shell Chair",
+      "summary": "A rounded shell chair on a brass-tone pedestal base, with a matching ottoman.",
+      "more": "A rounded shell on a brass-tone pedestal base, shown with its matching ottoman.",
+      "tags": [
+        "lounge",
+        "metal"
+      ],
+      "hashtag": "#loungechair"
+    },
+    {
+      "no": 56,
+      "name": "High-Back Shell Chair",
+      "summary": "A high-back shell chair on a brass-tone pedestal base, with a matching ottoman.",
+      "more": "A high shell back with flared arms, on a brass-tone pedestal, with a matching ottoman.",
+      "tags": [
+        "lounge",
+        "metal"
+      ],
+      "hashtag": "#loungechair"
+    },
+    {
+      "no": 57,
+      "name": "Wide Shell Lounge Chair",
+      "summary": "A wide, low shell chair on a brass-tone pedestal base, with a matching ottoman.",
+      "more": "A wide, low shell on a brass-tone pedestal base, with a matching ottoman.",
+      "tags": [
+        "lounge",
+        "metal"
+      ],
+      "hashtag": "#loungechair"
+    },
+    {
+      "no": 58,
+      "name": "Looped-Tube Lounge Chair",
+      "summary": "An upholstered seat and back in a looped brass-tone tube frame.",
+      "more": "The arms loop down into the base in one brass-tone tube, shown in camel and sand.",
+      "tags": [
+        "lounge",
+        "metal"
+      ],
+      "hashtag": "#loungechair"
+    },
+    {
+      "no": 59,
+      "name": "Rounded Tub Chair on Base",
+      "summary": "A sand-colored tub chair with a rounded back, on a low dark round base.",
+      "more": "A rounded back wraps into the arms, on a low dark round base.",
+      "tags": [
+        "tub"
+      ],
+      "hashtag": "#accentchair"
+    },
+    {
+      "no": 60,
+      "name": "Open-Back Block Chair",
+      "summary": "A squared chair with an open slot in the back, on a dark round base.",
+      "more": "A squared shape with an open slot in the back, on a dark round base; shown in white, camel and gray.",
+      "tags": [],
+      "hashtag": "#accentchair"
+    },
+    {
+      "no": 61,
+      "name": "Round-Arm Wood Chair",
+      "summary": "A cream chair with round light wood rails for arms and legs.",
+      "more": "Round light wood rails form the arms and legs around a cream seat and back.",
+      "tags": [
+        "wood"
+      ],
+      "hashtag": "#accentchair"
+    }
+  ],
+  "hero_grid": [
+    14,
+    17,
+    26,
+    43
+  ]
+}

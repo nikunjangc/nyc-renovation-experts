@@ -1,0 +1,400 @@
+{
+  "slug": "dining",
+  "title": "Dining Tables",
+  "singular": "Dining Table",
+  "noun": "table",
+  "lead": "Round pedestal tables and long tables in wood, stone looks and metal.",
+  "intro": "Every table has a number, like Dining Table No. 08. Ask about it by number and we will come back with sizes, finishes, pricing and lead time.",
+  "source": "Imported from ready-made posts (tools/collection/import_posts.py)",
+  "hashtags": [
+    "#diningroom",
+    "#nycinteriors",
+    "#diningroomdesign"
+  ],
+  "filters": [
+    {
+      "tag": "round",
+      "label": "Round & oval"
+    },
+    {
+      "tag": "long",
+      "label": "Long tables"
+    },
+    {
+      "tag": "pedestal",
+      "label": "Pedestal"
+    },
+    {
+      "tag": "stone",
+      "label": "Stone look"
+    },
+    {
+      "tag": "wood",
+      "label": "Wood"
+    }
+  ],
+  "models": [
+    {
+      "no": 1,
+      "name": "Flared Pedestal Table",
+      "summary": "A light wood top on a slim stem that flares out into a wide brass-tone base.",
+      "more": "The stem flares into a wide brass-tone base, under a round or oval light wood top.",
+      "tags": [
+        "round",
+        "pedestal",
+        "wood"
+      ],
+      "hashtag": "#diningtable"
+    },
+    {
+      "no": 2,
+      "name": "Fluted Pedestal Table",
+      "summary": "Fluted wood pedestals under a round or oval top, in wood or a stone-look finish.",
+      "more": "The fluted bases come as one round pedestal, two pedestals or one long base, with a wood or stone-look top.",
+      "tags": [
+        "round",
+        "long",
+        "pedestal",
+        "stone",
+        "wood"
+      ],
+      "hashtag": "#woodtable"
+    },
+    {
+      "no": 3,
+      "name": "Plinth-Base Wood Table",
+      "summary": "A warm brown wood table on a solid base set on a slim plinth.",
+      "more": "Choose a round drum pedestal, a long block base or an open frame, all on a slim plinth.",
+      "tags": [
+        "round",
+        "long",
+        "pedestal",
+        "wood"
+      ],
+      "hashtag": "#woodtable"
+    },
+    {
+      "no": 4,
+      "name": "Stone Pedestal Table",
+      "summary": "A stone-look top on a tapered cone pedestal, or on round columns with a narrow collar.",
+      "more": "The base comes as a tapered cone or as round columns with a narrow collar, in dark or pale stone looks.",
+      "tags": [
+        "round",
+        "pedestal",
+        "stone"
+      ],
+      "hashtag": "#marbletable"
+    },
+    {
+      "no": 5,
+      "name": "Wave-Base Wood Table",
+      "summary": "A light wood top on a wide pedestal with a soft, wavy base.",
+      "more": "The pedestal widens toward the floor and ends in a soft wavy edge.",
+      "tags": [
+        "pedestal",
+        "wood"
+      ],
+      "hashtag": "#woodtable"
+    },
+    {
+      "no": 6,
+      "name": "Flared-Foot Pedestal Table",
+      "summary": "A dark wood table on a pedestal that flares out onto a flat foot.",
+      "more": "A dark wood pedestal flares out onto a flat foot, under a round or long top.",
+      "tags": [
+        "round",
+        "long",
+        "pedestal",
+        "wood"
+      ],
+      "hashtag": "#woodtable"
+    },
+    {
+      "no": 7,
+      "name": "Curved-Leg Stone-Top Table",
+      "summary": "A brown stone-look top on curved wood legs joined low by a stretcher.",
+      "more": "Curved wood legs hold a brown stone-look top, with a low stretcher between them.",
+      "tags": [
+        "stone",
+        "wood"
+      ],
+      "hashtag": "#marbletable"
+    },
+    {
+      "no": 8,
+      "name": "Cross-Slab Stone Table",
+      "summary": "A round pale stone-look table on two slabs that cross under the top.",
+      "more": "Two flat slabs cross under the round top, all in a pale stone look.",
+      "tags": [
+        "round",
+        "stone"
+      ],
+      "hashtag": "#roundtable"
+    },
+    {
+      "no": 9,
+      "name": "White Marble-Look Pedestal Table",
+      "summary": "A white marble-look table with bold gray veining, on a solid rounded pedestal.",
+      "more": "The top and pedestal share the same white, gray-veined marble look.",
+      "tags": [
+        "pedestal",
+        "stone"
+      ],
+      "hashtag": "#marbletable"
+    },
+    {
+      "no": 10,
+      "name": "Domed-Column Stone Table",
+      "summary": "A pale stone-look top on thick columns with rounded tops.",
+      "more": "One thick column holds the round top, or two hold the oval, and there's a white marble-look version.",
+      "tags": [
+        "round",
+        "pedestal",
+        "stone"
+      ],
+      "hashtag": "#marbletable"
+    },
+    {
+      "no": 11,
+      "name": "Block-Base Stone Table",
+      "summary": "A long beige stone-look top on a single solid block.",
+      "more": "A thick square-edged top sits on one solid block, in beige or dark brown stone looks.",
+      "tags": [
+        "long",
+        "stone"
+      ],
+      "hashtag": "#marbletable"
+    },
+    {
+      "no": 12,
+      "name": "Matte Cream Pedestal Table",
+      "summary": "A matte cream table with soft, rounded edges on a solid pedestal.",
+      "more": "Everything is in one matte cream finish, with soft rounded edges on the top and base.",
+      "tags": [
+        "pedestal"
+      ],
+      "hashtag": "#roundtable"
+    },
+    {
+      "no": 13,
+      "name": "Metal-Frame Stone Table",
+      "summary": "A beige stone-look top on a slim dark metal frame.",
+      "more": "A slim dark metal frame holds a beige stone-look top, round or long.",
+      "tags": [
+        "round",
+        "long",
+        "stone"
+      ],
+      "hashtag": "#marbletable"
+    },
+    {
+      "no": 14,
+      "name": "Stone-Top Wood Pedestal Table",
+      "summary": "A pale stone-look top on wood pedestals.",
+      "more": "A pale stone-look top sits on a wood drum, or on two wood slab legs for the long version.",
+      "tags": [
+        "long",
+        "pedestal",
+        "stone",
+        "wood"
+      ],
+      "hashtag": "#diningtable"
+    },
+    {
+      "no": 15,
+      "name": "Slim-Leg Wood Table",
+      "summary": "A warm brown wood table on four slim legs, and a round version on a drum pedestal.",
+      "more": "The long table stands on four slim legs, and the round one sits on a drum pedestal.",
+      "tags": [
+        "round",
+        "long",
+        "pedestal",
+        "wood"
+      ],
+      "hashtag": "#woodtable"
+    },
+    {
+      "no": 16,
+      "name": "U-Base Wood Table",
+      "summary": "A light wood table on an open U-shaped base.",
+      "more": "The base is an open U shape, under a round or long light wood top.",
+      "tags": [
+        "round",
+        "long",
+        "wood"
+      ],
+      "hashtag": "#woodtable"
+    },
+    {
+      "no": 17,
+      "name": "Drum Pedestal Light Wood Table",
+      "summary": "A light wood top on a solid drum or block pedestal.",
+      "more": "A solid drum holds the round top, and a long block holds the long one.",
+      "tags": [
+        "round",
+        "long",
+        "pedestal",
+        "wood"
+      ],
+      "hashtag": "#woodtable"
+    },
+    {
+      "no": 18,
+      "name": "Cluster-Column Wood Table",
+      "summary": "A light wood top on clusters of round wood columns.",
+      "more": "Round wood columns are grouped into one cluster for the round top, or two for the long one.",
+      "tags": [
+        "round",
+        "long",
+        "pedestal",
+        "wood"
+      ],
+      "hashtag": "#woodtable"
+    },
+    {
+      "no": 19,
+      "name": "Frame-Base Wood Table",
+      "summary": "A long warm brown wood table on a closed, rounded rectangular frame.",
+      "more": "The base is a closed frame with rounded corners, in warm brown wood.",
+      "tags": [
+        "long",
+        "wood"
+      ],
+      "hashtag": "#woodtable"
+    },
+    {
+      "no": 20,
+      "name": "Column-Base Wood Table",
+      "summary": "A warm brown wood top on round columns or an open U pedestal.",
+      "more": "The long top sits on two columns, and the round top on a drum or an open U pedestal.",
+      "tags": [
+        "round",
+        "long",
+        "pedestal",
+        "wood"
+      ],
+      "hashtag": "#woodtable"
+    },
+    {
+      "no": 21,
+      "name": "Brass-Tone Trestle Table",
+      "summary": "A dark wood top on brass-tone T-shaped legs joined by a low stretcher.",
+      "more": "The brass-tone legs meet the dark wood top in a T and are joined low by a stretcher.",
+      "tags": [
+        "wood"
+      ],
+      "hashtag": "#diningtable"
+    },
+    {
+      "no": 22,
+      "name": "Plinth Pedestal Wood Table",
+      "summary": "A natural wood table on a solid pedestal with a rounded plinth.",
+      "more": "The round top sits on a drum with a plinth, and the long top on a rounded open frame.",
+      "tags": [
+        "round",
+        "long",
+        "pedestal",
+        "wood"
+      ],
+      "hashtag": "#woodtable"
+    },
+    {
+      "no": 23,
+      "name": "Arched-Leg Wood Table",
+      "summary": "A natural wood table on legs with arched cut-outs.",
+      "more": "Each leg has an arched cut-out, and the long version adds a stretcher between the ends.",
+      "tags": [
+        "long",
+        "wood"
+      ],
+      "hashtag": "#woodtable"
+    },
+    {
+      "no": 24,
+      "name": "Angled-Frame Wood Table",
+      "summary": "A dark wood top on angled open-frame legs.",
+      "more": "Angled frames splay out from the round table's center column, or stand in pairs under the long top.",
+      "tags": [
+        "round",
+        "long",
+        "pedestal",
+        "wood"
+      ],
+      "hashtag": "#woodtable"
+    },
+    {
+      "no": 25,
+      "name": "Stone-Top Cross-Slab Table",
+      "summary": "A pale stone-look top on crossed wood slabs.",
+      "more": "Crossed wood slabs hold a pale stone-look top, with the base in light or warm brown wood.",
+      "tags": [
+        "stone",
+        "wood"
+      ],
+      "hashtag": "#diningtable"
+    },
+    {
+      "no": 26,
+      "name": "Rounded-Leg Wood Table",
+      "summary": "A textured light wood top on thick, rounded legs.",
+      "more": "Thick rounded legs carry a textured light wood top, and a dark version is shown too.",
+      "tags": [
+        "wood"
+      ],
+      "hashtag": "#woodtable"
+    },
+    {
+      "no": 27,
+      "name": "Stepped Marble-Look Table",
+      "summary": "A white marble-look top on a fluted pedestal that steps out at the foot.",
+      "more": "The fluted pedestal steps out at the foot, all in a white, gray-veined marble look.",
+      "tags": [
+        "pedestal",
+        "stone"
+      ],
+      "hashtag": "#marbletable"
+    },
+    {
+      "no": 28,
+      "name": "Bronze-Column Table",
+      "summary": "A honey-toned stone-look top on a group of bronze-tone columns.",
+      "more": "Grouped bronze-tone columns hold a honey-toned stone-look top, and there are dark and light wood versions.",
+      "tags": [
+        "pedestal",
+        "stone",
+        "wood"
+      ],
+      "hashtag": "#diningtable"
+    },
+    {
+      "no": 29,
+      "name": "Split-Column Wood Table",
+      "summary": "A long dark wood table on two split column pedestals.",
+      "more": "Two split columns hold the long dark wood top.",
+      "tags": [
+        "long",
+        "pedestal",
+        "wood"
+      ],
+      "hashtag": "#woodtable"
+    },
+    {
+      "no": 30,
+      "name": "Slab-Leg Wood Table",
+      "summary": "A weathered-look wood table on flat slab legs, with round versions on a frame or crossed base.",
+      "more": "The long top stands on flat slab legs, and the round top on a square frame or crossed slabs.",
+      "tags": [
+        "round",
+        "long",
+        "wood"
+      ],
+      "hashtag": "#woodtable"
+    }
+  ],
+  "hero_grid": [
+    1,
+    4,
+    9,
+    23
+  ]
+}

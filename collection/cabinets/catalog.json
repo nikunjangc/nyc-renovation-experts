@@ -1,0 +1,296 @@
+{
+  "slug": "cabinets",
+  "title": "Cabinets & Sideboards",
+  "singular": "Cabinet",
+  "noun": "cabinet",
+  "lead": "Sideboards, tall cabinets and low consoles with reeded, carved, cane, glass and plain fronts, in light and dark wood.",
+  "intro": "Every cabinet has a number, like Cabinet No. 05. Ask about it by number and we will come back with sizes, finishes, pricing and lead time.",
+  "source": "Imported from ready-made posts (tools/collection/import_posts.py)",
+  "hashtags": [
+    "#nycinteriors",
+    "#interiordesign",
+    "#cabinetdesign"
+  ],
+  "filters": [
+    {
+      "tag": "glass",
+      "label": "Glass doors"
+    },
+    {
+      "tag": "dark",
+      "label": "Dark wood"
+    },
+    {
+      "tag": "light",
+      "label": "Light wood"
+    },
+    {
+      "tag": "texture",
+      "label": "Reeded & carved"
+    },
+    {
+      "tag": "brass",
+      "label": "Brass details"
+    }
+  ],
+  "models": [
+    {
+      "no": 1,
+      "name": "Rounded Reeded Cabinet",
+      "summary": "Vertical reeding wraps the whole cabinet, with rounded ends and slim inset pulls.",
+      "more": "It comes as a tall two-door cabinet or a long sideboard, shown in dark wood and in light wood.",
+      "tags": [
+        "dark",
+        "light",
+        "texture"
+      ],
+      "hashtag": "#sideboard"
+    },
+    {
+      "no": 2,
+      "name": "Tapered-Leg Brass-Pull Cabinet",
+      "summary": "A dark wood cabinet on slim tapered legs, with long brass bar pulls.",
+      "more": "There's a tall version with glass or wood doors, sideboards with or without drawers, and low consoles with glass doors.",
+      "tags": [
+        "glass",
+        "dark",
+        "brass"
+      ],
+      "hashtag": "#sideboard"
+    },
+    {
+      "no": 3,
+      "name": "Soft-Corner Cabinet",
+      "summary": "A light wood cabinet with softly rounded corners on a slim recessed plinth.",
+      "more": "It comes tall with glass or wood doors, glass over wood doors, or as a long or short sideboard.",
+      "tags": [
+        "glass",
+        "light"
+      ],
+      "hashtag": "#storagecabinet"
+    },
+    {
+      "no": 4,
+      "name": "Ring-Pull Cabinet",
+      "summary": "A warm brown wood cabinet with brass ring pulls, on slim legs.",
+      "more": "The tall version has glass or wood doors, and the sideboards come with a row of drawers on top or with doors only.",
+      "tags": [
+        "glass",
+        "brass"
+      ],
+      "hashtag": "#sideboard"
+    },
+    {
+      "no": 5,
+      "name": "Reeded Bookcase Cabinet",
+      "summary": "Light wood reeding with rounded ends, as closed cabinets, glass cabinets or open bookcases.",
+      "more": "It comes with reeded doors, glass doors, or open shelves over a reeded cupboard, plus a long low sideboard.",
+      "tags": [
+        "glass",
+        "light",
+        "texture"
+      ],
+      "hashtag": "#bookcase"
+    },
+    {
+      "no": 6,
+      "name": "Sculpted-Pull Cabinet",
+      "summary": "A dark wood cabinet with shaped brass pulls set into the doors, on square legs.",
+      "more": "It comes tall with glass or wood doors, and as sideboards and low consoles with wood or glass doors.",
+      "tags": [
+        "glass",
+        "dark",
+        "brass"
+      ],
+      "hashtag": "#sideboard"
+    },
+    {
+      "no": 7,
+      "name": "Carved-Pull Cabinet",
+      "summary": "A light wood cabinet with pulls carved into the door edges, on slim legs.",
+      "more": "The pulls are carved into the doors. It comes tall with glass or wood doors, or as a long or short sideboard.",
+      "tags": [
+        "glass",
+        "light",
+        "texture"
+      ],
+      "hashtag": "#sideboard"
+    },
+    {
+      "no": 8,
+      "name": "Plinth-Base Dark Cabinet",
+      "summary": "A dark wood cabinet with rounded corners, a recessed plinth and textured brass-tone pulls.",
+      "more": "It comes tall with glass or wood doors, or as a sideboard with doors or with doors and drawers.",
+      "tags": [
+        "glass",
+        "dark",
+        "brass"
+      ],
+      "hashtag": "#sideboard"
+    },
+    {
+      "no": 9,
+      "name": "Wave-Front Cabinet",
+      "summary": "A dark wood cabinet whose front bows in and out in soft waves.",
+      "more": "The front curves in and out along its length. It comes as a tall cabinet or a long sideboard.",
+      "tags": [
+        "dark"
+      ],
+      "hashtag": "#sideboard"
+    },
+    {
+      "no": 10,
+      "name": "Framed Panel Cabinet",
+      "summary": "A square-cut wood cabinet with flat panel doors set inside a deep frame.",
+      "more": "The doors sit inside a deep square frame. It comes as a tall glass cabinet or a long sideboard.",
+      "tags": [
+        "glass"
+      ],
+      "hashtag": "#sideboard"
+    },
+    {
+      "no": 11,
+      "name": "Waterfall Reeded Cabinet",
+      "summary": "A light wood cabinet whose top curves down into the sides, with reeded doors.",
+      "more": "The top curves down into the sides. It comes as a tall cabinet, open shelves over doors, or a long sideboard.",
+      "tags": [
+        "light",
+        "texture"
+      ],
+      "hashtag": "#sideboard"
+    },
+    {
+      "no": 12,
+      "name": "Carved-Front Cabinet",
+      "summary": "A natural wood cabinet with a deep carved ripple texture across the doors.",
+      "more": "The doors are carved with a rippled texture. There's a tall cabinet, a brass-tone open shelf over a cupboard, and long sideboards.",
+      "tags": [
+        "light",
+        "texture",
+        "brass"
+      ],
+      "hashtag": "#sideboard"
+    },
+    {
+      "no": 13,
+      "name": "Cane-Panel Cabinet",
+      "summary": "Light wood framing around woven cane panels, with rounded corners.",
+      "more": "The doors are woven cane in a light wood frame. It comes tall, as open shelves over a cupboard, or as a sideboard.",
+      "tags": [
+        "light",
+        "texture"
+      ],
+      "hashtag": "#canefurniture"
+    },
+    {
+      "no": 14,
+      "name": "Flush-Door Cabinet",
+      "summary": "A plain light wood cabinet with flush doors and slim finger pulls along the top edge.",
+      "more": "It comes tall with glass or wood doors, or as a sideboard, and is also shown in a darker brown.",
+      "tags": [
+        "glass",
+        "dark",
+        "light"
+      ],
+      "hashtag": "#sideboard"
+    },
+    {
+      "no": 15,
+      "name": "Bracket-Foot Cabinet",
+      "summary": "A natural wood cabinet on shaped bracket feet, with small brass knobs.",
+      "more": "It comes tall with glass or wood doors, as open shelves over a cupboard, or as a sideboard.",
+      "tags": [
+        "glass",
+        "light",
+        "brass"
+      ],
+      "hashtag": "#bookcase"
+    },
+    {
+      "no": 16,
+      "name": "Cornice-Top Cabinet",
+      "summary": "A traditional dark wood cabinet with a carved cornice, panelled doors and a deep plinth.",
+      "more": "It comes as a tall closed cabinet, a low glass-door cabinet, or a sideboard with drawers on top.",
+      "tags": [
+        "glass",
+        "dark",
+        "texture"
+      ],
+      "hashtag": "#sideboard"
+    },
+    {
+      "no": 17,
+      "name": "Long-Pull Charcoal Cabinet",
+      "summary": "A charcoal wood cabinet with framed doors and long dark bar pulls.",
+      "more": "It comes tall, as sideboards with drawers, and as low consoles with glass or wood doors. It's also shown in gray.",
+      "tags": [
+        "glass",
+        "dark"
+      ],
+      "hashtag": "#sideboard"
+    },
+    {
+      "no": 18,
+      "name": "Brass-Corner Cabinet",
+      "summary": "A rustic dark wood cabinet with brass corner brackets and brass bar pulls.",
+      "more": "Brass brackets cap the corners. It comes tall, as glass over wood doors, or as sideboards, and is also shown in a pale gray wash.",
+      "tags": [
+        "glass",
+        "dark",
+        "light",
+        "brass"
+      ],
+      "hashtag": "#sideboard"
+    },
+    {
+      "no": 19,
+      "name": "Shagreen-Look Cabinet",
+      "summary": "A cabinet wrapped in a textured shagreen-look finish, edged in thin brass-tone trim.",
+      "more": "The finish has a fine pebbled texture, edged in brass tone. It comes tall or as a sideboard, in gray or pale cream.",
+      "tags": [
+        "light",
+        "brass"
+      ],
+      "hashtag": "#sideboard"
+    },
+    {
+      "no": 20,
+      "name": "Slim-Plinth Wood Cabinet",
+      "summary": "A warm natural wood cabinet with softly rounded edges on a slim recessed plinth.",
+      "more": "It comes tall with glass or wood doors, as a short glass cabinet, or as a long console with drawers.",
+      "tags": [
+        "glass",
+        "light"
+      ],
+      "hashtag": "#sideboard"
+    },
+    {
+      "no": 21,
+      "name": "Rolled-Base Cabinet",
+      "summary": "A brown wood cabinet with a rounded, rolled base and small notch pulls.",
+      "more": "The base and top roll outward. It comes tall with glass or wood doors, or as a sideboard with wood or glass doors.",
+      "tags": [
+        "glass"
+      ],
+      "hashtag": "#sideboard"
+    },
+    {
+      "no": 22,
+      "name": "Soft-Edge Cabinet",
+      "summary": "Tall cabinets with softly rounded edges, in a knotty natural wood or a dark finish.",
+      "more": "The tall cabinet comes with glass or wood doors in natural or dark wood, and there's a gently curved sideboard.",
+      "tags": [
+        "glass",
+        "dark",
+        "light"
+      ],
+      "hashtag": "#storagecabinet"
+    }
+  ],
+  "hero_grid": [
+    1,
+    3,
+    6,
+    13
+  ]
+}

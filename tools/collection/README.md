@@ -86,6 +86,22 @@ hold the partner's name and codes).
 7. **Publish**: commit, push `gh-pages` first (production builds from it),
    then `main`.
 
+## Adding a collection from ready-made posts
+
+When the posts already exist (1080x1350 images in this layout plus a
+captions.txt with one block per post), `import_posts.py` builds the
+collection from them: it cuts the product photo out of each post, reads the
+names and descriptions from the captions, copies the posts, and marks the
+collection live. Each piece gets one photo.
+
+```bash
+python3 tools/collection/import_posts.py "path/to/Sofas and Sectionals" tools/collection/imports/sofas.json
+python3 tools/collection/build.py pages
+```
+
+The configs in `imports/` hold each collection's title, intro, filters, the
+four pieces shown in the header, and which posts use a room photo.
+
 ## Posting to Instagram
 
 `collection-posts.html` has every post with Download, Copy caption and Copy

@@ -1,0 +1,303 @@
+{
+  "slug": "sofas",
+  "title": "Sofas & Sectionals",
+  "singular": "Sofa",
+  "noun": "sofa",
+  "lead": "Deep, cushioned sofas, curved and modular pieces, and sectionals in chaise, corner and U shapes.",
+  "intro": "Every sofa has a number, like Sofa No. 07. Ask about it by number and we will come back with sizes, finishes, pricing and lead time.",
+  "source": "Imported from ready-made posts (tools/collection/import_posts.py)",
+  "hashtags": [
+    "#sofadesign",
+    "#nycinteriors",
+    "#livingroominspo"
+  ],
+  "filters": [
+    {
+      "tag": "sectional",
+      "label": "Sectionals"
+    },
+    {
+      "tag": "curved",
+      "label": "Curved"
+    },
+    {
+      "tag": "modular",
+      "label": "Modular"
+    },
+    {
+      "tag": "boucle",
+      "label": "Bouclé look"
+    }
+  ],
+  "models": [
+    {
+      "no": 1,
+      "name": "Pillow-Arm Deep Sofa",
+      "summary": "A white sofa with deep, soft cushions and low arms topped with loose pillows.",
+      "more": "It is shown as a sofa and as chaise, corner and U-shaped sectionals, all in white.",
+      "tags": [
+        "sectional"
+      ],
+      "hashtag": "#sectionalsofa"
+    },
+    {
+      "no": 2,
+      "name": "Plump-Cushion Sofa",
+      "summary": "A white sofa with plump seat and back cushions, with a square or a softly sloped arm.",
+      "more": "Choose the square arm or the sloped arm, as a sofa or a chaise or U-shaped sectional.",
+      "tags": [
+        "sectional"
+      ],
+      "hashtag": "#sectionalsofa"
+    },
+    {
+      "no": 3,
+      "name": "Track-Arm Sofa",
+      "summary": "A tailored sofa with square track arms and low wood block feet.",
+      "more": "It comes with two or three seat cushions, and as chaise and U-shaped sectionals, shown in light gray and oatmeal.",
+      "tags": [
+        "sectional"
+      ],
+      "hashtag": "#livingroominspo"
+    },
+    {
+      "no": 4,
+      "name": "Low Square-Arm Sofa",
+      "summary": "A long, low sofa with a square or sloped arm, on wood feet or skirted to the floor.",
+      "more": "The arm comes square or sloped, and the base tailored on wood feet or skirted to the floor.",
+      "tags": [],
+      "hashtag": "#livingroominspo"
+    },
+    {
+      "no": 5,
+      "name": "Lumbar-Pillow Sofa",
+      "summary": "A linen-look sofa with a bench seat and long lumbar pillows along the back.",
+      "more": "It comes with square or sloped arms, tailored or skirted, as sectionals and as a sleeper sofa.",
+      "tags": [
+        "sectional"
+      ],
+      "hashtag": "#livingroominspo"
+    },
+    {
+      "no": 6,
+      "name": "Deep Modular Sofa",
+      "summary": "A deep sofa with wide low arms and loose back cushions, made in modular pieces.",
+      "more": "The modular pieces make long, curved or U-shaped sectionals, shown in oatmeal and cream.",
+      "tags": [
+        "sectional",
+        "curved",
+        "modular"
+      ],
+      "hashtag": "#modularsofa"
+    },
+    {
+      "no": 7,
+      "name": "Rounded Reclining Sofa",
+      "summary": "A cream sofa built from soft, rounded blocks, with seats that recline.",
+      "more": "The seats recline with pull-out footrests, as a sofa or a corner sectional.",
+      "tags": [
+        "sectional",
+        "curved"
+      ],
+      "hashtag": "#reclinersofa"
+    },
+    {
+      "no": 8,
+      "name": "Channel-Back Reclining Sofa",
+      "summary": "A cream reclining sofa with horizontal channels across the back.",
+      "more": "The seats recline, and it also comes as a sectional with a curved corner.",
+      "tags": [
+        "sectional",
+        "curved"
+      ],
+      "hashtag": "#reclinersofa"
+    },
+    {
+      "no": 9,
+      "name": "Low Platform Sofa",
+      "summary": "A low camel sofa with wide flat arms that work as ledges, on a slim plinth.",
+      "more": "The wide arms double as ledges, and it comes as chaise, corner and U-shaped sectionals.",
+      "tags": [
+        "sectional"
+      ],
+      "hashtag": "#sectionalsofa"
+    },
+    {
+      "no": 10,
+      "name": "Built-In Arm Sofa",
+      "summary": "A camel sofa with high square arms set flush with the back and one long bench cushion.",
+      "more": "It is shown as a sofa and as corner and U-shaped sectionals in camel.",
+      "tags": [
+        "sectional"
+      ],
+      "hashtag": "#livingroominspo"
+    },
+    {
+      "no": 11,
+      "name": "Rounded-End Sofa",
+      "summary": "A cream sofa whose rounded ends wrap around a long bench seat.",
+      "more": "There is also a U-shaped version with a rounded chaise at each end.",
+      "tags": [
+        "sectional",
+        "curved"
+      ],
+      "hashtag": "#curvedsofa"
+    },
+    {
+      "no": 12,
+      "name": "Serpentine Curved Sofa",
+      "summary": "A camel sofa with a gently curved back, on a dark recessed base.",
+      "more": "It comes as a sofa, a chaise sofa and as crescent and curved sectionals.",
+      "tags": [
+        "sectional",
+        "curved"
+      ],
+      "hashtag": "#curvedsofa"
+    },
+    {
+      "no": 13,
+      "name": "Pebble Modular Sofa",
+      "summary": "Rounded, pebble-shaped seat pieces with separate back pads, joined in gentle curves.",
+      "more": "The rounded pieces join in curved runs, with the back pads placed along the top.",
+      "tags": [
+        "curved",
+        "modular"
+      ],
+      "hashtag": "#modularsofa"
+    },
+    {
+      "no": 14,
+      "name": "Slim-Arm Sofa on Legs",
+      "summary": "A white sofa with slim sloped arms, raised on slim legs.",
+      "more": "It is shown in white on slim legs and in gray on wood legs, as a sofa and as sectionals.",
+      "tags": [
+        "sectional"
+      ],
+      "hashtag": "#livingroominspo"
+    },
+    {
+      "no": 15,
+      "name": "Bouclé-Look Sofa",
+      "summary": "A cream sofa in a textured bouclé-look fabric, with low rounded arms.",
+      "more": "It comes as a sofa and as chaise and corner sectionals, in textured cream.",
+      "tags": [
+        "sectional",
+        "curved",
+        "boucle"
+      ],
+      "hashtag": "#bouclesofa"
+    },
+    {
+      "no": 16,
+      "name": "Sculpted Curve Sofa",
+      "summary": "A camel sofa where the back and arms form one flowing curve.",
+      "more": "It comes with a straight or wave-shaped back, and as an asymmetric chaise sofa.",
+      "tags": [
+        "sectional",
+        "curved"
+      ],
+      "hashtag": "#curvedsofa"
+    },
+    {
+      "no": 17,
+      "name": "Rolled-Arm Plinth Sofa",
+      "summary": "A camel sofa with round rolled arms, on a slim plinth.",
+      "more": "It also comes as chaise and U-shaped sectionals with the same rolled arms.",
+      "tags": [
+        "sectional",
+        "curved"
+      ],
+      "hashtag": "#livingroominspo"
+    },
+    {
+      "no": 18,
+      "name": "Biscuit-Tufted Sofa",
+      "summary": "A low sofa covered in square biscuit tufting on the seat, back and arms.",
+      "more": "It comes as a sofa and as modular chaise, corner and U-shaped sectionals.",
+      "tags": [
+        "sectional",
+        "modular"
+      ],
+      "hashtag": "#modularsofa"
+    },
+    {
+      "no": 19,
+      "name": "Grid-Stitched Low Sofa",
+      "summary": "A low camel sofa with square stitching across the seat and back.",
+      "more": "It is made in modular pieces for long runs and U-shaped sectionals.",
+      "tags": [
+        "sectional",
+        "modular"
+      ],
+      "hashtag": "#modularsofa"
+    },
+    {
+      "no": 20,
+      "name": "Block Modular Sofa",
+      "summary": "A low modular sofa with block arms and loose seat cushions.",
+      "more": "It is shown in cream and gray, as a sofa and as long, corner and U-shaped sectionals.",
+      "tags": [
+        "sectional",
+        "modular"
+      ],
+      "hashtag": "#modularsofa"
+    },
+    {
+      "no": 21,
+      "name": "Wraparound-Back Sofa",
+      "summary": "A camel sofa whose rounded back curves down into the arms, with a slim outlined edge.",
+      "more": "The rounded back wraps into the arms, outlined in a slim edge.",
+      "tags": [
+        "curved"
+      ],
+      "hashtag": "#curvedsofa"
+    },
+    {
+      "no": 22,
+      "name": "Feather-Pillow Sofa",
+      "summary": "A cream sofa with loose, flange-edged back pillows and slightly sloped arms.",
+      "more": "It comes as a sofa and as chaise and U-shaped sectionals, in cream or white.",
+      "tags": [
+        "sectional"
+      ],
+      "hashtag": "#sectionalsofa"
+    },
+    {
+      "no": 23,
+      "name": "Bolster Curved Sofa",
+      "summary": "A white curved sofa in a bouclé-look fabric, with round bolster pillows on small wood feet.",
+      "more": "It sits on small wood feet, with round bolsters along the curved back.",
+      "tags": [
+        "curved",
+        "boucle"
+      ],
+      "hashtag": "#curvedsofa"
+    },
+    {
+      "no": 24,
+      "name": "Deep Low-Arm Sofa",
+      "summary": "A sofa with thin low arms, a very deep seat and two large back cushions.",
+      "more": "It comes as a sofa and as chaise and corner sectionals, in cream or white.",
+      "tags": [
+        "sectional"
+      ],
+      "hashtag": "#livingroominspo"
+    },
+    {
+      "no": 25,
+      "name": "Buttoned Bouclé-Look Loveseat",
+      "summary": "A small cream loveseat in a bouclé-look fabric, with a buttoned back and flared arms.",
+      "more": "The flared arms and buttoned back sit on splayed wood legs.",
+      "tags": [
+        "boucle"
+      ],
+      "hashtag": "#loveseat"
+    }
+  ],
+  "hero_grid": [
+    1,
+    12,
+    9,
+    23
+  ]
+}

@@ -1,0 +1,616 @@
+{
+  "stage_bg": "#F8F7F3",
+  "models": {
+    "armchair-01": [
+      {
+        "src": "collection/armchairs/img/armchair-01-1.webp",
+        "thumb": "collection/armchairs/img/armchair-01-1-t.webp",
+        "w": 588,
+        "h": 604,
+        "kind": "product",
+        "i": 0
+      }
+    ],
+    "armchair-02": [
+      {
+        "src": "collection/armchairs/img/armchair-02-1.webp",
+        "thumb": "collection/armchairs/img/armchair-02-1-t.webp",
+        "w": 765,
+        "h": 630,
+        "kind": "product",
+        "i": 0
+      }
+    ],
+    "armchair-03": [
+      {
+        "src": "collection/armchairs/img/armchair-03-1.webp",
+        "thumb": "collection/armchairs/img/armchair-03-1-t.webp",
+        "w": 717,
+        "h": 642,
+        "kind": "product",
+        "i": 0
+      }
+    ],
+    "armchair-04": [
+      {
+        "src": "collection/armchairs/img/armchair-04-1.webp",
+        "thumb": "collection/armchairs/img/armchair-04-1-t.webp",
+        "w": 703,
+        "h": 634,
+        "kind": "product",
+        "i": 0
+      }
+    ],
+    "armchair-05": [
+      {
+        "src": "collection/armchairs/img/armchair-05-1.webp",
+        "thumb": "collection/armchairs/img/armchair-05-1-t.webp",
+        "w": 609,
+        "h": 629,
+        "kind": "product",
+        "i": 0
+      }
+    ],
+    "armchair-06": [
+      {
+        "src": "collection/armchairs/img/armchair-06-1.webp",
+        "thumb": "collection/armchairs/img/armchair-06-1-t.webp",
+        "w": 696,
+        "h": 630,
+        "kind": "product",
+        "i": 0
+      }
+    ],
+    "armchair-07": [
+      {
+        "src": "collection/armchairs/img/armchair-07-1.webp",
+        "thumb": "collection/armchairs/img/armchair-07-1-t.webp",
+        "w": 715,
+        "h": 637,
+        "kind": "product",
+        "i": 0
+      }
+    ],
+    "armchair-08": [
+      {
+        "src": "collection/armchairs/img/armchair-08-1.webp",
+        "thumb": "collection/armchairs/img/armchair-08-1-t.webp",
+        "w": 741,
+        "h": 647,
+        "kind": "product",
+        "i": 0
+      }
+    ],
+    "armchair-09": [
+      {
+        "src": "collection/armchairs/img/armchair-09-1.webp",
+        "thumb": "collection/armchairs/img/armchair-09-1-t.webp",
+        "w": 625,
+        "h": 588,
+        "kind": "product",
+        "i": 0
+      }
+    ],
+    "armchair-10": [
+      {
+        "src": "collection/armchairs/img/armchair-10-1.webp",
+        "thumb": "collection/armchairs/img/armchair-10-1-t.webp",
+        "w": 611,
+        "h": 614,
+        "kind": "product",
+        "i": 0
+      }
+    ],
+    "armchair-11": [
+      {
+        "src": "collection/armchairs/img/armchair-11-1.webp",
+        "thumb": "collection/armchairs/img/armchair-11-1-t.webp",
+        "w": 672,
+        "h": 627,
+        "kind": "product",
+        "i": 0
+      }
+    ],
+    "armchair-12": [
+      {
+        "src": "collection/armchairs/img/armchair-12-1.webp",
+        "thumb": "collection/armchairs/img/armchair-12-1-t.webp",
+        "w": 850,
+        "h": 620,
+        "kind": "product",
+        "i": 0
+      }
+    ],
+    "armchair-13": [
+      {
+        "src": "collection/armchairs/img/armchair-13-1.webp",
+        "thumb": "collection/armchairs/img/armchair-13-1-t.webp",
+        "w": 704,
+        "h": 633,
+        "kind": "product",
+        "i": 0
+      }
+    ],
+    "armchair-14": [
+      {
+        "src": "collection/armchairs/img/armchair-14-1.webp",
+        "thumb": "collection/armchairs/img/armchair-14-1-t.webp",
+        "w": 731,
+        "h": 618,
+        "kind": "product",
+        "i": 0
+      }
+    ],
+    "armchair-15": [
+      {
+        "src": "collection/armchairs/img/armchair-15-1.webp",
+        "thumb": "collection/armchairs/img/armchair-15-1-t.webp",
+        "w": 695,
+        "h": 643,
+        "kind": "product",
+        "i": 0
+      }
+    ],
+    "armchair-16": [
+      {
+        "src": "collection/armchairs/img/armchair-16-1.webp",
+        "thumb": "collection/armchairs/img/armchair-16-1-t.webp",
+        "w": 761,
+        "h": 635,
+        "kind": "product",
+        "i": 0
+      }
+    ],
+    "armchair-17": [
+      {
+        "src": "collection/armchairs/img/armchair-17-1.webp",
+        "thumb": "collection/armchairs/img/armchair-17-1-t.webp",
+        "w": 819,
+        "h": 613,
+        "kind": "product",
+        "i": 0
+      }
+    ],
+    "armchair-18": [
+      {
+        "src": "collection/armchairs/img/armchair-18-1.webp",
+        "thumb": "collection/armchairs/img/armchair-18-1-t.webp",
+        "w": 785,
+        "h": 591,
+        "kind": "product",
+        "i": 0
+      }
+    ],
+    "armchair-19": [
+      {
+        "src": "collection/armchairs/img/armchair-19-1.webp",
+        "thumb": "collection/armchairs/img/armchair-19-1-t.webp",
+        "w": 778,
+        "h": 630,
+        "kind": "product",
+        "i": 0
+      }
+    ],
+    "armchair-20": [
+      {
+        "src": "collection/armchairs/img/armchair-20-1.webp",
+        "thumb": "collection/armchairs/img/armchair-20-1-t.webp",
+        "w": 747,
+        "h": 616,
+        "kind": "product",
+        "i": 0
+      }
+    ],
+    "armchair-21": [
+      {
+        "src": "collection/armchairs/img/armchair-21-1.webp",
+        "thumb": "collection/armchairs/img/armchair-21-1-t.webp",
+        "w": 720,
+        "h": 710,
+        "kind": "product",
+        "i": 0
+      }
+    ],
+    "armchair-22": [
+      {
+        "src": "collection/armchairs/img/armchair-22-1.webp",
+        "thumb": "collection/armchairs/img/armchair-22-1-t.webp",
+        "w": 745,
+        "h": 687,
+        "kind": "product",
+        "i": 0
+      }
+    ],
+    "armchair-23": [
+      {
+        "src": "collection/armchairs/img/armchair-23-1.webp",
+        "thumb": "collection/armchairs/img/armchair-23-1-t.webp",
+        "w": 748,
+        "h": 694,
+        "kind": "product",
+        "i": 0
+      }
+    ],
+    "armchair-24": [
+      {
+        "src": "collection/armchairs/img/armchair-24-1.webp",
+        "thumb": "collection/armchairs/img/armchair-24-1-t.webp",
+        "w": 839,
+        "h": 673,
+        "kind": "product",
+        "i": 0
+      }
+    ],
+    "armchair-25": [
+      {
+        "src": "collection/armchairs/img/armchair-25-1.webp",
+        "thumb": "collection/armchairs/img/armchair-25-1-t.webp",
+        "w": 589,
+        "h": 701,
+        "kind": "room",
+        "i": 0
+      }
+    ],
+    "armchair-26": [
+      {
+        "src": "collection/armchairs/img/armchair-26-1.webp",
+        "thumb": "collection/armchairs/img/armchair-26-1-t.webp",
+        "w": 683,
+        "h": 699,
+        "kind": "product",
+        "i": 0
+      }
+    ],
+    "armchair-27": [
+      {
+        "src": "collection/armchairs/img/armchair-27-1.webp",
+        "thumb": "collection/armchairs/img/armchair-27-1-t.webp",
+        "w": 802,
+        "h": 692,
+        "kind": "product",
+        "i": 0
+      }
+    ],
+    "armchair-28": [
+      {
+        "src": "collection/armchairs/img/armchair-28-1.webp",
+        "thumb": "collection/armchairs/img/armchair-28-1-t.webp",
+        "w": 764,
+        "h": 664,
+        "kind": "product",
+        "i": 0
+      }
+    ],
+    "armchair-29": [
+      {
+        "src": "collection/armchairs/img/armchair-29-1.webp",
+        "thumb": "collection/armchairs/img/armchair-29-1-t.webp",
+        "w": 798,
+        "h": 697,
+        "kind": "product",
+        "i": 0
+      }
+    ],
+    "armchair-30": [
+      {
+        "src": "collection/armchairs/img/armchair-30-1.webp",
+        "thumb": "collection/armchairs/img/armchair-30-1-t.webp",
+        "w": 736,
+        "h": 696,
+        "kind": "product",
+        "i": 0
+      }
+    ],
+    "armchair-31": [
+      {
+        "src": "collection/armchairs/img/armchair-31-1.webp",
+        "thumb": "collection/armchairs/img/armchair-31-1-t.webp",
+        "w": 563,
+        "h": 651,
+        "kind": "product",
+        "i": 0
+      }
+    ],
+    "armchair-32": [
+      {
+        "src": "collection/armchairs/img/armchair-32-1.webp",
+        "thumb": "collection/armchairs/img/armchair-32-1-t.webp",
+        "w": 605,
+        "h": 701,
+        "kind": "room",
+        "i": 0
+      }
+    ],
+    "armchair-33": [
+      {
+        "src": "collection/armchairs/img/armchair-33-1.webp",
+        "thumb": "collection/armchairs/img/armchair-33-1-t.webp",
+        "w": 694,
+        "h": 661,
+        "kind": "product",
+        "i": 0
+      }
+    ],
+    "armchair-34": [
+      {
+        "src": "collection/armchairs/img/armchair-34-1.webp",
+        "thumb": "collection/armchairs/img/armchair-34-1-t.webp",
+        "w": 818,
+        "h": 669,
+        "kind": "product",
+        "i": 0
+      }
+    ],
+    "armchair-35": [
+      {
+        "src": "collection/armchairs/img/armchair-35-1.webp",
+        "thumb": "collection/armchairs/img/armchair-35-1-t.webp",
+        "w": 774,
+        "h": 690,
+        "kind": "product",
+        "i": 0
+      }
+    ],
+    "armchair-36": [
+      {
+        "src": "collection/armchairs/img/armchair-36-1.webp",
+        "thumb": "collection/armchairs/img/armchair-36-1-t.webp",
+        "w": 605,
+        "h": 690,
+        "kind": "product",
+        "i": 0
+      }
+    ],
+    "armchair-37": [
+      {
+        "src": "collection/armchairs/img/armchair-37-1.webp",
+        "thumb": "collection/armchairs/img/armchair-37-1-t.webp",
+        "w": 588,
+        "h": 701,
+        "kind": "room",
+        "i": 0
+      }
+    ],
+    "armchair-38": [
+      {
+        "src": "collection/armchairs/img/armchair-38-1.webp",
+        "thumb": "collection/armchairs/img/armchair-38-1-t.webp",
+        "w": 697,
+        "h": 677,
+        "kind": "product",
+        "i": 0
+      }
+    ],
+    "armchair-39": [
+      {
+        "src": "collection/armchairs/img/armchair-39-1.webp",
+        "thumb": "collection/armchairs/img/armchair-39-1-t.webp",
+        "w": 771,
+        "h": 689,
+        "kind": "product",
+        "i": 0
+      }
+    ],
+    "armchair-40": [
+      {
+        "src": "collection/armchairs/img/armchair-40-1.webp",
+        "thumb": "collection/armchairs/img/armchair-40-1-t.webp",
+        "w": 782,
+        "h": 692,
+        "kind": "product",
+        "i": 0
+      }
+    ],
+    "armchair-41": [
+      {
+        "src": "collection/armchairs/img/armchair-41-1.webp",
+        "thumb": "collection/armchairs/img/armchair-41-1-t.webp",
+        "w": 724,
+        "h": 681,
+        "kind": "product",
+        "i": 0
+      }
+    ],
+    "armchair-42": [
+      {
+        "src": "collection/armchairs/img/armchair-42-1.webp",
+        "thumb": "collection/armchairs/img/armchair-42-1-t.webp",
+        "w": 736,
+        "h": 689,
+        "kind": "product",
+        "i": 0
+      }
+    ],
+    "armchair-43": [
+      {
+        "src": "collection/armchairs/img/armchair-43-1.webp",
+        "thumb": "collection/armchairs/img/armchair-43-1-t.webp",
+        "w": 746,
+        "h": 675,
+        "kind": "product",
+        "i": 0
+      }
+    ],
+    "armchair-44": [
+      {
+        "src": "collection/armchairs/img/armchair-44-1.webp",
+        "thumb": "collection/armchairs/img/armchair-44-1-t.webp",
+        "w": 641,
+        "h": 684,
+        "kind": "product",
+        "i": 0
+      }
+    ],
+    "armchair-45": [
+      {
+        "src": "collection/armchairs/img/armchair-45-1.webp",
+        "thumb": "collection/armchairs/img/armchair-45-1-t.webp",
+        "w": 832,
+        "h": 697,
+        "kind": "product",
+        "i": 0
+      }
+    ],
+    "armchair-46": [
+      {
+        "src": "collection/armchairs/img/armchair-46-1.webp",
+        "thumb": "collection/armchairs/img/armchair-46-1-t.webp",
+        "w": 727,
+        "h": 691,
+        "kind": "product",
+        "i": 0
+      }
+    ],
+    "armchair-47": [
+      {
+        "src": "collection/armchairs/img/armchair-47-1.webp",
+        "thumb": "collection/armchairs/img/armchair-47-1-t.webp",
+        "w": 888,
+        "h": 604,
+        "kind": "product",
+        "i": 0
+      }
+    ],
+    "armchair-48": [
+      {
+        "src": "collection/armchairs/img/armchair-48-1.webp",
+        "thumb": "collection/armchairs/img/armchair-48-1-t.webp",
+        "w": 662,
+        "h": 684,
+        "kind": "product",
+        "i": 0
+      }
+    ],
+    "armchair-49": [
+      {
+        "src": "collection/armchairs/img/armchair-49-1.webp",
+        "thumb": "collection/armchairs/img/armchair-49-1-t.webp",
+        "w": 662,
+        "h": 694,
+        "kind": "product",
+        "i": 0
+      }
+    ],
+    "armchair-50": [
+      {
+        "src": "collection/armchairs/img/armchair-50-1.webp",
+        "thumb": "collection/armchairs/img/armchair-50-1-t.webp",
+        "w": 775,
+        "h": 701,
+        "kind": "product",
+        "i": 0
+      }
+    ],
+    "armchair-51": [
+      {
+        "src": "collection/armchairs/img/armchair-51-1.webp",
+        "thumb": "collection/armchairs/img/armchair-51-1-t.webp",
+        "w": 626,
+        "h": 655,
+        "kind": "product",
+        "i": 0
+      }
+    ],
+    "armchair-52": [
+      {
+        "src": "collection/armchairs/img/armchair-52-1.webp",
+        "thumb": "collection/armchairs/img/armchair-52-1-t.webp",
+        "w": 689,
+        "h": 689,
+        "kind": "product",
+        "i": 0
+      }
+    ],
+    "armchair-53": [
+      {
+        "src": "collection/armchairs/img/armchair-53-1.webp",
+        "thumb": "collection/armchairs/img/armchair-53-1-t.webp",
+        "w": 767,
+        "h": 679,
+        "kind": "product",
+        "i": 0
+      }
+    ],
+    "armchair-54": [
+      {
+        "src": "collection/armchairs/img/armchair-54-1.webp",
+        "thumb": "collection/armchairs/img/armchair-54-1-t.webp",
+        "w": 744,
+        "h": 655,
+        "kind": "product",
+        "i": 0
+      }
+    ],
+    "armchair-55": [
+      {
+        "src": "collection/armchairs/img/armchair-55-1.webp",
+        "thumb": "collection/armchairs/img/armchair-55-1-t.webp",
+        "w": 877,
+        "h": 557,
+        "kind": "product",
+        "i": 0
+      }
+    ],
+    "armchair-56": [
+      {
+        "src": "collection/armchairs/img/armchair-56-1.webp",
+        "thumb": "collection/armchairs/img/armchair-56-1-t.webp",
+        "w": 601,
+        "h": 671,
+        "kind": "product",
+        "i": 0
+      }
+    ],
+    "armchair-57": [
+      {
+        "src": "collection/armchairs/img/armchair-57-1.webp",
+        "thumb": "collection/armchairs/img/armchair-57-1-t.webp",
+        "w": 875,
+        "h": 619,
+        "kind": "product",
+        "i": 0
+      }
+    ],
+    "armchair-58": [
+      {
+        "src": "collection/armchairs/img/armchair-58-1.webp",
+        "thumb": "collection/armchairs/img/armchair-58-1-t.webp",
+        "w": 668,
+        "h": 683,
+        "kind": "product",
+        "i": 0
+      }
+    ],
+    "armchair-59": [
+      {
+        "src": "collection/armchairs/img/armchair-59-1.webp",
+        "thumb": "collection/armchairs/img/armchair-59-1-t.webp",
+        "w": 751,
+        "h": 639,
+        "kind": "product",
+        "i": 0
+      }
+    ],
+    "armchair-60": [
+      {
+        "src": "collection/armchairs/img/armchair-60-1.webp",
+        "thumb": "collection/armchairs/img/armchair-60-1-t.webp",
+        "w": 757,
+        "h": 645,
+        "kind": "product",
+        "i": 0
+      }
+    ],
+    "armchair-61": [
+      {
+        "src": "collection/armchairs/img/armchair-61-1.webp",
+        "thumb": "collection/armchairs/img/armchair-61-1-t.webp",
+        "w": 662,
+        "h": 672,
+        "kind": "product",
+        "i": 0
+      }
+    ]
+  },
+  "editorial": []
+}

@@ -1,0 +1,58 @@
+{
+ "slug": "dining",
+ "title": "Dining Tables",
+ "noun": "table",
+ "after": "armchairs",
+ "lead": "Round pedestal tables and long tables in wood, stone looks and metal.",
+ "intro": "Every table has a number, like Dining Table No. 08. Ask about it by number and we will come back with sizes, finishes, pricing and lead time.",
+ "filters": [
+  {
+   "tag": "round",
+   "label": "Round & oval",
+   "match": [
+    "\\bround\\b",
+    "\\boval\\b"
+   ]
+  },
+  {
+   "tag": "long",
+   "label": "Long tables",
+   "match": [
+    "\\blong\\b",
+    "rectangular"
+   ]
+  },
+  {
+   "tag": "pedestal",
+   "label": "Pedestal",
+   "match": [
+    "pedestal",
+    "\\bcolumn",
+    "\\bdrum\\b"
+   ]
+  },
+  {
+   "tag": "stone",
+   "label": "Stone look",
+   "match": [
+    "stone",
+    "marble",
+    "travertine"
+   ]
+  },
+  {
+   "tag": "wood",
+   "label": "Wood",
+   "match": [
+    "\\bwood"
+   ]
+  }
+ ],
+ "hero_grid": [
+  1,
+  4,
+  9,
+  23
+ ],
+ "rooms": []
+}

@@ -7,6 +7,26 @@
       "status": "live"
     },
     {
+      "slug": "sofas",
+      "title": "Sofas & Sectionals",
+      "status": "live"
+    },
+    {
+      "slug": "armchairs",
+      "title": "Armchairs",
+      "status": "live"
+    },
+    {
+      "slug": "dining",
+      "title": "Dining Tables",
+      "status": "live"
+    },
+    {
+      "slug": "cabinets",
+      "title": "Cabinets & Sideboards",
+      "status": "live"
+    },
+    {
       "slug": "desks",
       "title": "Desks & Bookcases",
       "status": "live"

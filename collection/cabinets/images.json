@@ -1,0 +1,226 @@
+{
+  "stage_bg": "#F8F7F3",
+  "models": {
+    "cabinet-01": [
+      {
+        "src": "collection/cabinets/img/cabinet-01-1.webp",
+        "thumb": "collection/cabinets/img/cabinet-01-1-t.webp",
+        "w": 939,
+        "h": 370,
+        "kind": "product",
+        "i": 0
+      }
+    ],
+    "cabinet-02": [
+      {
+        "src": "collection/cabinets/img/cabinet-02-1.webp",
+        "thumb": "collection/cabinets/img/cabinet-02-1-t.webp",
+        "w": 863,
+        "h": 396,
+        "kind": "product",
+        "i": 0
+      }
+    ],
+    "cabinet-03": [
+      {
+        "src": "collection/cabinets/img/cabinet-03-1.webp",
+        "thumb": "collection/cabinets/img/cabinet-03-1-t.webp",
+        "w": 944,
+        "h": 383,
+        "kind": "product",
+        "i": 0
+      }
+    ],
+    "cabinet-04": [
+      {
+        "src": "collection/cabinets/img/cabinet-04-1.webp",
+        "thumb": "collection/cabinets/img/cabinet-04-1-t.webp",
+        "w": 942,
+        "h": 373,
+        "kind": "product",
+        "i": 0
+      }
+    ],
+    "cabinet-05": [
+      {
+        "src": "collection/cabinets/img/cabinet-05-1.webp",
+        "thumb": "collection/cabinets/img/cabinet-05-1-t.webp",
+        "w": 935,
+        "h": 424,
+        "kind": "product",
+        "i": 0
+      }
+    ],
+    "cabinet-06": [
+      {
+        "src": "collection/cabinets/img/cabinet-06-1.webp",
+        "thumb": "collection/cabinets/img/cabinet-06-1-t.webp",
+        "w": 939,
+        "h": 471,
+        "kind": "product",
+        "i": 0
+      }
+    ],
+    "cabinet-07": [
+      {
+        "src": "collection/cabinets/img/cabinet-07-1.webp",
+        "thumb": "collection/cabinets/img/cabinet-07-1-t.webp",
+        "w": 941,
+        "h": 421,
+        "kind": "product",
+        "i": 0
+      }
+    ],
+    "cabinet-08": [
+      {
+        "src": "collection/cabinets/img/cabinet-08-1.webp",
+        "thumb": "collection/cabinets/img/cabinet-08-1-t.webp",
+        "w": 936,
+        "h": 452,
+        "kind": "product",
+        "i": 0
+      }
+    ],
+    "cabinet-09": [
+      {
+        "src": "collection/cabinets/img/cabinet-09-1.webp",
+        "thumb": "collection/cabinets/img/cabinet-09-1-t.webp",
+        "w": 939,
+        "h": 394,
+        "kind": "product",
+        "i": 0
+      }
+    ],
+    "cabinet-10": [
+      {
+        "src": "collection/cabinets/img/cabinet-10-1.webp",
+        "thumb": "collection/cabinets/img/cabinet-10-1-t.webp",
+        "w": 892,
+        "h": 352,
+        "kind": "product",
+        "i": 0
+      }
+    ],
+    "cabinet-11": [
+      {
+        "src": "collection/cabinets/img/cabinet-11-1.webp",
+        "thumb": "collection/cabinets/img/cabinet-11-1-t.webp",
+        "w": 946,
+        "h": 337,
+        "kind": "product",
+        "i": 0
+      }
+    ],
+    "cabinet-12": [
+      {
+        "src": "collection/cabinets/img/cabinet-12-1.webp",
+        "thumb": "collection/cabinets/img/cabinet-12-1-t.webp",
+        "w": 940,
+        "h": 320,
+        "kind": "product",
+        "i": 0
+      }
+    ],
+    "cabinet-13": [
+      {
+        "src": "collection/cabinets/img/cabinet-13-1.webp",
+        "thumb": "collection/cabinets/img/cabinet-13-1-t.webp",
+        "w": 940,
+        "h": 338,
+        "kind": "product",
+        "i": 0
+      }
+    ],
+    "cabinet-14": [
+      {
+        "src": "collection/cabinets/img/cabinet-14-1.webp",
+        "thumb": "collection/cabinets/img/cabinet-14-1-t.webp",
+        "w": 943,
+        "h": 280,
+        "kind": "product",
+        "i": 0
+      }
+    ],
+    "cabinet-15": [
+      {
+        "src": "collection/cabinets/img/cabinet-15-1.webp",
+        "thumb": "collection/cabinets/img/cabinet-15-1-t.webp",
+        "w": 863,
+        "h": 396,
+        "kind": "product",
+        "i": 0
+      }
+    ],
+    "cabinet-16": [
+      {
+        "src": "collection/cabinets/img/cabinet-16-1.webp",
+        "thumb": "collection/cabinets/img/cabinet-16-1-t.webp",
+        "w": 942,
+        "h": 450,
+        "kind": "product",
+        "i": 0
+      }
+    ],
+    "cabinet-17": [
+      {
+        "src": "collection/cabinets/img/cabinet-17-1.webp",
+        "thumb": "collection/cabinets/img/cabinet-17-1-t.webp",
+        "w": 933,
+        "h": 328,
+        "kind": "product",
+        "i": 0
+      }
+    ],
+    "cabinet-18": [
+      {
+        "src": "collection/cabinets/img/cabinet-18-1.webp",
+        "thumb": "collection/cabinets/img/cabinet-18-1-t.webp",
+        "w": 936,
+        "h": 349,
+        "kind": "product",
+        "i": 0
+      }
+    ],
+    "cabinet-19": [
+      {
+        "src": "collection/cabinets/img/cabinet-19-1.webp",
+        "thumb": "collection/cabinets/img/cabinet-19-1-t.webp",
+        "w": 931,
+        "h": 358,
+        "kind": "product",
+        "i": 0
+      }
+    ],
+    "cabinet-20": [
+      {
+        "src": "collection/cabinets/img/cabinet-20-1.webp",
+        "thumb": "collection/cabinets/img/cabinet-20-1-t.webp",
+        "w": 942,
+        "h": 296,
+        "kind": "product",
+        "i": 0
+      }
+    ],
+    "cabinet-21": [
+      {
+        "src": "collection/cabinets/img/cabinet-21-1.webp",
+        "thumb": "collection/cabinets/img/cabinet-21-1-t.webp",
+        "w": 939,
+        "h": 408,
+        "kind": "product",
+        "i": 0
+      }
+    ],
+    "cabinet-22": [
+      {
+        "src": "collection/cabinets/img/cabinet-22-1.webp",
+        "thumb": "collection/cabinets/img/cabinet-22-1-t.webp",
+        "w": 931,
+        "h": 441,
+        "kind": "product",
+        "i": 0
+      }
+    ]
+  },
+  "editorial": []
+}

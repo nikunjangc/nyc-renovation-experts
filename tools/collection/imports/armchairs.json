@@ -1,0 +1,70 @@
+{
+ "slug": "armchairs",
+ "title": "Armchairs",
+ "noun": "chair",
+ "after": "sofas",
+ "lead": "Tub and barrel chairs, wingbacks, bouclé lounge chairs and chairs framed in wood or metal.",
+ "intro": "Every chair has a number, like Armchair No. 12. Ask about it by number and we will come back with sizes, finishes, pricing and lead time.",
+ "filters": [
+  {
+   "tag": "tub",
+   "label": "Tub & barrel",
+   "match": [
+    "\\btub\\b",
+    "barrel"
+   ]
+  },
+  {
+   "tag": "boucle",
+   "label": "Bouclé look",
+   "match": [
+    "boucl"
+   ]
+  },
+  {
+   "tag": "wing",
+   "label": "Wingback",
+   "match": [
+    "wing"
+   ]
+  },
+  {
+   "tag": "lounge",
+   "label": "Lounge & recliners",
+   "match": [
+    "lounge",
+    "reclin",
+    "ottoman"
+   ]
+  },
+  {
+   "tag": "wood",
+   "label": "Wood",
+   "match": [
+    "\\bwood"
+   ]
+  },
+  {
+   "tag": "metal",
+   "label": "Metal",
+   "match": [
+    "brass",
+    "bronze",
+    "\\bcast\\b",
+    "metal",
+    "\\biron\\b"
+   ]
+  }
+ ],
+ "hero_grid": [
+  14,
+  17,
+  26,
+  43
+ ],
+ "rooms": [
+  25,
+  32,
+  37
+ ]
+}

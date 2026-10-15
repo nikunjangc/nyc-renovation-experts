@@ -1,0 +1,51 @@
+{
+ "slug": "sofas",
+ "title": "Sofas & Sectionals",
+ "noun": "sofa",
+ "after": "beds",
+ "lead": "Deep, cushioned sofas, curved and modular pieces, and sectionals in chaise, corner and U shapes.",
+ "intro": "Every sofa has a number, like Sofa No. 07. Ask about it by number and we will come back with sizes, finishes, pricing and lead time.",
+ "filters": [
+  {
+   "tag": "sectional",
+   "label": "Sectionals",
+   "match": [
+    "sectional",
+    "chaise",
+    "\\bcorner\\b",
+    "u-shaped"
+   ]
+  },
+  {
+   "tag": "curved",
+   "label": "Curved",
+   "match": [
+    "curv",
+    "serpentine",
+    "crescent",
+    "\\bround"
+   ]
+  },
+  {
+   "tag": "modular",
+   "label": "Modular",
+   "match": [
+    "modular"
+   ]
+  },
+  {
+   "tag": "boucle",
+   "label": "Bouclé look",
+   "match": [
+    "boucl"
+   ]
+  }
+ ],
+ "hero_grid": [
+  1,
+  12,
+  9,
+  23
+ ],
+ "rooms": []
+}

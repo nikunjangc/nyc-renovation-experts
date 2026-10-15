@@ -1,0 +1,58 @@
+{
+ "slug": "cabinets",
+ "title": "Cabinets & Sideboards",
+ "noun": "cabinet",
+ "after": "dining",
+ "lead": "Sideboards, tall cabinets and low consoles with reeded, carved, cane, glass and plain fronts, in light and dark wood.",
+ "intro": "Every cabinet has a number, like Cabinet No. 05. Ask about it by number and we will come back with sizes, finishes, pricing and lead time.",
+ "filters": [
+  {
+   "tag": "glass",
+   "label": "Glass doors",
+   "match": [
+    "glass"
+   ]
+  },
+  {
+   "tag": "dark",
+   "label": "Dark wood",
+   "match": [
+    "\\bdark",
+    "charcoal"
+   ]
+  },
+  {
+   "tag": "light",
+   "label": "Light wood",
+   "match": [
+    "\\blight\\b",
+    "natural",
+    "\\bpale\\b"
+   ]
+  },
+  {
+   "tag": "texture",
+   "label": "Reeded & carved",
+   "match": [
+    "reed",
+    "carv",
+    "flut",
+    "\\bcane\\b"
+   ]
+  },
+  {
+   "tag": "brass",
+   "label": "Brass details",
+   "match": [
+    "brass"
+   ]
+  }
+ ],
+ "hero_grid": [
+  1,
+  3,
+  6,
+  13
+ ],
+ "rooms": []
+}

@@ -403,7 +403,9 @@ def collection_page(slug):
     page = page_name(slug)
     eds = imgs["editorial"]
     split = hero_photo(cat, imgs) if not eds else None
-    hero = split or (eds[cat.get("page_hero", 0)] if eds else photos_of(imgs, cat, models[0])[0])
+    grid = hero_grid(cat, imgs) if not eds and not split else None
+    hero = split or (grid[0] if grid else None) or (eds[cat.get("page_hero", 0)] if eds
+                                                      else photos_of(imgs, cat, models[0])[0])
     n_photos = sum(len(photos_of(imgs, cat, m)) for m in models)
     mixed = is_mixed(cat)
 
@@ -441,7 +443,7 @@ def collection_page(slug):
         sections.append(model_section(cat, m, photos_of(imgs, cat, m), flip=idx % 2 == 1))
 
     main = f"""    <main class="pc pc-catalog" style="--pc-stage: {esc(imgs.get('stage_bg', STAGE_BG))}">
-{hero_block(cat, hero, len(models), n_photos, split is not None)}
+{hero_block(cat, hero, len(models), n_photos, split is not None, grid)}
 
       <section class="pc-intro" aria-labelledby="pc-index-title">
         <div class="pc-wrap">
@@ -496,12 +498,36 @@ def hero_photo(cat, imgs):
     sys.exit(f"hero_photo {hp} is not in images.json; run build.py images again")
 
 
-def hero_block(cat, hero, n_models, n_photos, split):
+def hero_grid(cat, imgs):
+    """Four product shots for the page header and landing card, for collections
+    with no room photos: catalog "hero_grid": [model numbers]."""
+    nos = cat.get("hero_grid")
+    if not nos:
+        return None
+    by_no = {m["no"]: m for m in cat["models"] if "singular" not in m}
+    return [photos_of(imgs, cat, by_no[n])[0] for n in nos if n in by_no][:4] or None
+
+
+def grid_cells(photos, alt, lazy):
+    return "".join(f'<span class="pc-grid-cell">{img_tag(ph["src"], ph["w"], ph["h"], alt, lazy=lazy)}</span>'
+                   for ph in photos)
+
+
+def hero_block(cat, hero, n_models, n_photos, split, grid=None):
     alt = f"{cat['title']} from the partner collection, in a room setting"
     text = f"""<nav class="pc-crumbs" aria-label="Breadcrumb"><a href="collection.html">Partner Collection</a><span aria-hidden="true">/</span>{esc(cat['title'])}</nav>
             <h1 class="pc-display">{esc(cat['title'])}</h1>
             <p class="pc-lead">{esc(cat['lead'])}</p>
-            <p class="pc-meta">{n_models} designs &middot; {n_photos} photos</p>"""
+            <p class="pc-meta">{n_models} designs{f" &middot; {n_photos} photos" if n_photos > n_models else ""}</p>"""
+    if grid:
+        return f"""      <header class="pc-hero pc-hero--split">
+        <div class="pc-wrap pc-split">
+          <div class="pc-split-text">
+            {text}
+          </div>
+          <div class="pc-split-img pc-split-grid">{grid_cells(grid, f"{cat['title']} from the partner collection", False)}</div>
+        </div>
+      </header>"""
     if split:
         return f"""      <header class="pc-hero pc-hero--split">
         <div class="pc-wrap pc-split">
@@ -541,8 +567,15 @@ def model_section(cat, m, photos, flip):
             f'<button type="button" class="pc-thumb{room}{on}"{cur} data-src="{esc(ph["src"])}" data-w="{ph["w"]}" '
             f'data-h="{ph["h"]}" data-kind="{ph["kind"]}" data-alt="{esc(alt)}" aria-label="Show photo {i + 1} of {len(photos)}">'
             f'{img_tag(ph["thumb"], *thumb_size(ph), "")}</button>')
-    details = "".join(f"<li>{esc(d)}</li>" for d in m["details"])
-    shown = "".join(f'<li><i style="--sw:{swatch(s)}" aria-hidden="true"></i>{esc(s)}</li>' for s in m["shown"])
+    details = "".join(f"<li>{esc(d)}</li>" for d in m.get("details", []))
+    shown = "".join(f'<li><i style="--sw:{swatch(s)}" aria-hidden="true"></i>{esc(s)}</li>' for s in m.get("shown", []))
+    details_html = f'<ul class="pc-details">{details}</ul>' if details else ""
+    shown_html = (f'<div class="pc-shown"><span class="pc-shown-label">Shown in</span><ul>{shown}</ul></div>'
+                  if shown else "")
+    more_html = f'<p class="pc-more">{esc(m["more"])}</p>' if not details and m.get("more") else ""
+    thumbs_html = f'<div class="pc-thumbs">{"".join(thumbs)}</div>' if len(photos) > 1 else ""
+    photos_note = (f"{len(photos)} photos &middot; tap a photo to enlarge" if len(photos) > 1
+                   else "Tap the photo to enlarge")
     stage_cls = "pc-stage is-room" if first["kind"] == "room" else "pc-stage"
     first_alt = f"{lab}, {m['name']}, photo 1 of {len(photos)}"
     return f"""      <section class="pc-model{' is-flip' if flip else ''}" id="{anchor(cat, m)}" data-tags="{esc(' '.join(m['tags']))}" data-label="{esc(lab)}" data-name="{esc(m['name'])}">
@@ -551,17 +584,16 @@ def model_section(cat, m, photos, flip):
             <button type="button" class="{stage_cls}" data-index="0" aria-label="Enlarge photo">
               {img_tag(first['src'], first['w'], first['h'], first_alt)}
             </button>
-            <div class="pc-thumbs">{''.join(thumbs)}</div>
+            {thumbs_html}
           </div>
           <div class="pc-info">
             <p class="pc-num" aria-hidden="true">{num(m['no'])}</p>
             <p class="pc-eyebrow">{esc(lab)}</p>
             <h2 class="pc-name">{esc(m['name'])}</h2>
             <p class="pc-summary">{esc(m['summary'])}</p>
-            <ul class="pc-details">{details}</ul>
-            <div class="pc-shown"><span class="pc-shown-label">Shown in</span><ul>{shown}</ul></div>
+            {more_html}{details_html}{shown_html}
             <a class="pc-ask" href="{quote_link(model_note(cat, m))}">Ask about {esc(ask)} <i class="bi bi-arrow-right" aria-hidden="true"></i></a>
-            <p class="pc-photos">{len(photos)} photos &middot; tap a photo to enlarge</p>
+            <p class="pc-photos">{photos_note}</p>
           </div>
         </div>
       </section>"""
@@ -583,17 +615,23 @@ def landing_page():
     cols = collections()
     lives = [c for c in cols if c["status"] == "live"]
     soons = [c for c in cols if c["status"] != "live"]
-    cards, hero = [], None
+    cards, hero, fallback = [], None, None
     for c in lives:
         cat, imgs = live(c["slug"])
         eds = imgs["editorial"]
+        grid = None if eds or hero_photo(cat, imgs) else hero_grid(cat, imgs)
         cover = (eds[cat.get("card_cover", 0)] if eds
-                 else hero_photo(cat, imgs) or photos_of(imgs, cat, cat["models"][0])[0])
-        if hero is None:
-            hero = eds[cat.get("landing_hero", 0)] if eds else cover
+                 else hero_photo(cat, imgs) or (grid[0] if grid else None)
+                 or photos_of(imgs, cat, cat["models"][0])[0])
+        if hero is None and eds:
+            hero = eds[cat.get("landing_hero", 0)]
+        fallback = fallback or cover
         n = len(cat["models"])
+        alt = f"{cat['title']} from the partner collection"
+        card_img = (f'<span class="pc-card-img pc-card-grid">{grid_cells(grid, alt, True)}</span>' if grid
+                    else f'<span class="pc-card-img">{img_tag(cover["src"], cover["w"], cover["h"], alt)}</span>')
         cards.append(f"""          <a class="pc-card" href="{page_name(c['slug'])}">
-            <span class="pc-card-img">{img_tag(cover['src'], cover['w'], cover['h'], f"{cat['title']} from the partner collection")}</span>
+            {card_img}
             <span class="pc-card-body">
               <span class="pc-eyebrow">{n} designs</span>
               <span class="pc-card-title">{esc(cat['title'])}</span>
@@ -601,6 +639,7 @@ def landing_page():
               <span class="pc-card-link">View the collection <i class="bi bi-arrow-right" aria-hidden="true"></i></span>
             </span>
           </a>""")
+    hero = hero or fallback
     soon = "".join(f"""
             <li class="pc-soon"><span class="pc-eyebrow">Coming soon</span><span class="pc-soon-title">{esc(c['title'])}</span></li>"""
                    for c in soons)
