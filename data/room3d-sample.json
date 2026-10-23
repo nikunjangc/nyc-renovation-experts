@@ -1,0 +1,23 @@
+{
+  "cameraHeightFt": 4.921,
+  "ceilingFt": 8.999,
+  "corners": [
+    [
+      9.35,
+      -7.448
+    ],
+    [
+      9.35,
+      6.562
+    ],
+    [
+      -7.71,
+      6.562
+    ],
+    [
+      -7.71,
+      -7.448
+    ]
+  ],
+  "note": "Sample room rendered by tools/room3d/sample_room.py. Feet; x = photo centre direction, z = to its right."
+}

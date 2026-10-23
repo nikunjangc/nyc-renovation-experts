@@ -16,6 +16,7 @@ const { segmentImage } = require('../backend/ds-segment');
 const { getObjectMask } = require('../backend/ds-mask');
 const { submitProductRender, getRenderStatus } = require('../backend/ds-render3d');
 const { compositeProduct } = require('../backend/ds-composite');
+const { eraseObject } = require('../backend/room-erase');
 require('dotenv').config();
 
 const app = express();
@@ -784,6 +785,25 @@ app.post('/api/ds-mask', rateLimiter, async (req, res) => {
     if (error.code === 'NOT_CONFIGURED') return res.status(503).json({ error: 'fal.ai not configured', hint: 'Set FAL_API_KEY in Vercel env vars' });
     res.status(error.status || 500).json({
       error: 'Mask failed',
+      upstream_message: (error.detail || error.message || '').toString().slice(0, 400),
+    });
+  }
+});
+
+// 3D Room: erase an object from a camera view of the 360 photo.
+app.options('/api/room-erase', (req, res) => { dsCors(req, res); res.status(200).send(); });
+app.post('/api/room-erase', rateLimiter, async (req, res) => {
+  dsCors(req, res);
+  try {
+    const { imageUrl, maskUrl } = req.body || {};
+    const data = await eraseObject({ imageUrl, maskUrl });
+    res.json(data);
+  } catch (error) {
+    console.error('room-erase error:', error.message);
+    dsCors(req, res);
+    if (error.code === 'NOT_CONFIGURED') return res.status(503).json({ error: 'fal.ai not configured', hint: 'Set FAL_API_KEY in Vercel env vars' });
+    res.status(error.status || 500).json({
+      error: error.status && error.status < 500 ? error.message : 'Erase failed',
       upstream_message: (error.detail || error.message || '').toString().slice(0, 400),
     });
   }

@@ -1,0 +1,222 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <base href="/">
+    <meta charset="utf-8" />
+    <title>Design Your Room in 3D | NYC Renovation Experts</title>
+    <meta content="width=device-width, initial-scale=1.0, viewport-fit=cover" name="viewport" />
+    <meta content="Scan your room with your phone camera and redesign it in 3D: paint the walls, change the floor, remove old furniture and place new pieces, live." name="description" />
+    <!-- Test page: kept out of search results until it's ready to launch. -->
+    <meta name="robots" content="noindex" />
+
+    <link href="img/favicon.ico" rel="icon" />
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link href="https://fonts.googleapis.com/css2?family=Roboto:wght@400;500&family=Poppins:wght@600;700&display=swap" rel="stylesheet" />
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.10.0/css/all.min.css" rel="stylesheet" />
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.4.1/font/bootstrap-icons.css" rel="stylesheet" />
+    <link href="css/bootstrap.min.css" rel="stylesheet" />
+    <link href="css/style.css" rel="stylesheet" />
+    <link href="css/room3d.css" rel="stylesheet" />
+  </head>
+
+  <body class="r3d-page">
+    <!-- Topbar -->
+    <div class="container-fluid bg-light p-0">
+      <div class="row gx-0 d-none d-lg-flex">
+        <div class="col-lg-7 px-5 text-start">
+          <div class="h-100 d-inline-flex align-items-center border-start border-end px-3">
+            <small class="fa fa-phone-alt me-2"></small><small>+1 (646) 444-2434</small>
+          </div>
+          <div class="h-100 d-inline-flex align-items-center border-end px-3">
+            <small class="far fa-envelope-open me-2"></small><small>info@nycrenovationexperts.com</small>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Navbar -->
+    <nav class="navbar navbar-expand-lg bg-white navbar-light sticky-top px-4 px-lg-5 py-lg-0">
+      <a href="index.html" class="navbar-brand d-flex align-items-center">
+        <h1 class="m-0"><i class="fa fa-building text-primary me-3"></i>NYC Renovation Experts</h1>
+      </a>
+      <button type="button" class="navbar-toggler" data-bs-toggle="collapse" data-bs-target="#navbarCollapse">
+        <span class="navbar-toggler-icon"></span>
+      </button>
+      <div class="collapse navbar-collapse" id="navbarCollapse">
+        <div class="navbar-nav ms-auto py-3 py-lg-0">
+          <a href="index.html" class="nav-item nav-link">Home</a>
+          <a href="about.html" class="nav-item nav-link">About Us</a>
+          <a href="service.html" class="nav-item nav-link">Our Services</a>
+          <a href="collection.html" class="nav-item nav-link">Collection</a>
+          <a href="designstudio.html" class="nav-item nav-link">Design Studio</a>
+          <a href="designstudio3d.html" class="nav-item nav-link">Design Studio 3D</a>
+          <a href="designstudio3d-premium.html" class="nav-item nav-link">3D Premium</a>
+          <a href="contact.html" class="nav-item nav-link">Contact Us</a>
+          <a href="quote.html" class="nav-item nav-link">Get Free Quote</a>
+        </div>
+      </div>
+    </nav>
+
+    <main class="r3d" id="r3d">
+      <!-- Start -->
+      <section class="r3d-start" id="r3d-start">
+        <div class="r3d-start-inner">
+          <div class="r3d-hero">
+            <div class="r3d-hero-text">
+              <p class="r3d-kicker"><i class="fas fa-cube"></i> 3D Room · beta</p>
+              <h1 class="r3d-title">Design your room in 3D</h1>
+              <p class="r3d-lead">Scan your room with your phone, then paint the walls, try a new floor, remove what you don't want and place new furniture. Everything changes live, like a game.</p>
+            </div>
+            <figure class="r3d-hero-img">
+              <img src="img/room3d/preview.jpg" width="920" height="924" alt="A living room in 3D, seen from above, with a sage green wall and a new white oak herringbone floor" />
+              <figcaption>Our sample room with a painted wall and a new floor.</figcaption>
+            </figure>
+          </div>
+          <div class="r3d-start-grid">
+            <button type="button" class="r3d-card r3d-card-main" id="r3d-scan">
+              <span class="r3d-card-icon"><i class="fas fa-camera"></i></span>
+              <strong>Scan my room</strong>
+              <span>Stand in the middle and turn slowly while your phone takes the photos. About a minute.</span>
+            </button>
+            <label class="r3d-card" for="r3d-upload">
+              <span class="r3d-card-icon"><i class="fas fa-globe-americas"></i></span>
+              <strong>Upload a 360 photo</strong>
+              <span>From a 360 camera or app (the photo is twice as wide as it is tall).</span>
+            </label>
+            <input type="file" id="r3d-upload" accept="image/jpeg,image/png,image/webp" hidden />
+            <button type="button" class="r3d-card" id="r3d-sample">
+              <span class="r3d-card-icon"><i class="fas fa-couch"></i></span>
+              <strong>Try a sample room</strong>
+              <span>See how it works before you scan.</span>
+            </button>
+            <button type="button" class="r3d-card" id="r3d-continue" hidden>
+              <span class="r3d-card-icon"><i class="fas fa-history"></i></span>
+              <strong>Continue my room</strong>
+              <span>Pick up where you left off on this device.</span>
+            </button>
+          </div>
+          <p class="r3d-note" id="r3d-desktop-note" hidden><i class="fas fa-mobile-alt"></i> Scanning uses a phone's camera and motion sensors. On a computer, try the sample room or upload a 360 photo, or open this page on your phone.</p>
+          <ol class="r3d-how">
+            <li><strong>Scan.</strong> Dots on the screen show where to point. The page takes the photos by itself.</li>
+            <li><strong>Mark the corners.</strong> Tap the floor in each corner so we know the room's shape.</li>
+            <li><strong>Redesign.</strong> Tap a wall to paint it, change the floor, remove things, and shop real furniture in 3D.</li>
+          </ol>
+          <p class="r3d-privacy">Your photos stay on your phone. They're only sent out when you use Remove (to an AI image service) or make a product 3D model.</p>
+        </div>
+      </section>
+
+      <!-- The 3D room -->
+      <section class="r3d-stage" id="r3d-stage" hidden>
+        <canvas id="r3d-canvas" aria-label="Your room in 3D"></canvas>
+        <div class="r3d-labels" id="r3d-labels"></div>
+
+        <div class="r3d-topbar">
+          <div class="r3d-seg" role="group" aria-label="View">
+            <button type="button" data-view="inside" class="active"><i class="fas fa-street-view"></i> Inside</button>
+            <button type="button" data-view="dollhouse"><i class="fas fa-cube"></i> Dollhouse</button>
+          </div>
+          <div class="r3d-top-actions">
+            <button type="button" class="r3d-round" id="r3d-gyro" title="Look around by moving your phone" hidden><i class="fas fa-mobile-alt"></i></button>
+            <button type="button" class="r3d-round" id="r3d-undo" title="Undo" disabled><i class="fas fa-undo"></i></button>
+            <button type="button" class="r3d-round" id="r3d-menu" title="More"><i class="fas fa-ellipsis-h"></i></button>
+          </div>
+        </div>
+
+        <div class="r3d-hint" id="r3d-hint" hidden></div>
+        <button type="button" class="r3d-pill r3d-photospot" id="r3d-photospot" hidden><i class="fas fa-crosshairs"></i> Back to photo spot</button>
+
+        <div class="r3d-layout" id="r3d-layout" hidden></div>
+        <div class="r3d-bubble" id="r3d-bubble" hidden></div>
+        <div class="r3d-itembar" id="r3d-itembar" hidden></div>
+
+        <nav class="r3d-tools" id="r3d-tools" hidden aria-label="Tools">
+          <button type="button" data-tool="paint"><i class="fas fa-paint-roller"></i><span>Paint</span></button>
+          <button type="button" data-tool="floor"><i class="fas fa-th-large"></i><span>Floor</span></button>
+          <button type="button" data-tool="furniture"><i class="fas fa-couch"></i><span>Furniture</span></button>
+          <button type="button" data-tool="shop"><i class="fas fa-shopping-bag"></i><span>Shop</span></button>
+          <button type="button" data-tool="remove"><i class="fas fa-eraser"></i><span>Remove</span></button>
+        </nav>
+
+        <div class="r3d-sheet" id="r3d-sheet" hidden>
+          <div class="r3d-sheet-head">
+            <strong id="r3d-sheet-title"></strong>
+            <button type="button" class="r3d-btn r3d-btn-ghost" id="r3d-sheet-close">Done</button>
+          </div>
+          <div class="r3d-sheet-body" id="r3d-sheet-body"></div>
+        </div>
+
+        <div class="r3d-toast" id="r3d-toast" hidden role="status"></div>
+      </section>
+
+      <div class="r3d-busy" id="r3d-busy" hidden>
+        <div class="r3d-busy-box">
+          <div class="r3d-spinner"></div>
+          <div id="r3d-busy-text">Working…</div>
+          <div class="r3d-bar"><span id="r3d-busy-bar"></span></div>
+        </div>
+      </div>
+
+      <div class="r3d-alert" id="r3d-alert" hidden role="alertdialog" aria-modal="true">
+        <div class="r3d-alert-box">
+          <p id="r3d-alert-text"></p>
+          <button type="button" class="r3d-btn r3d-btn-primary" id="r3d-alert-ok">OK</button>
+        </div>
+      </div>
+
+      <div id="r3d-capture-root"></div>
+    </main>
+
+    <!-- Footer -->
+    <div class="container-fluid bg-dark footer pt-5 r3d-footer">
+      <div class="container py-5">
+        <div class="row g-5">
+          <div class="col-lg-6 col-md-6">
+            <h1 class="text-white mb-4"><i class="fa fa-building text-primary me-3"></i>NYC Renovation Experts</h1>
+            <p>Your trusted partner for high-quality home and commercial renovations across New York City.</p>
+          </div>
+          <div class="col-lg-3 col-md-6">
+            <h4 class="text-light mb-4">Quick Links</h4>
+            <a class="btn btn-link" href="about.html">About Us</a>
+            <a class="btn btn-link" href="service.html">Our Services</a>
+            <a class="btn btn-link" href="designstudio.html">Design Studio</a>
+            <a class="btn btn-link" href="quote.html">Get Free Quote</a>
+          </div>
+          <div class="col-lg-3 col-md-6">
+            <h4 class="text-light mb-4">Address</h4>
+            <p><i class="fa fa-map-marker-alt me-3"></i>80 5th Ave, B1, New York, NY 10011</p>
+            <p><i class="fa fa-phone-alt me-3"></i>+1 (646) 444-2434</p>
+            <p><i class="fa fa-envelope me-3"></i>info@nycrenovationexperts.com</p>
+          </div>
+        </div>
+      </div>
+      <div class="container-fluid copyright">
+        <div class="container">
+          <div class="row">
+            <div class="col-md-12 text-center mb-3 mb-md-0">
+              &copy; <a href="index.html">NYC Renovation Experts</a>, All Rights Reserved.
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <script src="https://code.jquery.com/jquery-3.4.1.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.0.0/dist/js/bootstrap.bundle.min.js"></script>
+
+    <script type="importmap">
+      {
+        "imports": {
+          "three": "https://cdn.jsdelivr.net/npm/three@0.160.0/build/three.module.js",
+          "three/addons/": "https://cdn.jsdelivr.net/npm/three@0.160.0/examples/jsm/"
+        }
+      }
+    </script>
+    <script>
+      // AI tools (remove, shop 3D) run on the site's backend.
+      window.BACKEND_API_URL = window.BACKEND_API_URL ||
+        (location.hostname.endsWith('.vercel.app') ? location.origin : 'https://nyc-renovation-experts.vercel.app');
+    </script>
+    <script type="module" src="js/room3d/app.js"></script>
+  </body>
+</html>
